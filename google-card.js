@@ -22,6 +22,7 @@ class GoogleCard extends LitElement {
       brightness: { type: Number },
       overlayDismissTimer: { type: Number },
       showBrightnessCard: { type: Boolean },
+      brightnessCardTransition: { type: String },
     };
   }
 
@@ -47,7 +48,9 @@ class GoogleCard extends LitElement {
     this.brightness = 128;
     this.overlayDismissTimer = null;
     this.showBrightnessCard = false;
+    this.brightnessCardTransition = 'none';
     this.longPressTimer = null;
+    this.brightnessCardDismissTimer = null;
   }
 
   setConfig(config) {
@@ -95,6 +98,7 @@ class GoogleCard extends LitElement {
     clearInterval(this.imageUpdateInterval);
     clearInterval(this.imageListUpdateInterval);
     this.clearOverlayDismissTimer();
+    this.clearBrightnessCardDismissTimer();
 
     this.removeEventListener('touchstart', this.handleTouchStart);
     this.removeEventListener('touchmove', this.handleTouchMove);
@@ -113,12 +117,16 @@ class GoogleCard extends LitElement {
     const touchEndY = event.changedTouches[0].clientY;
     const deltaY = this.touchStartY - touchEndY;
 
-    if (deltaY > 50) {
+    if (deltaY > 50 && !this.showBrightnessCard) {
       this.showOverlay = true;
       this.requestUpdate();
       this.startOverlayDismissTimer();
     } else if (deltaY < -50) {
-      this.dismissOverlay();
+      if (this.showBrightnessCard) {
+        this.dismissBrightnessCard();
+      } else {
+        this.dismissOverlay();
+      }
     }
   }
 
@@ -138,8 +146,40 @@ class GoogleCard extends LitElement {
 
   dismissOverlay() {
     this.showOverlay = false;
-    this.showBrightnessCard = false;
     this.clearOverlayDismissTimer();
+    this.requestUpdate();
+  }
+
+  toggleBrightnessCard() {
+    if (!this.showBrightnessCard) {
+      this.showOverlay = false;
+      this.brightnessCardTransition = 'none';
+      this.showBrightnessCard = true;
+      this.startBrightnessCardDismissTimer();
+    } else {
+      this.dismissBrightnessCard();
+    }
+    this.requestUpdate();
+  }
+
+  startBrightnessCardDismissTimer() {
+    this.clearBrightnessCardDismissTimer();
+    this.brightnessCardDismissTimer = setTimeout(() => {
+      this.dismissBrightnessCard();
+    }, 10000);
+  }
+
+  clearBrightnessCardDismissTimer() {
+    if (this.brightnessCardDismissTimer) {
+      clearTimeout(this.brightnessCardDismissTimer);
+      this.brightnessCardDismissTimer = null;
+    }
+  }
+
+  dismissBrightnessCard() {
+    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
+    this.showBrightnessCard = false;
+    this.clearBrightnessCardDismissTimer();
     this.requestUpdate();
   }
 
@@ -370,26 +410,43 @@ class GoogleCard extends LitElement {
   }
 
   async updateBrightness() {
-    if (this.hass && this.hass.states['number.liam_display_screen_brightness']) {
-      const brightnessState = this.hass.states['number.liam_display_screen_brightness'];
-      this.brightness = brightnessState.state;
-    }
+    console.log("Brightness update method called");
+  }
+
+  setBrightness(value) {
+    // Convert 0-10 range to 1-255
+    const internalValue = value === 0 ? 1 : Math.max(1, Math.min(255, Math.round(value * 25.5)));
+    this.brightness = internalValue;
+    this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: "command_screen_brightness_level",
+      data: {
+        command: this.brightness
+      }
+    });
+    this.startBrightnessCardDismissTimer();
+    this.requestUpdate();
   }
 
   handleBrightnessChange(e) {
-    const newBrightness = parseInt(e.target.value) * 25.5;
-    this.hass.callService('number', 'set_value', {
-      entity_id: 'number.liam_display_screen_brightness',
-      value: Math.round(newBrightness)
-    });
-    this.brightness = newBrightness;
-    this.startOverlayDismissTimer();
+    const clickedDot = e.target.closest('.brightness-dot');
+    if (!clickedDot) return;
+
+    const newBrightness = parseInt(clickedDot.dataset.value);
+    this.setBrightness(newBrightness);
   }
 
-  toggleBrightnessCard() {
-    this.showBrightnessCard = !this.showBrightnessCard;
-    this.startOverlayDismissTimer();
-    this.requestUpdate();
+  handleBrightnessDrag(e) {
+    const container = this.shadowRoot.querySelector('.brightness-dots');
+    const rect = container.getBoundingClientRect();
+    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
+    const containerWidth = rect.width;
+    let newValue = Math.round((relativeX / containerWidth) * 10);
+    this.setBrightness(newValue);
+  }
+
+  getBrightnessDisplayValue() {
+    return this.brightness === 1 ? 0 : Math.round((this.brightness - 1) / 25.5);
   }
 
   toggleDebugInfo() {
@@ -412,7 +469,8 @@ class GoogleCard extends LitElement {
   render() {
     const imageAOpacity = this.activeImage === "A" ? 1 : 0;
     const imageBOpacity = this.activeImage === "B" ? 1 : 0;
-    const brightnessValue = Math.round(this.brightness / 25.5);
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
+
     return html`
       <div class="background-container">
         <div class="background-image" style="background-image: url('${this.imageA}'); opacity: ${imageAOpacity};"></div>
@@ -437,28 +495,8 @@ class GoogleCard extends LitElement {
           <pre>${JSON.stringify(this.config, null, 2)}</pre>
         </div>
       ` : ''}
-      <div class="overlay ${this.showOverlay ? 'show' : ''}">
-        ${this.showBrightnessCard ? html`
-          <button class="back-button" @click="${this.toggleBrightnessCard}">
-            <iconify-icon icon="material-symbols-light:arrow-back"></iconify-icon>
-            Back
-          </button>
-          <div class="brightness-card">
-            <div class="brightness-control">
-              <label for="brightness-slider">Brightness:</label>
-              <input 
-                type="range" 
-                id="brightness-slider" 
-                min="0" 
-                max="10" 
-                step="1"
-                .value="${brightnessValue}"
-                @change="${this.handleBrightnessChange}"
-                @input="${this.startOverlayDismissTimer}"
-              >
-            </div>
-          </div>
-        ` : html`
+      ${!this.showBrightnessCard ? html`
+        <div class="overlay ${this.showOverlay ? 'show' : ''}">
           <div class="icon-container">
             <div class="icon-row">
               <button class="icon-button" @click="${this.toggleBrightnessCard}">
@@ -481,13 +519,35 @@ class GoogleCard extends LitElement {
               </button>
             </div>
           </div>
-        `}
+        </div>
+      ` : ''}
+      <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" style="transition: ${this.brightnessCardTransition};">
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div class="brightness-dots" 
+                 @click="${this.handleBrightnessChange}"
+                 @mousedown="${this.handleBrightnessDrag}"
+                 @mousemove="${this.handleBrightnessDrag}"
+                 @touchstart="${this.handleBrightnessDrag}"
+                 @touchmove="${this.handleBrightnessDrag}">
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => html`
+                <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" data-value="${value}"></div>
+              `)}
+            </div>
+          </div>
+          <span class="brightness-value">${brightnessDisplayValue}</span>
+        </div>
       </div>
     `;
   }
 
   static get styles() {
     return css`
+      @font-face {
+        font-family: 'Product Sans';
+        src: url('https://befonts.com/product-sans-font.html') format('woff2');
+        font-style: regular;
+      }
       :host {
         --crossfade-time: 3s;
         --overlay-height: 120px;
@@ -498,6 +558,7 @@ class GoogleCard extends LitElement {
         width: 100vw;
         height: 100vh;
         z-index: 1;
+        font-family: 'Product Sans', sans-serif;
       }
       .background-container {
         position: absolute;
@@ -589,32 +650,54 @@ class GoogleCard extends LitElement {
         background-color: rgba(0, 0, 0, 0.1);
       }
       .brightness-card {
-        width: 90%;
-        max-width: 300px;
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 3;
+        transform: translateY(calc(100% + 20px));
+        transition: transform 0.3s ease-in-out;
+      }
+      .brightness-card.show {
+        transform: translateY(0);
       }
       .brightness-control {
         display: flex;
         align-items: center;
         width: 100%;
       }
-      .brightness-control label {
-        margin-right: 10px;
-      }
-      .brightness-control input {
+      .brightness-dots-container {
         flex-grow: 1;
+        margin-left: 10px;
+        padding: 0 10px;
       }
-      .back-button {
-        align-self: flex-start;
-        background: none;
-        border: none;
-        color: #333;
-        cursor: pointer;
-        margin-bottom: 16px;
+      .brightness-dots {
         display: flex;
+        justify-content: space-between;
         align-items: center;
+        height: 30px;
       }
-      .back-button iconify-icon {
-        margin-right: 8px;
+      .brightness-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #d1d1d1;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+      }
+      .brightness-dot.active {
+        background-color: #333;
+      }
+      .brightness-value {
+        min-width: 60px;
+        text-align: right;
+        font-size: 45px;
+        color: black;
+        margin-right: 20px;
       }
       iconify-icon {
         font-size: 50px;
