@@ -1,6 +1,140 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
+class WeatherComponent extends LitElement {
+  static get properties() {
+    return {
+      date: { type: String },
+      time: { type: String },
+      temperature: { type: String },
+      weatherIcon: { type: String },
+      aqi: { type: String }
+    };
+  }
+
+  constructor() {
+    super();
+    this.date = '';
+    this.time = '';
+    this.temperature = '';
+    this.weatherIcon = '';
+    this.aqi = '';
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.updateWeather();
+    this.timer = setInterval(() => this.updateWeather(), 60000); // Update every minute
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this.timer);
+  }
+
+  updateWeather() {
+    const now = new Date();
+    this.date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    this.time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M/, '');
+    this.temperature = '72°';
+    this.weatherIcon = 'clear-day-fill';
+    this.aqi = '45';
+  }
+
+  getAqiColor(aqi) {
+    if (aqi <= 50) return '#68a03a';
+    if (aqi <= 100) return '#f9bf33';
+    if (aqi <= 150) return '#f47c06';
+    if (aqi <= 200) return '#c43828';
+    if (aqi <= 300) return '#ab1457';
+    return '#83104c';
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <div class="weather-component">
+        <div class="left-column">
+          <div class="date">${this.date}</div>
+          <div class="time">${this.time}</div>
+        </div>
+        <div class="right-column">
+          <div class="weather-info">
+            <img src="https://basmilius.github.io/weather-icons/production/fill/all/clear-day.svg" class="weather-icon" alt="Weather icon">
+            <span class="temperature">${this.temperature}</span>
+          </div>
+          <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
+            ${this.aqi} AQI
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  static get styles() {
+    return css`
+      .weather-component {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        font-family: "Rubik", sans-serif;
+      }
+      .left-column {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+      .date {
+        font-size: 25px;
+        margin-bottom: 5px;
+        margin-left: 10px;
+        font-weight: 400;
+        text-shadow: 1px 1px 3px black;
+      }
+      .time {
+        font-size: 90px;
+        line-height: 1;
+        font-weight: 500;
+        text-shadow: 1px 1px 3px black;
+        margin-right: 0px;
+      }
+      .weather-info {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+        font-weight: 500;
+        margin-left: 10px;
+      }
+      .weather-icon {
+        width: 45px;
+        height: 45px;
+      }
+      .temperature {
+        font-size: 35px;
+        font-weight: 500;
+        text-shadow: 1px 1px 3px black;
+        margin-left: 5px;
+      }
+      .aqi {
+        font-size: 20px;
+        padding: 6px 10px 5px;
+        border-radius: 6px;
+        font-weight: 500;
+        margin-top: 5px;
+        margin-right: 10px;
+      }
+    `;
+  }
+}
+
+customElements.define('weather-component', WeatherComponent);
+
 class GoogleCard extends LitElement {
   static get properties() {
     return {
@@ -74,11 +208,11 @@ class GoogleCard extends LitElement {
     console.log("Config set:", this.config);
   }
 
-  async connectedCallback() {
+  connectedCallback() {
     super.connectedCallback();
     console.log("Card connected");
     window.addEventListener('resize', this.boundUpdateScreenSize);
-    await this.updateImageList();
+    this.updateImageList();
     this.startImageRotation();
     this.imageListUpdateInterval = setInterval(() => {
       this.updateImageList();
@@ -88,7 +222,7 @@ class GoogleCard extends LitElement {
     this.addEventListener('touchmove', this.handleTouchMove.bind(this));
     this.addEventListener('touchend', this.handleTouchEnd.bind(this));
 
-    await this.updateBrightness();
+    this.updateBrightness();
   }
 
   disconnectedCallback() {
@@ -411,10 +545,10 @@ class GoogleCard extends LitElement {
 
   async updateBrightness() {
     console.log("Brightness update method called");
+    // Implement the actual brightness update logic here
   }
 
   setBrightness(value) {
-    // Convert 0-10 range to 1-255
     const internalValue = value === 0 ? 1 : Math.max(1, Math.min(255, Math.round(value * 25.5)));
     this.brightness = internalValue;
     this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
@@ -472,11 +606,13 @@ class GoogleCard extends LitElement {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
 
     return html`
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
       <div class="background-container">
         <div class="background-image" style="background-image: url('${this.imageA}'); opacity: ${imageAOpacity};"></div>
         <div class="background-image" style="background-image: url('${this.imageB}'); opacity: ${imageBOpacity};"></div>
       </div>
       ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+      <weather-component></weather-component>
       ${this.showDebugInfo ? html`
         <div class="debug-info">
           <h2>Background Card Debug Info</h2>
@@ -543,11 +679,6 @@ class GoogleCard extends LitElement {
 
   static get styles() {
     return css`
-      @font-face {
-        font-family: 'Product Sans';
-        src: url('https://befonts.com/product-sans-font.html') format('woff2');
-        font-style: regular;
-      }
       :host {
         --crossfade-time: 3s;
         --overlay-height: 120px;
@@ -558,7 +689,8 @@ class GoogleCard extends LitElement {
         width: 100vw;
         height: 100vh;
         z-index: 1;
-        font-family: 'Product Sans', sans-serif;
+        font-family: "Rubik", sans-serif;
+        font-weight: 400;
       }
       .background-container {
         position: absolute;
@@ -609,7 +741,7 @@ class GoogleCard extends LitElement {
         box-sizing: border-box;
         transition: transform 0.3s ease-in-out;
         transform: translateY(100%);
-        z-index: 2;
+        z-index: 4;
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         display: flex;
         flex-direction: column;
@@ -672,7 +804,7 @@ class GoogleCard extends LitElement {
       }
       .brightness-dots-container {
         flex-grow: 1;
-        margin-left: 10px;
+        margin-right: 10px;
         padding: 0 10px;
       }
       .brightness-dots {
@@ -695,8 +827,9 @@ class GoogleCard extends LitElement {
       .brightness-value {
         min-width: 60px;
         text-align: right;
-        font-size: 45px;
+        font-size: 40px;
         color: black;
+        font-weight: 300;
         margin-right: 20px;
       }
       iconify-icon {
@@ -704,6 +837,12 @@ class GoogleCard extends LitElement {
         display: block;
         width: 50px;
         height: 50px;
+      }
+      weather-component {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 2;
       }
     `;
   }
