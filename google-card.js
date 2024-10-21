@@ -4,6 +4,7 @@ import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 class WeatherComponent extends LitElement {
   static get properties() {
     return {
+      hass: { type: Object },
       date: { type: String },
       time: { type: String },
       temperature: { type: String },
@@ -24,21 +25,66 @@ class WeatherComponent extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.updateWeather();
-    this.timer = setInterval(() => this.updateWeather(), 60000); // Update every minute
+    this.scheduleUpdate();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    clearInterval(this.timer);
+    clearTimeout(this.updateTimer);
+  }
+
+  scheduleUpdate() {
+    const now = new Date();
+    const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    
+    this.updateTimer = setTimeout(() => {
+      this.updateWeather();
+      this.scheduleUpdate();
+    }, delay);
   }
 
   updateWeather() {
     const now = new Date();
     this.date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     this.time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M/, '');
-    this.temperature = '72°';
-    this.weatherIcon = 'clear-day-fill';
-    this.aqi = '45';
+
+    if (this.hass) {
+      const weatherEntity = this.hass.states['weather.64_west_glen_ave'];
+      const aqiEntity = this.hass.states['sensor.ridgewood_air_quality_index'];
+
+      if (weatherEntity) {
+        this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
+        this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
+      }
+
+      if (aqiEntity) {
+        this.aqi = aqiEntity.state;
+      }
+    }
+
+    this.requestUpdate();
+  }
+
+  getWeatherIcon(state) {
+    const iconMapping = {
+      'clear-night': 'clear-night',
+      'cloudy': 'cloudy-fill',
+      'fog': 'fog',
+      'hail': 'hail',
+      'lightning': 'thunderstorms',
+      'lightning-rainy': 'thunderstorms-rain',
+      'partlycloudy': 'partly-cloudy-day',
+      'pouring': 'rain',
+      'rainy': 'drizzle',
+      'snowy': 'snow',
+      'snowy-rainy': 'sleet',
+      'sunny': 'clear-day',
+      'windy': 'wind',
+      'windy-variant': 'wind',
+      'exceptional': 'not-available'
+    };
+
+    return iconMapping[state] || 'not-available-fill';
   }
 
   getAqiColor(aqi) {
@@ -60,7 +106,7 @@ class WeatherComponent extends LitElement {
         </div>
         <div class="right-column">
           <div class="weather-info">
-            <img src="https://basmilius.github.io/weather-icons/production/fill/all/clear-day.svg" class="weather-icon" alt="Weather icon">
+            <img src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg" class="weather-icon" alt="Weather icon">
             <span class="temperature">${this.temperature}</span>
           </div>
           <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
@@ -78,7 +124,9 @@ class WeatherComponent extends LitElement {
         justify-content: space-between;
         align-items: center;
         color: white;
-        font-family: "Rubik", sans-serif;
+        font-family: "Product Sans Regular", sans-serif;
+        width: 100%;
+        max-width: 400px;
       }
       .left-column {
         display: flex;
@@ -93,41 +141,43 @@ class WeatherComponent extends LitElement {
       .date {
         font-size: 25px;
         margin-bottom: 5px;
-        margin-left: 10px;
         font-weight: 400;
         text-shadow: 1px 1px 3px black;
+        margin-left: 10px;
       }
       .time {
         font-size: 90px;
         line-height: 1;
         font-weight: 500;
         text-shadow: 1px 1px 3px black;
-        margin-right: 0px;
       }
       .weather-info {
         display: flex;
         align-items: center;
         margin-top: 10px;
         font-weight: 500;
-        margin-left: 10px;
+        margin-right: -5px;
       }
       .weather-icon {
-        width: 45px;
-        height: 45px;
+        width: 50px;
+        height: 50px;
       }
       .temperature {
         font-size: 35px;
         font-weight: 500;
         text-shadow: 1px 1px 3px black;
-        margin-left: 5px;
       }
       .aqi {
         font-size: 20px;
-        padding: 6px 10px 5px;
+        padding: 5px 10px 5px;
         border-radius: 6px;
         font-weight: 500;
         margin-top: 5px;
-        margin-right: 10px;
+        margin-left: 30px;
+        align-self: flex-end;
+        min-width: 60px;
+        text-align: center;
+        vertical-align: middle;
       }
     `;
   }
@@ -371,7 +421,6 @@ class GoogleCard extends LitElement {
       } else {
         newImageList.sort();
       }
-
       this.imageList = newImageList;
       this.error = null;
       this.debugInfo.imageList = this.imageList;
@@ -543,20 +592,23 @@ class GoogleCard extends LitElement {
     }
   }
 
-  async updateBrightness() {
-    console.log("Brightness update method called");
-    // Implement the actual brightness update logic here
+  updateBrightness() {
+    if (this.hass && this.hass.states['sensor.liam_room_display_screen_brightness']) {
+      const brightnessState = this.hass.states['sensor.liam_room_display_screen_brightness'];
+      this.brightness = parseInt(brightnessState.state);
+      this.requestUpdate();
+    }
   }
 
   setBrightness(value) {
-    const internalValue = value === 0 ? 1 : Math.max(1, Math.min(255, Math.round(value * 25.5)));
-    this.brightness = internalValue;
+    const internalValue = Math.max(1, Math.min(255, Math.round(value)));
     this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: "command_screen_brightness_level",
       data: {
-        command: this.brightness
+        command: internalValue
       }
     });
+    this.brightness = internalValue;
     this.startBrightnessCardDismissTimer();
     this.requestUpdate();
   }
@@ -566,7 +618,7 @@ class GoogleCard extends LitElement {
     if (!clickedDot) return;
 
     const newBrightness = parseInt(clickedDot.dataset.value);
-    this.setBrightness(newBrightness);
+    this.setBrightness(newBrightness * 25.5); // Convert 0-10 scale to 0-255 scale
   }
 
   handleBrightnessDrag(e) {
@@ -576,11 +628,11 @@ class GoogleCard extends LitElement {
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
     const containerWidth = rect.width;
     let newValue = Math.round((relativeX / containerWidth) * 10);
-    this.setBrightness(newValue);
+    this.setBrightness(newValue * 25.5); // Convert 0-10 scale to 0-255 scale
   }
 
   getBrightnessDisplayValue() {
-    return this.brightness === 1 ? 0 : Math.round((this.brightness - 1) / 25.5);
+    return Math.round(this.brightness / 25.5);
   }
 
   toggleDebugInfo() {
@@ -612,7 +664,7 @@ class GoogleCard extends LitElement {
         <div class="background-image" style="background-image: url('${this.imageB}'); opacity: ${imageBOpacity};"></div>
       </div>
       ${this.error ? html`<div class="error">${this.error}</div>` : ''}
-      <weather-component></weather-component>
+      <weather-component .hass="${this.hass}"></weather-component>
       ${this.showDebugInfo ? html`
         <div class="debug-info">
           <h2>Background Card Debug Info</h2>
@@ -689,7 +741,7 @@ class GoogleCard extends LitElement {
         width: 100vw;
         height: 100vh;
         z-index: 1;
-        font-family: "Rubik", sans-serif;
+        font-family: "Product Sans Regular", sans-serif;
         font-weight: 400;
       }
       .background-container {
