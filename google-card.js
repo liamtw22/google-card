@@ -207,6 +207,8 @@ class GoogleCard extends LitElement {
       overlayDismissTimer: { type: Number },
       showBrightnessCard: { type: Boolean },
       brightnessCardTransition: { type: String },
+      isNightMode: { type: Boolean },
+      currentTime: { type: String }
     };
   }
 
@@ -235,6 +237,9 @@ class GoogleCard extends LitElement {
     this.brightnessCardTransition = 'none';
     this.longPressTimer = null;
     this.brightnessCardDismissTimer = null;
+    this.isNightMode = false;
+    this.currentTime = '';
+    this.timeUpdateInterval = null;
   }
 
   setConfig(config) {
@@ -273,6 +278,12 @@ class GoogleCard extends LitElement {
     this.addEventListener('touchend', this.handleTouchEnd.bind(this));
 
     this.updateBrightness();
+    
+    // Start time updates for night mode
+    this.updateTime();
+    this.timeUpdateInterval = setInterval(() => {
+      this.updateTime();
+    }, 1000);
   }
 
   disconnectedCallback() {
@@ -281,12 +292,37 @@ class GoogleCard extends LitElement {
     window.removeEventListener('resize', this.boundUpdateScreenSize);
     clearInterval(this.imageUpdateInterval);
     clearInterval(this.imageListUpdateInterval);
+    clearInterval(this.timeUpdateInterval);
     this.clearOverlayDismissTimer();
     this.clearBrightnessCardDismissTimer();
 
     this.removeEventListener('touchstart', this.handleTouchStart);
     this.removeEventListener('touchmove', this.handleTouchMove);
     this.removeEventListener('touchend', this.handleTouchEnd);
+  }
+
+  updateTime() {
+    const now = new Date();
+    this.currentTime = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).replace(/\s?[AP]M/, '');
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('hass')) {
+      this.updateNightMode();
+      this.updateBrightness();
+    }
+  }
+
+  updateNightMode() {
+    if (this.hass && this.hass.states['sensor.liam_room_display_light_sensor']) {
+      const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+      this.isNightMode = parseInt(lightSensor.state) === 0;
+      this.requestUpdate();
+    }
   }
 
   handleTouchStart(event) {
@@ -331,39 +367,6 @@ class GoogleCard extends LitElement {
   dismissOverlay() {
     this.showOverlay = false;
     this.clearOverlayDismissTimer();
-    this.requestUpdate();
-  }
-
-  toggleBrightnessCard() {
-    if (!this.showBrightnessCard) {
-      this.showOverlay = false;
-      this.brightnessCardTransition = 'none';
-      this.showBrightnessCard = true;
-      this.startBrightnessCardDismissTimer();
-    } else {
-      this.dismissBrightnessCard();
-    }
-    this.requestUpdate();
-  }
-
-  startBrightnessCardDismissTimer() {
-    this.clearBrightnessCardDismissTimer();
-    this.brightnessCardDismissTimer = setTimeout(() => {
-      this.dismissBrightnessCard();
-    }, 10000);
-  }
-
-  clearBrightnessCardDismissTimer() {
-    if (this.brightnessCardDismissTimer) {
-      clearTimeout(this.brightnessCardDismissTimer);
-      this.brightnessCardDismissTimer = null;
-    }
-  }
-
-  dismissBrightnessCard() {
-    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
-    this.showBrightnessCard = false;
-    this.clearBrightnessCardDismissTimer();
     this.requestUpdate();
   }
 
@@ -517,7 +520,6 @@ class GoogleCard extends LitElement {
   }
 
   async updateImage() {
-    console.log("Updating image");
     if (this.isTransitioning) {
       console.log("Transition in progress, skipping update");
       return;
@@ -557,10 +559,6 @@ class GoogleCard extends LitElement {
     this.debugInfo.imageB = this.imageB;
     this.debugInfo.activeImage = this.activeImage;
     this.debugInfo.preloadedImage = this.preloadedImage;
-    console.log("Image A:", this.imageA);
-    console.log("Image B:", this.imageB);
-    console.log("Active Image:", this.activeImage);
-    console.log("Preloaded image:", this.preloadedImage);
 
     this.requestUpdate();
 
@@ -592,6 +590,39 @@ class GoogleCard extends LitElement {
     }
   }
 
+  toggleBrightnessCard() {
+    if (!this.showBrightnessCard) {
+      this.showOverlay = false;
+      this.brightnessCardTransition = 'none';
+      this.showBrightnessCard = true;
+      this.startBrightnessCardDismissTimer();
+    } else {
+      this.dismissBrightnessCard();
+    }
+    this.requestUpdate();
+  }
+
+  startBrightnessCardDismissTimer() {
+    this.clearBrightnessCardDismissTimer();
+    this.brightnessCardDismissTimer = setTimeout(() => {
+      this.dismissBrightnessCard();
+    }, 10000);
+  }
+
+  clearBrightnessCardDismissTimer() {
+    if (this.brightnessCardDismissTimer) {
+      clearTimeout(this.brightnessCardDismissTimer);
+      this.brightnessCardDismissTimer = null;
+    }
+  }
+
+  dismissBrightnessCard() {
+    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
+    this.showBrightnessCard = false;
+    this.clearBrightnessCardDismissTimer();
+    this.requestUpdate();
+  }
+
   updateBrightness() {
     if (this.hass && this.hass.states['sensor.liam_room_display_screen_brightness']) {
       const brightnessState = this.hass.states['sensor.liam_room_display_screen_brightness'];
@@ -618,7 +649,7 @@ class GoogleCard extends LitElement {
     if (!clickedDot) return;
 
     const newBrightness = parseInt(clickedDot.dataset.value);
-    this.setBrightness(newBrightness * 25.5); // Convert 0-10 scale to 0-255 scale
+    this.setBrightness(newBrightness * 25.5);
   }
 
   handleBrightnessDrag(e) {
@@ -628,7 +659,7 @@ class GoogleCard extends LitElement {
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
     const containerWidth = rect.width;
     let newValue = Math.round((relativeX / containerWidth) * 10);
-    this.setBrightness(newValue * 25.5); // Convert 0-10 scale to 0-255 scale
+    this.setBrightness(newValue * 25.5);
   }
 
   getBrightnessDisplayValue() {
@@ -643,7 +674,7 @@ class GoogleCard extends LitElement {
   handleSettingsIconTouchStart(e) {
     this.longPressTimer = setTimeout(() => {
       this.toggleDebugInfo();
-    }, 1000); // 1 second long press
+    }, 1000);
   }
 
   handleSettingsIconTouchEnd(e) {
@@ -653,6 +684,14 @@ class GoogleCard extends LitElement {
   }
 
   render() {
+    if (this.isNightMode) {
+      return html`
+        <div class="night-mode">
+          <div class="night-time">${this.currentTime}</div>
+        </div>
+      `;
+    }
+
     const imageAOpacity = this.activeImage === "A" ? 1 : 0;
     const imageBOpacity = this.activeImage === "B" ? 1 : 0;
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
@@ -668,7 +707,8 @@ class GoogleCard extends LitElement {
       ${this.showDebugInfo ? html`
         <div class="debug-info">
           <h2>Background Card Debug Info</h2>
-          <h3>Background Card Version: 22</h3>
+          <h3>Background Card Version: 23</h3>
+          <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
           <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
           <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
           <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
@@ -744,6 +784,26 @@ class GoogleCard extends LitElement {
         font-family: "Product Sans Regular", sans-serif;
         font-weight: 400;
       }
+      
+      .night-mode {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 5;
+      }
+      .night-time {
+        font-family: "Product Sans Regular", sans-serif;
+        color: white;
+        font-size: 30vw;
+        font-weight: 500;
+      }
+      
       .background-container {
         position: absolute;
         top: 0;
