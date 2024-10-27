@@ -1,6 +1,20 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
+// Constants
+const OVERLAY_DISMISS_TIMEOUT = 10000;
+const LONG_PRESS_TIMEOUT = 1000;
+const NIGHT_MODE_TRANSITION_DELAY = 100;
+const TRANSITION_BUFFER = 50;
+const DEFAULT_BRIGHTNESS = 128;
+const MAX_BRIGHTNESS = 255;
+const MIN_BRIGHTNESS = 1;
+const SWIPE_THRESHOLD = 50;
+const DEFAULT_SENSOR_UPDATE_DELAY = 500;
+const BRIGHTNESS_DEBOUNCE_DELAY = 250;
+const BRIGHTNESS_STABILIZE_DELAY = 2000;
+
+// Weather Component
 class WeatherComponent extends LitElement {
   static get properties() {
     return {
@@ -15,6 +29,10 @@ class WeatherComponent extends LitElement {
 
   constructor() {
     super();
+    this.resetProperties();
+  }
+
+  resetProperties() {
     this.date = '';
     this.time = '';
     this.temperature = '';
@@ -36,7 +54,6 @@ class WeatherComponent extends LitElement {
   scheduleUpdate() {
     const now = new Date();
     const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-    
     this.updateTimer = setTimeout(() => {
       this.updateWeather();
       this.scheduleUpdate();
@@ -45,24 +62,38 @@ class WeatherComponent extends LitElement {
 
   updateWeather() {
     const now = new Date();
-    this.date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    this.time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M/, '');
+    this.updateDateTime(now);
+    this.updateWeatherData();
+    this.requestUpdate();
+  }
 
-    if (this.hass) {
-      const weatherEntity = this.hass.states['weather.64_west_glen_ave'];
-      const aqiEntity = this.hass.states['sensor.ridgewood_air_quality_index'];
+  updateDateTime(now) {
+    this.date = now.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    this.time = now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    }).replace(/\s?[AP]M/, '');
+  }
 
-      if (weatherEntity) {
-        this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
-        this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
-      }
+  updateWeatherData() {
+    if (!this.hass) return;
 
-      if (aqiEntity) {
-        this.aqi = aqiEntity.state;
-      }
+    const weatherEntity = this.hass.states['weather.64_west_glen_ave'];
+    const aqiEntity = this.hass.states['sensor.ridgewood_air_quality_index'];
+
+    if (weatherEntity) {
+      this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
+      this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
     }
 
-    this.requestUpdate();
+    if (aqiEntity) {
+      this.aqi = aqiEntity.state;
+    }
   }
 
   getWeatherIcon(state) {
@@ -83,7 +114,6 @@ class WeatherComponent extends LitElement {
       'windy-variant': 'wind',
       'exceptional': 'not-available'
     };
-
     return iconMapping[state] || 'not-available-fill';
   }
 
@@ -106,7 +136,9 @@ class WeatherComponent extends LitElement {
         </div>
         <div class="right-column">
           <div class="weather-info">
-            <img src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg" class="weather-icon" alt="Weather icon">
+            <img src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg" 
+                 class="weather-icon" 
+                 alt="Weather icon">
             <span class="temperature">${this.temperature}</span>
           </div>
           <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
@@ -142,14 +174,14 @@ class WeatherComponent extends LitElement {
         font-size: 25px;
         margin-bottom: 5px;
         font-weight: 400;
-        text-shadow: 1px 1px 3px black;
         margin-left: 10px;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
       }
       .time {
         font-size: 90px;
         line-height: 1;
         font-weight: 500;
-        text-shadow: 1px 1px 3px black;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
       }
       .weather-info {
         display: flex;
@@ -165,11 +197,11 @@ class WeatherComponent extends LitElement {
       .temperature {
         font-size: 35px;
         font-weight: 500;
-        text-shadow: 1px 1px 3px black;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
       }
       .aqi {
         font-size: 20px;
-        padding: 5px 10px 5px;
+        padding: 5px 10px;
         border-radius: 6px;
         font-weight: 500;
         margin-top: 5px;
@@ -177,7 +209,6 @@ class WeatherComponent extends LitElement {
         align-self: flex-end;
         min-width: 60px;
         text-align: center;
-        vertical-align: middle;
       }
     `;
   }
@@ -185,6 +216,7 @@ class WeatherComponent extends LitElement {
 
 customElements.define('weather-component', WeatherComponent);
 
+// Main Google Card Component
 class GoogleCard extends LitElement {
   static get properties() {
     return {
@@ -204,49 +236,53 @@ class GoogleCard extends LitElement {
       showDebugInfo: { type: Boolean },
       showOverlay: { type: Boolean },
       brightness: { type: Number },
-      overlayDismissTimer: { type: Number },
+      visualBrightness: { type: Number },
       showBrightnessCard: { type: Boolean },
       brightnessCardTransition: { type: String },
       isNightMode: { type: Boolean },
-      currentTime: { type: String }
+      currentTime: { type: String },
+      previousBrightness: { type: Number },
+      isInNightMode: { type: Boolean },
+      isAdjustingBrightness: { type: Boolean },
+      lastBrightnessUpdateTime: { type: Number }
     };
   }
 
   constructor() {
     super();
+    this.initializeProperties();
+    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    this.brightnessUpdateTimer = null;
+    this.brightnessStabilizeTimer = null;
+  }
+
+  initializeProperties() {
     this.currentImageIndex = -1;
     this.imageList = [];
     this.imageA = "";
     this.imageB = "";
     this.activeImage = "A";
     this.preloadedImage = "";
-    this.imageUpdateInterval = null;
-    this.imageListUpdateInterval = null;
     this.error = null;
     this.debugInfo = {};
-    this.urlTemplate = "";
-    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
     this.isTransitioning = false;
     this.showDebugInfo = false;
     this.showOverlay = false;
-    this.updateScreenSize();
-    this.touchStartY = 0;
-    this.brightness = 128;
-    this.overlayDismissTimer = null;
+    this.brightness = DEFAULT_BRIGHTNESS;
+    this.visualBrightness = DEFAULT_BRIGHTNESS;
     this.showBrightnessCard = false;
     this.brightnessCardTransition = 'none';
-    this.longPressTimer = null;
-    this.brightnessCardDismissTimer = null;
     this.isNightMode = false;
     this.currentTime = '';
-    this.timeUpdateInterval = null;
+    this.previousBrightness = DEFAULT_BRIGHTNESS;
+    this.isInNightMode = false;
+    this.isAdjustingBrightness = false;
+    this.lastBrightnessUpdateTime = 0;
+    this.updateScreenSize();
   }
 
   setConfig(config) {
-    if (!config.image_url) {
-      throw new Error("You need to define an image_url");
-    }
-    this.config = {
+    const defaultConfig = {
       image_url: "",
       display_time: 15,
       crossfade_time: 3,
@@ -254,77 +290,201 @@ class GoogleCard extends LitElement {
       image_list_update_interval: 3600,
       image_order: "sorted",
       show_debug: false,
-      ...config,
+      sensor_update_delay: DEFAULT_SENSOR_UPDATE_DELAY
     };
+
+    if (!config.image_url) {
+      throw new Error("You need to define an image_url");
+    }
+
+    this.config = { ...defaultConfig, ...config };
     this.urlTemplate = this.config.image_url;
     this.showDebugInfo = this.config.show_debug;
     this.debugInfo.config = this.config;
     this.style.setProperty('--crossfade-time', `${this.config.crossfade_time}s`);
-    console.log("Config set:", this.config);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    console.log("Card connected");
+    this.setupEventListeners();
+    this.startTimers();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.cleanupEventListeners();
+    this.clearTimers();
+    if (this.brightnessStabilizeTimer) {
+      clearTimeout(this.brightnessStabilizeTimer);
+    }
+  }
+
+  setupEventListeners() {
     window.addEventListener('resize', this.boundUpdateScreenSize);
+    this.addEventListener('touchstart', this.handleTouchStart.bind(this));
+    this.addEventListener('touchmove', this.handleTouchMove.bind(this));
+    this.addEventListener('touchend', this.handleTouchEnd.bind(this));
+  }
+
+  cleanupEventListeners() {
+    window.removeEventListener('resize', this.boundUpdateScreenSize);
+    this.removeEventListener('touchstart', this.handleTouchStart);
+    this.removeEventListener('touchmove', this.handleTouchMove);
+    this.removeEventListener('touchend', this.handleTouchEnd);
+  }
+
+  startTimers() {
     this.updateImageList();
     this.startImageRotation();
     this.imageListUpdateInterval = setInterval(() => {
       this.updateImageList();
     }, this.config.image_list_update_interval * 1000);
 
-    this.addEventListener('touchstart', this.handleTouchStart.bind(this));
-    this.addEventListener('touchmove', this.handleTouchMove.bind(this));
-    this.addEventListener('touchend', this.handleTouchEnd.bind(this));
-
-    this.updateBrightness();
-    
-    // Start time updates for night mode
     this.updateTime();
     this.timeUpdateInterval = setInterval(() => {
       this.updateTime();
     }, 1000);
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    console.log("Card disconnected");
-    window.removeEventListener('resize', this.boundUpdateScreenSize);
+  clearTimers() {
     clearInterval(this.imageUpdateInterval);
     clearInterval(this.imageListUpdateInterval);
     clearInterval(this.timeUpdateInterval);
     this.clearOverlayDismissTimer();
     this.clearBrightnessCardDismissTimer();
-
-    this.removeEventListener('touchstart', this.handleTouchStart);
-    this.removeEventListener('touchmove', this.handleTouchMove);
-    this.removeEventListener('touchend', this.handleTouchEnd);
-  }
-
-  updateTime() {
-    const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).replace(/\s?[AP]M/, '');
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('hass')) {
-      this.updateNightMode();
-      this.updateBrightness();
+    if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
+      // Only update brightness if enough time has passed since last manual adjustment
+      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
+      if (timeSinceLastUpdate > BRIGHTNESS_STABILIZE_DELAY) {
+        this.updateNightMode();
+        this.updateBrightness();
+      }
     }
   }
 
+  updateBrightness() {
+    if (!this.hass?.states['sensor.liam_room_display_screen_brightness'] || this.isAdjustingBrightness) return;
+    
+    const brightnessState = this.hass.states['sensor.liam_room_display_screen_brightness'];
+    const newBrightness = parseInt(brightnessState.state);
+    this.brightness = newBrightness;
+    this.visualBrightness = newBrightness;
+    this.requestUpdate();
+  }
+
+  async updateBrightnessValue(value) {
+    // Update visual feedback immediately
+    this.isAdjustingBrightness = true;
+    this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    this.requestUpdate();
+
+    // Debounce the actual device update
+    if (this.brightnessUpdateTimer) {
+      clearTimeout(this.brightnessUpdateTimer);
+    }
+    if (this.brightnessStabilizeTimer) {
+      clearTimeout(this.brightnessStabilizeTimer);
+    }
+
+    this.brightnessUpdateTimer = setTimeout(async () => {
+      await this.setBrightness(value);
+      this.lastBrightnessUpdateTime = Date.now();
+      
+      // Set a timer to re-enable sensor updates
+      this.brightnessStabilizeTimer = setTimeout(() => {
+        this.isAdjustingBrightness = false;
+        this.requestUpdate();
+      }, BRIGHTNESS_STABILIZE_DELAY);
+      
+    }, BRIGHTNESS_DEBOUNCE_DELAY);
+  }
+
+  async setBrightness(value) {
+    const internalValue = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    
+    try {
+      // Set the brightness
+      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+        message: "command_screen_brightness_level",
+        data: {
+          command: internalValue
+        }
+      });
+
+      // Request sensor update
+      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+        message: "command_update_sensors"
+      });
+
+      // Wait for sensors to update
+      await new Promise(resolve => setTimeout(resolve, this.config.sensor_update_delay || DEFAULT_SENSOR_UPDATE_DELAY));
+
+      this.brightness = internalValue;
+      if (!this.isNightMode) {
+        this.previousBrightness = internalValue;
+      }
+    } catch (error) {
+      console.error("Error setting brightness:", error);
+      // Revert visual brightness to last known good value
+      this.visualBrightness = this.brightness;
+    }
+
+    this.startBrightnessCardDismissTimer();
+    this.requestUpdate();
+  }
+
+  // Night mode handling
   updateNightMode() {
-    if (this.hass && this.hass.states['sensor.liam_room_display_light_sensor']) {
-      const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
-      this.isNightMode = parseInt(lightSensor.state) === 0;
-      this.requestUpdate();
-    }
+    if (!this.hass?.states['sensor.liam_room_display_light_sensor']) return;
+
+    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+    const newNightMode = parseInt(lightSensor.state) === 0;
+    
+    if (newNightMode === this.isInNightMode) return;
+
+    this.handleNightModeTransition(newNightMode);
   }
 
+  async handleNightModeTransition(newNightMode) {
+    if (newNightMode) {
+      await this.enterNightMode();
+    } else {
+      await this.exitNightMode();
+    }
+    
+    this.isInNightMode = newNightMode;
+    this.isNightMode = newNightMode;
+    this.requestUpdate();
+  }
+
+  async enterNightMode() {
+    this.previousBrightness = this.brightness;
+    await this.toggleAutoBrightness(false);
+    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+    await this.setBrightness(MIN_BRIGHTNESS);
+    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+    await this.toggleAutoBrightness(true);
+  }
+
+  async exitNightMode() {
+    await this.toggleAutoBrightness(false);
+    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+    await this.setBrightness(this.previousBrightness);
+  }
+
+  async toggleAutoBrightness(enabled) {
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: "command_auto_screen_brightness",
+      data: {
+        command: enabled ? "turn_on" : "turn_off"
+      }
+    });
+  }
+
+  // Touch handling
   handleTouchStart(event) {
     this.touchStartY = event.touches[0].clientY;
   }
@@ -334,27 +494,44 @@ class GoogleCard extends LitElement {
   }
 
   handleTouchEnd(event) {
-    const touchEndY = event.changedTouches[0].clientY;
-    const deltaY = this.touchStartY - touchEndY;
+    const deltaY = this.touchStartY - event.changedTouches[0].clientY;
 
-    if (deltaY > 50 && !this.showBrightnessCard) {
+    if (deltaY > SWIPE_THRESHOLD && !this.showBrightnessCard) {
       this.showOverlay = true;
       this.requestUpdate();
       this.startOverlayDismissTimer();
-    } else if (deltaY < -50) {
-      if (this.showBrightnessCard) {
-        this.dismissBrightnessCard();
-      } else {
-        this.dismissOverlay();
-      }
+    } else if (deltaY < -SWIPE_THRESHOLD) {
+      this.showBrightnessCard ? this.dismissBrightnessCard() : this.dismissOverlay();
     }
   }
 
+  getBrightnessDisplayValue() {
+    return Math.round(this.visualBrightness / 25.5);
+  }
+
+  async handleBrightnessChange(e) {
+    const clickedDot = e.target.closest('.brightness-dot');
+    if (!clickedDot) return;
+
+    const newBrightness = parseInt(clickedDot.dataset.value);
+    await this.updateBrightnessValue(newBrightness * 25.5);
+  }
+
+  async handleBrightnessDrag(e) {
+    const container = this.shadowRoot.querySelector('.brightness-dots');
+    const rect = container.getBoundingClientRect();
+    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
+    const newValue = Math.round((relativeX / rect.width) * 10);
+    await this.updateBrightnessValue(newValue * 25.5);
+  }
+
+  // Timer management
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
       this.dismissOverlay();
-    }, 10000);
+    }, OVERLAY_DISMISS_TIMEOUT);
   }
 
   clearOverlayDismissTimer() {
@@ -364,75 +541,90 @@ class GoogleCard extends LitElement {
     }
   }
 
+  startBrightnessCardDismissTimer() {
+    this.clearBrightnessCardDismissTimer();
+    this.brightnessCardDismissTimer = setTimeout(() => {
+      this.dismissBrightnessCard();
+    }, OVERLAY_DISMISS_TIMEOUT);
+  }
+
+  clearBrightnessCardDismissTimer() {
+    if (this.brightnessCardDismissTimer) {
+      clearTimeout(this.brightnessCardDismissTimer);
+      this.brightnessCardDismissTimer = null;
+    }
+  }
+
+  // UI State Management
   dismissOverlay() {
     this.showOverlay = false;
     this.clearOverlayDismissTimer();
     this.requestUpdate();
   }
 
+  toggleBrightnessCard() {
+    if (!this.showBrightnessCard) {
+      this.showOverlay = false;
+      this.brightnessCardTransition = 'none';
+      this.showBrightnessCard = true;
+      this.startBrightnessCardDismissTimer();
+    } else {
+      this.dismissBrightnessCard();
+    }
+    this.requestUpdate();
+  }
+
+  dismissBrightnessCard() {
+    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
+    this.showBrightnessCard = false;
+    this.clearBrightnessCardDismissTimer();
+    this.requestUpdate();
+  }
+
+  // Debug Info
+  toggleDebugInfo() {
+    this.showDebugInfo = !this.showDebugInfo;
+    this.requestUpdate();
+  }
+
+  handleSettingsIconTouchStart(e) {
+    this.longPressTimer = setTimeout(() => {
+      this.toggleDebugInfo();
+    }, LONG_PRESS_TIMEOUT);
+  }
+
+  handleSettingsIconTouchEnd(e) {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+    }
+  }
+
+  // Screen and Image Management
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
     this.screenWidth = Math.round(window.innerWidth * pixelRatio);
     this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    console.log(`Viewport dimensions: ${this.screenWidth}x${this.screenHeight}`);
     this.updateImageList();
+  }
+
+  updateTime() {
+    const now = new Date();
+    this.currentTime = now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    }).replace(/\s?[AP]M/, '');
   }
 
   getImageUrl() {
     const timestamp_ms = Date.now();
     const timestamp = Math.floor(timestamp_ms / 1000);
-    let url = this.urlTemplate;
-    url = url.replace(/\${width}/g, this.screenWidth);
-    url = url.replace(/\${height}/g, this.screenHeight);
-    url = url.replace(/\${timestamp_ms}/g, timestamp_ms);
-    url = url.replace(/\${timestamp}/g, timestamp);
-    console.log("Generated image URL:", url);
+    let url = this.urlTemplate
+      .replace(/\${width}/g, this.screenWidth)
+      .replace(/\${height}/g, this.screenHeight)
+      .replace(/\${timestamp_ms}/g, timestamp_ms)
+      .replace(/\${timestamp}/g, timestamp);
     return url;
-  }
-
-  async updateImageList() {
-    console.log("Updating image list");
-    if (!this.screenWidth || !this.screenHeight) {
-      console.error("Screen dimensions not set");
-      this.error = "Screen dimensions not set";
-      this.requestUpdate();
-      return;
-    }
-    const imageSourceType = this.getImageSourceType();
-    let newImageList = [];
-
-    try {
-      switch (imageSourceType) {
-        case "media-source":
-          newImageList = await this.getImagesFromMediaSource();
-          break;
-        case "unsplash-api":
-          newImageList = await this.getImagesFromUnsplashAPI();
-          break;
-        case "immich-api":
-          newImageList = await this.getImagesFromImmichAPI();
-          break;
-        case "picsum":
-          newImageList = [this.getImageUrl()];
-          break;
-        default:
-          newImageList = [this.getImageUrl()];
-      }
-
-      if (this.config.image_order === "random") {
-        newImageList.sort(() => 0.5 - Math.random());
-      } else {
-        newImageList.sort();
-      }
-      this.imageList = newImageList;
-      this.error = null;
-      this.debugInfo.imageList = this.imageList;
-      console.log("Updated image list:", this.imageList);
-    } catch (error) {
-      console.error("Error updating image list:", error);
-      this.error = `Error updating image list: ${error.message}`;
-    }
-    this.requestUpdate();
   }
 
   getImageSourceType() {
@@ -444,6 +636,41 @@ class GoogleCard extends LitElement {
     return "url";
   }
 
+  async updateImageList() {
+    if (!this.screenWidth || !this.screenHeight) {
+      this.error = "Screen dimensions not set";
+      this.requestUpdate();
+      return;
+    }
+
+    try {
+      const newImageList = await this.fetchImageList();
+      this.imageList = this.config.image_order === "random" 
+        ? newImageList.sort(() => 0.5 - Math.random())
+        : newImageList.sort();
+        
+      this.error = null;
+      this.debugInfo.imageList = this.imageList;
+    } catch (error) {
+      this.error = `Error updating image list: ${error.message}`;
+    }
+    this.requestUpdate();
+  }
+
+  async fetchImageList() {
+    const sourceType = this.getImageSourceType();
+    switch (sourceType) {
+      case "media-source":
+        return this.getImagesFromMediaSource();
+      case "unsplash-api":
+        return this.getImagesFromUnsplashAPI();
+      case "immich-api":
+        return this.getImagesFromImmichAPI();
+      default:
+        return [this.getImageUrl()];
+    }
+  }
+
   async getImagesFromMediaSource() {
     try {
       const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, '');
@@ -451,7 +678,6 @@ class GoogleCard extends LitElement {
         type: "media_source/browse_media",
         media_content_id: mediaContentId
       });
-
       return result.children
         .filter(child => child.media_class === "image")
         .map(child => child.media_content_id);
@@ -494,8 +720,7 @@ class GoogleCard extends LitElement {
           .map(asset => `${apiUrl}/assets/${asset.id}/original`);
       });
 
-      const imageArrays = await Promise.all(imagePromises);
-      return imageArrays.flat();
+      return (await Promise.all(imagePromises)).flat();
     } catch (error) {
       console.error("Error fetching images from Immich API:", error);
       return [this.getImageUrl()];
@@ -503,7 +728,6 @@ class GoogleCard extends LitElement {
   }
 
   startImageRotation() {
-    console.log("Starting image rotation");
     this.updateImage();
     this.imageUpdateInterval = setInterval(() => {
       this.updateImage();
@@ -519,68 +743,10 @@ class GoogleCard extends LitElement {
     });
   }
 
-  async updateImage() {
-    if (this.isTransitioning) {
-      console.log("Transition in progress, skipping update");
-      return;
-    }
-
-    let newImage;
-    if (this.getImageSourceType() === "picsum") {
-      newImage = this.getImageUrl();
-    } else {
-      this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-      newImage = this.imageList[this.currentImageIndex];
-    }
-
-    if (this.preloadedImage) {
-      newImage = this.preloadedImage;
-      this.preloadedImage = "";
-    } else {
-      try {
-        newImage = await this.preloadImage(newImage);
-      } catch (error) {
-        console.error("Error loading new image:", error);
-        return;
-      }
-    }
-
-    this.preloadNextImage();
-
-    this.isTransitioning = true;
-
-    if (this.activeImage === "A") {
-      this.imageB = newImage;
-    } else {
-      this.imageA = newImage;
-    }
-
-    this.debugInfo.imageA = this.imageA;
-    this.debugInfo.imageB = this.imageB;
-    this.debugInfo.activeImage = this.activeImage;
-    this.debugInfo.preloadedImage = this.preloadedImage;
-
-    this.requestUpdate();
-
-    setTimeout(() => {
-      this.activeImage = this.activeImage === "A" ? "B" : "A";
-      this.requestUpdate();
-
-      setTimeout(() => {
-        this.isTransitioning = false;
-        this.requestUpdate();
-      }, this.config.crossfade_time * 1000 + 50);
-    }, 50);
-  }
-
   async preloadNextImage() {
-    let nextImageToPreload;
-    if (this.getImageSourceType() === "picsum") {
-      nextImageToPreload = this.getImageUrl();
-    } else {
-      const nextIndex = (this.currentImageIndex + 1) % this.imageList.length;
-      nextImageToPreload = this.imageList[nextIndex];
-    }
+    const nextImageToPreload = this.getImageSourceType() === "picsum" 
+      ? this.getImageUrl()
+      : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
 
     try {
       this.preloadedImage = await this.preloadImage(nextImageToPreload);
@@ -590,182 +756,187 @@ class GoogleCard extends LitElement {
     }
   }
 
-  toggleBrightnessCard() {
-    if (!this.showBrightnessCard) {
-      this.showOverlay = false;
-      this.brightnessCardTransition = 'none';
-      this.showBrightnessCard = true;
-      this.startBrightnessCardDismissTimer();
+  async updateImage() {
+    if (this.isTransitioning) return;
+
+    try {
+      const newImage = await this.getNextImage();
+      await this.transitionToNewImage(newImage);
+      this.preloadNextImage();
+    } catch (error) {
+      console.error("Error updating image:", error);
+    }
+  }
+
+  async getNextImage() {
+    let newImage;
+    if (this.preloadedImage) {
+      newImage = this.preloadedImage;
+      this.preloadedImage = "";
     } else {
-      this.dismissBrightnessCard();
-    }
-    this.requestUpdate();
-  }
-
-  startBrightnessCardDismissTimer() {
-    this.clearBrightnessCardDismissTimer();
-    this.brightnessCardDismissTimer = setTimeout(() => {
-      this.dismissBrightnessCard();
-    }, 10000);
-  }
-
-  clearBrightnessCardDismissTimer() {
-    if (this.brightnessCardDismissTimer) {
-      clearTimeout(this.brightnessCardDismissTimer);
-      this.brightnessCardDismissTimer = null;
-    }
-  }
-
-  dismissBrightnessCard() {
-    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
-    this.showBrightnessCard = false;
-    this.clearBrightnessCardDismissTimer();
-    this.requestUpdate();
-  }
-
-  updateBrightness() {
-    if (this.hass && this.hass.states['sensor.liam_room_display_screen_brightness']) {
-      const brightnessState = this.hass.states['sensor.liam_room_display_screen_brightness'];
-      this.brightness = parseInt(brightnessState.state);
-      this.requestUpdate();
-    }
-  }
-
-  setBrightness(value) {
-    const internalValue = Math.max(1, Math.min(255, Math.round(value)));
-    this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: "command_screen_brightness_level",
-      data: {
-        command: internalValue
+      if (this.getImageSourceType() === "picsum") {
+        newImage = this.getImageUrl();
+      } else {
+        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
+        newImage = this.imageList[this.currentImageIndex];
       }
-    });
-    this.brightness = internalValue;
-    this.startBrightnessCardDismissTimer();
+      newImage = await this.preloadImage(newImage);
+    }
+    return newImage;
+  }
+
+  async transitionToNewImage(newImage) {
+    this.isTransitioning = true;
+
+    if (this.activeImage === "A") {
+      this.imageB = newImage;
+    } else {
+      this.imageA = newImage;
+    }
+
+    this.updateDebugInfo();
+    this.requestUpdate();
+
+    await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
+    this.activeImage = this.activeImage === "A" ? "B" : "A";
+    this.requestUpdate();
+
+    await new Promise(resolve => setTimeout(resolve, this.config.crossfade_time * 1000 + TRANSITION_BUFFER));
+    this.isTransitioning = false;
     this.requestUpdate();
   }
 
-  handleBrightnessChange(e) {
-    const clickedDot = e.target.closest('.brightness-dot');
-    if (!clickedDot) return;
-
-    const newBrightness = parseInt(clickedDot.dataset.value);
-    this.setBrightness(newBrightness * 25.5);
+  updateDebugInfo() {
+    this.debugInfo = {
+      ...this.debugInfo,
+      imageA: this.imageA,
+      imageB: this.imageB,
+      activeImage: this.activeImage,
+      preloadedImage: this.preloadedImage
+    };
   }
 
-  handleBrightnessDrag(e) {
-    const container = this.shadowRoot.querySelector('.brightness-dots');
-    const rect = container.getBoundingClientRect();
-    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
-    const containerWidth = rect.width;
-    let newValue = Math.round((relativeX / containerWidth) * 10);
-    this.setBrightness(newValue * 25.5);
+  // Render Methods
+  renderNightMode() {
+    return html`
+      <div class="night-mode">
+        <div class="night-time">${this.currentTime}</div>
+      </div>
+    `;
   }
 
-  getBrightnessDisplayValue() {
-    return Math.round(this.brightness / 25.5);
-  }
-
-  toggleDebugInfo() {
-    this.showDebugInfo = !this.showDebugInfo;
-    this.requestUpdate();
-  }
-
-  handleSettingsIconTouchStart(e) {
-    this.longPressTimer = setTimeout(() => {
-      this.toggleDebugInfo();
-    }, 1000);
-  }
-
-  handleSettingsIconTouchEnd(e) {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-    }
-  }
-
-  render() {
-    if (this.isNightMode) {
-      return html`
-        <div class="night-mode">
-          <div class="night-time">${this.currentTime}</div>
-        </div>
-      `;
-    }
-
+  renderBackgroundImages() {
     const imageAOpacity = this.activeImage === "A" ? 1 : 0;
     const imageBOpacity = this.activeImage === "B" ? 1 : 0;
-    const brightnessDisplayValue = this.getBrightnessDisplayValue();
 
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
       <div class="background-container">
-        <div class="background-image" style="background-image: url('${this.imageA}'); opacity: ${imageAOpacity};"></div>
-        <div class="background-image" style="background-image: url('${this.imageB}'); opacity: ${imageBOpacity};"></div>
-      </div>
-      ${this.error ? html`<div class="error">${this.error}</div>` : ''}
-      <weather-component .hass="${this.hass}"></weather-component>
-      ${this.showDebugInfo ? html`
-        <div class="debug-info">
-          <h2>Background Card Debug Info</h2>
-          <h3>Background Card Version: 23</h3>
-          <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
-          <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
-          <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
-          <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
-          <p><strong>Image A:</strong> ${this.imageA}</p>
-          <p><strong>Image B:</strong> ${this.imageB}</p>
-          <p><strong>Active Image:</strong> ${this.activeImage}</p>
-          <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
-          <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
-          <p><strong>Image List:</strong> ${JSON.stringify(this.imageList)}</p>
-          <p><strong>Error:</strong> ${this.error}</p>
-          <h3>Config:</h3>
-          <pre>${JSON.stringify(this.config, null, 2)}</pre>
+        <div class="background-image" 
+             style="background-image: url('${this.imageA}'); 
+                    opacity: ${imageAOpacity};">
         </div>
-      ` : ''}
-      ${!this.showBrightnessCard ? html`
-        <div class="overlay ${this.showOverlay ? 'show' : ''}">
-          <div class="icon-container">
-            <div class="icon-row">
-              <button class="icon-button" @click="${this.toggleBrightnessCard}">
-                <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-              </button>
-              <button class="icon-button">
-                <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
-              </button>
-              <button class="icon-button">
-                <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>
-              </button>
-              <button class="icon-button">
-                <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
-              </button>
-              <button class="icon-button"
-                @touchstart="${this.handleSettingsIconTouchStart}"
-                @touchend="${this.handleSettingsIconTouchEnd}"
-                @touchcancel="${this.handleSettingsIconTouchEnd}">
-                <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
-              </button>
-            </div>
+        <div class="background-image" 
+             style="background-image: url('${this.imageB}'); 
+                    opacity: ${imageBOpacity};">
+        </div>
+      </div>
+    `;
+  }
+
+  renderDebugInfo() {
+    return html`
+      <div class="debug-info">
+        <h2>Background Card Debug Info</h2>
+        <h3>Background Card Version: 23</h3>
+        <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
+        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
+        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
+        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
+        <p><strong>Image A:</strong> ${this.imageA}</p>
+        <p><strong>Image B:</strong> ${this.imageB}</p>
+        <p><strong>Active Image:</strong> ${this.activeImage}</p>
+        <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
+        <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
+        <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness}</p>
+        <p><strong>Current Brightness:</strong> ${this.brightness}</p>
+        <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
+        <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
+        <p><strong>Image List:</strong> ${JSON.stringify(this.imageList)}</p>
+        <p><strong>Error:</strong> ${this.error}</p>
+        <h3>Config:</h3>
+        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+      </div>
+    `;
+  }
+
+  renderOverlay() {
+    return html`
+      <div class="overlay ${this.showOverlay ? 'show' : ''}">
+        <div class="icon-container">
+          <div class="icon-row">
+            <button class="icon-button" @click="${this.toggleBrightnessCard}">
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button"
+              @touchstart="${this.handleSettingsIconTouchStart}"
+              @touchend="${this.handleSettingsIconTouchEnd}"
+              @touchcancel="${this.handleSettingsIconTouchEnd}">
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
+            </button>
           </div>
         </div>
-      ` : ''}
-      <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" style="transition: ${this.brightnessCardTransition};">
+      </div>
+    `;
+  }
+
+  renderBrightnessCard() {
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
+    return html`
+      <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" 
+           style="transition: ${this.brightnessCardTransition};">
         <div class="brightness-control">
           <div class="brightness-dots-container">
             <div class="brightness-dots" 
                  @click="${this.handleBrightnessChange}"
                  @mousedown="${this.handleBrightnessDrag}"
-                 @mousemove="${this.handleBrightnessDrag}"
+                 @mousemove="${e => e.buttons === 1 && this.handleBrightnessDrag(e)}"
                  @touchstart="${this.handleBrightnessDrag}"
                  @touchmove="${this.handleBrightnessDrag}">
               ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => html`
-                <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" data-value="${value}"></div>
+                <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" 
+                     data-value="${value}">
+                </div>
               `)}
             </div>
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
         </div>
       </div>
+    `;
+  }
+
+  render() {
+    if (this.isNightMode) {
+      return this.renderNightMode();
+    }
+
+    return html`
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
+      ${this.renderBackgroundImages()}
+      ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+      <weather-component .hass="${this.hass}"></weather-component>
+      ${this.showDebugInfo ? this.renderDebugInfo() : ''}
+      ${!this.showBrightnessCard ? this.renderOverlay() : ''}
+      ${this.renderBrightnessCard()}
     `;
   }
 
@@ -797,11 +968,12 @@ class GoogleCard extends LitElement {
         align-items: center;
         z-index: 5;
       }
+      
       .night-time {
-        font-family: "Product Sans Regular", sans-serif;
         color: white;
-        font-size: 30vw;
-        font-weight: 500;
+        font-size: 35vw;
+        font-weight: 400;
+        font-family: "Product Sans Regular", sans-serif;
       }
       
       .background-container {
@@ -812,6 +984,7 @@ class GoogleCard extends LitElement {
         height: 100%;
         background-color: black;
       }
+      
       .background-image {
         position: absolute;
         top: 0;
@@ -821,12 +994,14 @@ class GoogleCard extends LitElement {
         background-size: contain;
         background-position: center;
         background-repeat: no-repeat;
-        transition: opacity var(--crossfade-time, 3s) ease-in-out;
+        transition: opacity var(--crossfade-time) ease-in-out;
       }
+      
       .error {
         color: red;
         padding: 16px;
       }
+      
       .debug-info {
         position: absolute;
         top: 50%;
@@ -842,6 +1017,7 @@ class GoogleCard extends LitElement {
         overflow: auto;
         border-radius: 8px;
       }
+      
       .overlay {
         position: fixed;
         bottom: 0;
@@ -862,9 +1038,11 @@ class GoogleCard extends LitElement {
         border-top-left-radius: 20px;
         border-top-right-radius: 20px;
       }
+      
       .overlay.show {
         transform: translateY(0);
       }
+      
       .icon-container {
         width: 100%;
         height: 100%;
@@ -872,12 +1050,14 @@ class GoogleCard extends LitElement {
         justify-content: center;
         align-items: center;
       }
+      
       .icon-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
         width: 85%;
       }
+      
       .icon-button {
         background: none;
         border: none;
@@ -890,9 +1070,11 @@ class GoogleCard extends LitElement {
         align-items: center;
         justify-content: center;
       }
+      
       .icon-button:hover {
         background-color: rgba(0, 0, 0, 0.1);
       }
+      
       .brightness-card {
         position: fixed;
         bottom: 20px;
@@ -906,25 +1088,30 @@ class GoogleCard extends LitElement {
         transform: translateY(calc(100% + 20px));
         transition: transform 0.3s ease-in-out;
       }
+      
       .brightness-card.show {
         transform: translateY(0);
       }
+      
       .brightness-control {
         display: flex;
         align-items: center;
         width: 100%;
       }
+      
       .brightness-dots-container {
         flex-grow: 1;
         margin-right: 10px;
         padding: 0 10px;
       }
+      
       .brightness-dots {
         display: flex;
         justify-content: space-between;
         align-items: center;
         height: 30px;
       }
+      
       .brightness-dot {
         width: 12px;
         height: 12px;
@@ -933,9 +1120,11 @@ class GoogleCard extends LitElement {
         transition: background-color 0.2s ease;
         cursor: pointer;
       }
+      
       .brightness-dot.active {
         background-color: #333;
       }
+      
       .brightness-value {
         min-width: 60px;
         text-align: right;
@@ -944,12 +1133,14 @@ class GoogleCard extends LitElement {
         font-weight: 300;
         margin-right: 20px;
       }
+      
       iconify-icon {
         font-size: 50px;
         display: block;
         width: 50px;
         height: 50px;
       }
+      
       weather-component {
         position: fixed;
         bottom: 30px;
