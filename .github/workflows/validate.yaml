@@ -1,17 +1,54 @@
-name: HACS Validation
+name: HACS Validate
 
 on:
   push:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
-  validate:
+  validate-hacs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: HACS validation
         uses: hacs/action@main
         with:
-          category: plugin
+          category: "plugin"
+
+  validate-hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
+        with:
+          ignore: "true"
+
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
+      - name: Build the project
+        run: npm run build
