@@ -1,18 +1,110 @@
-name: HACS Validate
+# .github/workflows/validate.yaml
+name: Validate
 
 on:
+  # Triggers on push to any branch
   push:
+  # Triggers on pull requests
   pull_request:
+  # Runs on schedule for continuous validation
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"  # Runs at 00:00 UTC every day
+  # Allows manual triggering
   workflow_dispatch:
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      # Check out the repository
       - uses: actions/checkout@v3
+
+      # Validate HACS
       - name: HACS validation
         uses: "hacs/action@main"
         with:
           category: "plugin"
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Run build
+      - name: Build
+        run: npm run build
+
+      # Run linting if you want to enforce code style
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+  # Style validation
+  style:
+    name: Validate style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
+      - name: Validate style
+        run: npm run lint
+        continue-on-error: true
+
+  # Draft Release
+  draft_release:
+    name: Draft Release
+    needs: [validate, style]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Create Release Draft
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            Changes in this Release:
+            - Automated release draft
+            - Built with latest changes
+          draft: true
+          prerelease: false
+          
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./google-card.js
+          asset_name: google-card.js
+          asset_content_type: text/javascript
+
+permissions:
+  contents: write # Required for creating releases
+  issues: write   # Required for creating release notes
+  pull-requests: write # Required for automated PR creation
