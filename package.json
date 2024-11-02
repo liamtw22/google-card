@@ -4,13 +4,14 @@
   "description": "A Google Nest Hub-inspired card for Home Assistant",
   "main": "google-card.js",
   "module": "google-card.js",
+  "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "dev": "rollup -c --watch",
+    "watch": "rollup -c --watch",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
-    "clean": "rimraf dist google-card.js",
-    "prebuild": "npm run clean",
+    "clean": "rimraf google-card.js",
+    "test": "echo \"No tests specified\" && exit 0",
     "prepare": "npm run build"
   },
   "repository": {
