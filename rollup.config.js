@@ -6,9 +6,8 @@ import { terser } from 'rollup-plugin-terser';
 export default {
   input: 'src/GoogleCard.js',
   output: {
-    dir: 'dist',
-    format: 'es',
-    filename: 'google-card.js'
+    file: 'google-card.js',  // Changed from dir/filename to file in root
+    format: 'es'
   },
   plugins: [
     resolve(),
