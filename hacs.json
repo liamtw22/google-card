@@ -1,6 +1,6 @@
 {
   "name": "Google Card",
-  "content_in_root": true,
+  "content_in_root": false,
   "filename": "google-card.js",
   "render_readme": true
 }
