@@ -522,13 +522,13 @@ customElements.define('weather-display', class extends LitElement {
   renderAQI() {
     if (!this.aqi) return null;
     var aqiColor = this.getAqiColor(this.aqi), aqiDescription = this.getAqiDescription(this.aqi);
-    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="aqi" style="background-color: ', '" title="', '"> \n          ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
+    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="aqi" style="background-color: ', '" title="', '"> ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
   }
   renderError() {
     return this.error ? html(_templateObject4$2 || (_templateObject4$2 = _taggedTemplateLiteral([ '\n      <div class="error-message">\n        ', '\n      </div>\n    ' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject5$1 || (_templateObject5$1 = _taggedTemplateLiteral([ '\n      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet">\n      <div class="weather-component">\n        ', '\n        <div class="right-column">\n          ', ' ', '\n        </div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
+    return html(_templateObject5$1 || (_templateObject5$1 = _taggedTemplateLiteral([ '\n      <link \n        href="https://fonts.googleapis.com/css2?\n        family=Product+Sans:wght@400;500&display=swap"\n        rel="stylesheet">\n      <div class="weather-component">\n        ', '\n        <div class="right-column">\n          ', ' ', '\n        </div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
   }
   // Public methods
   forceUpdate() {
