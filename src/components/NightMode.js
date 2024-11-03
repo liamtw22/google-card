@@ -1,11 +1,7 @@
 // src/components/NightMode.js
 import { LitElement, html } from 'lit-element';
 import { nightModeStyles } from '../styles/nightMode.js';
-import { 
-  TIME_FORMAT_OPTIONS, 
-  BRIGHTNESS,
-  TIMING 
-} from '../constants.js';
+import { TIME_FORMAT_OPTIONS, BRIGHTNESS, TIMING } from '../constants.js';
 
 export class NightMode extends LitElement {
   static get properties() {
@@ -13,7 +9,7 @@ export class NightMode extends LitElement {
       currentTime: { type: String },
       brightness: { type: Number },
       isAnimating: { type: Boolean },
-      error: { type: String }
+      error: { type: String },
     };
   }
 
@@ -91,13 +87,12 @@ export class NightMode extends LitElement {
   }
 
   formatTime(date) {
-    return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS)
+    return date
+      .toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS)
       .replace(/\s?[AP]M/, ''); // Remove AM/PM
   }
 
-  // Touch event handlers
   handleTouchStart(e) {
-    // Store the initial touch position
     this.touchStartY = e.touches[0].clientY;
   }
 
@@ -107,68 +102,56 @@ export class NightMode extends LitElement {
     const currentY = e.touches[0].clientY;
     const deltaY = this.touchStartY - currentY;
 
-    // If user has swiped up significantly, emit event
-    if (deltaY > 50) { // 50px threshold
-      this.dispatchEvent(new CustomEvent('exit-night-mode', {
-        bubbles: true,
-        composed: true
-      }));
+    if (deltaY > 50) {
+      this.dispatchEvent(
+        new CustomEvent('exit-night-mode', {
+          bubbles: true,
+          composed: true,
+        })
+      );
     }
   }
 
   handleTouchEnd() {
-    // Reset touch tracking
     this.touchStartY = null;
   }
 
-  // Animation helpers
   getAnimationClass() {
     return this.isAnimating ? 'fade-dim' : '';
   }
 
-  // Render helper methods
   renderTime() {
-    return html`
-      <div class="night-time ${this.getAnimationClass()}">
-        ${this.currentTime}
-      </div>
-    `;
+    return html`<div class="night-time ${this.getAnimationClass()}">${this.currentTime}</div>`;
   }
 
   renderError() {
     if (!this.error) return null;
-
-    return html`
-      <div class="error-message">
-        ${this.error}
-      </div>
-    `;
+    return html`<div class="error-message">${this.error}</div>`;
   }
 
   render() {
     return html`
-      <div class="night-mode"
-           @touchstart="${this.handleTouchStart}"
-           @touchmove="${this.handleTouchMove}"
-           @touchend="${this.handleTouchEnd}">
+      <div
+        class="night-mode"
+        @touchstart="${this.handleTouchStart}"
+        @touchmove="${this.handleTouchMove}"
+        @touchend="${this.handleTouchEnd}"
+      >
         ${this.renderTime()}
         ${this.renderError()}
       </div>
     `;
   }
 
-  // Public methods
   setBrightness(value) {
     this.brightness = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.NIGHT_MODE, value));
     this.requestUpdate();
   }
 
-  // Force an immediate time update
   forceUpdate() {
     this.updateTime();
   }
 
-  // Toggle the fade animation
   toggleAnimation() {
     if (this.fadeTimer) {
       this.stopFadeAnimation();
@@ -177,16 +160,14 @@ export class NightMode extends LitElement {
     }
   }
 
-  // Method to handle errors
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
 
-    // Emit error event
     const errorEvent = new CustomEvent('night-mode-error', {
       detail: { error },
       bubbles: true,
-      composed: true
+      composed: true,
     });
     this.dispatchEvent(errorEvent);
   }
