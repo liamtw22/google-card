@@ -44,13 +44,10 @@ export class NightMode extends LitElement {
   }
 
   startTimeUpdate() {
-    // Initial update
     this.updateTime();
-
-    // Set up interval for updates
     this.updateTimer = setInterval(() => {
       this.updateTime();
-    }, 1000); // Update every second
+    }, 1000);
   }
 
   stopTimeUpdate() {
@@ -64,7 +61,7 @@ export class NightMode extends LitElement {
     this.fadeTimer = setInterval(() => {
       this.isAnimating = !this.isAnimating;
       this.requestUpdate();
-    }, TIMING.NIGHT_MODE_TRANSITION_DELAY * 20); // Slow pulse animation
+    }, TIMING.NIGHT_MODE_TRANSITION_DELAY * 20);
   }
 
   stopFadeAnimation() {
@@ -87,7 +84,7 @@ export class NightMode extends LitElement {
   }
 
   formatTime(date) {
-    return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, ''); // Remove AM/PM
+    return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '');
   }
 
   handleTouchStart(e) {
@@ -101,12 +98,10 @@ export class NightMode extends LitElement {
     const deltaY = this.touchStartY - currentY;
 
     if (deltaY > 50) {
-      this.dispatchEvent(
-        new CustomEvent('exit-night-mode', {
-          bubbles: true,
-          composed: true,
-        })
-      );
+      this.dispatchEvent(new CustomEvent('exit-night-mode', {
+        bubbles: true,
+        composed: true,
+      }));
     }
   }
 
@@ -128,17 +123,10 @@ export class NightMode extends LitElement {
   }
 
   render() {
-    return html`
-      <div
-        class="night-mode"
-        @touchstart="${this.handleTouchStart}"
-        @touchmove="${this.handleTouchMove}"
-        @touchend="${this.handleTouchEnd}"
-      >
-        ${this.renderTime()}
-        ${this.renderError()}
-      </div>
-    `;
+    return html`<div class="night-mode" @touchstart="${this.handleTouchStart}" @touchmove="${this.handleTouchMove}" @touchend="${this.handleTouchEnd}">
+      ${this.renderTime()}
+      ${this.renderError()}
+    </div>`;
   }
 
   setBrightness(value) {
@@ -161,7 +149,6 @@ export class NightMode extends LitElement {
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
-
     const errorEvent = new CustomEvent('night-mode-error', {
       detail: { error },
       bubbles: true,
