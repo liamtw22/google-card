@@ -20,7 +20,7 @@ export class Controls extends LitElement {
       isAdjustingVolume: { type: Boolean },
       error: { type: String },
       touchStartY: { type: Number },
-      longPressTimer: { type: Number },
+      longPressTimer: { type: Number }
     };
   }
 
@@ -64,7 +64,6 @@ export class Controls extends LitElement {
     return controlsStyles;
   }
 
-  // Timer Management
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
@@ -107,13 +106,9 @@ export class Controls extends LitElement {
     }
   }
 
-  // Brightness Control Methods
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(
-      BRIGHTNESS.MIN,
-      Math.min(BRIGHTNESS.MAX, Math.round(value)),
-    );
+    this.visualBrightness = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
 
     try {
       await this.setBrightness(value);
@@ -131,31 +126,24 @@ export class Controls extends LitElement {
       throw new Error('Home Assistant not available');
     }
 
-    const brightnessValue = Math.max(
-      BRIGHTNESS.MIN,
-      Math.min(BRIGHTNESS.MAX, Math.round(value)),
-    );
+    const brightnessValue = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
 
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_screen_brightness_level',
-      data: { command: brightnessValue },
+      data: { command: brightnessValue }
     });
 
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_update_sensors',
+      message: 'command_update_sensors'
     });
 
     this.brightness = brightnessValue;
     this.emitBrightnessChange(brightnessValue);
   }
 
-  // Volume Control Methods
   async updateVolumeValue(value) {
     this.isAdjustingVolume = true;
-    this.visualVolume = Math.max(
-      VOLUME.MIN,
-      Math.min(VOLUME.MAX, Math.round(value)),
-    );
+    this.visualVolume = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
 
     try {
       await this.setVolume(value);
@@ -173,32 +161,27 @@ export class Controls extends LitElement {
       throw new Error('Home Assistant not available');
     }
 
-    const volumeValue = Math.max(
-      VOLUME.MIN,
-      Math.min(VOLUME.MAX, Math.round(value)),
-    );
+    const volumeValue = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
 
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_volume_level',
       data: {
         media_stream: 'system_stream',
-        command: volumeValue,
-      },
+        command: volumeValue
+      }
     });
 
-    // Play test sound
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_play_sound',
       data: {
-        sound: 'volume_change',
-      },
+        sound: 'volume_change'
+      }
     });
 
     this.volume = volumeValue;
     this.emitVolumeChange(volumeValue);
   }
 
-  // Event Handlers
   handleBrightnessChange(e) {
     const clickedDot = e.target.closest('.brightness-dot');
     if (!clickedDot) return;
@@ -233,7 +216,6 @@ export class Controls extends LitElement {
     await this.updateVolumeValue(newValue * (VOLUME.MAX / VOLUME.DOTS));
   }
 
-  // Touch Event Handlers
   handleTouchStart(e) {
     this.touchStartY = e.touches[0].clientY;
   }
@@ -258,7 +240,6 @@ export class Controls extends LitElement {
     this.touchStartY = null;
   }
 
-  // Settings Icon Long Press Handler
   handleSettingsIconTouchStart() {
     this.longPressTimer = setTimeout(() => {
       this.emitDebugToggle();
@@ -272,7 +253,6 @@ export class Controls extends LitElement {
     }
   }
 
-  // UI State Management
   dismissOverlay() {
     this.showOverlay = false;
     this.clearOverlayDismissTimer();
@@ -325,12 +305,11 @@ export class Controls extends LitElement {
     this.requestUpdate();
   }
 
-  // Event Emitters
   emitBrightnessChange(value) {
     const event = new CustomEvent('brightness-change', {
       detail: { brightness: value },
       bubbles: true,
-      composed: true,
+      composed: true
     });
     this.dispatchEvent(event);
   }
@@ -339,7 +318,7 @@ export class Controls extends LitElement {
     const event = new CustomEvent('volume-change', {
       detail: { volume: value },
       bubbles: true,
-      composed: true,
+      composed: true
     });
     this.dispatchEvent(event);
   }
@@ -347,51 +326,40 @@ export class Controls extends LitElement {
   emitDebugToggle() {
     const event = new CustomEvent('debug-toggle', {
       bubbles: true,
-      composed: true,
+      composed: true
     });
     this.dispatchEvent(event);
   }
 
-  // Error Handling
   handleError(message, error) {
     console.error(message, error);
     this.error = message;
     this.requestUpdate();
 
-    // Emit error event
     const errorEvent = new CustomEvent('control-error', {
       detail: { error: message },
       bubbles: true,
-      composed: true,
+      composed: true
     });
     this.dispatchEvent(errorEvent);
   }
 
-  // Render Methods
   renderOverlay() {
     return html`
       <div class="overlay ${this.showOverlay ? 'show' : ''}">
         <div class="icon-container">
           <div class="icon-row">
             <button class="icon-button" @click="${this.toggleBrightnessCard}">
-              <iconify-icon
-                icon="material-symbols-light:sunny-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button" @click="${this.toggleVolumeCard}">
-              <iconify-icon
-                icon="material-symbols-light:volume-up-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:alarm-add-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
             </button>
             <button
               class="icon-button"
@@ -399,9 +367,7 @@ export class Controls extends LitElement {
               @touchend="${this.handleSettingsIconTouchEnd}"
               @touchcancel="${this.handleSettingsIconTouchEnd}"
             >
-              <iconify-icon
-                icon="material-symbols-light:settings-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
           </div>
         </div>
@@ -410,14 +376,12 @@ export class Controls extends LitElement {
   }
 
   renderBrightnessCard() {
-    const brightnessDisplayValue = Math.round(
-      this.visualBrightness / (BRIGHTNESS.MAX / BRIGHTNESS.DOTS),
-    );
+    const brightnessDisplayValue = Math.round(this.visualBrightness / (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
 
     return html`
       <div
         class="brightness-card ${this.showBrightnessCard ? 'show' : ''}"
-        style="transition: ${this.brightnessCardTransition};"
+        style="transition: ${this.brightnessCardTransition}"
       >
         <div class="brightness-control">
           <div class="brightness-dots-container">
@@ -429,14 +393,12 @@ export class Controls extends LitElement {
               @touchstart="${this.handleBrightnessDrag}"
               @touchmove="${this.handleBrightnessDrag}"
             >
-              ${[...Array(BRIGHTNESS.DOTS)].map(
-                (_, i) => html`
-                  <div
-                    class="brightness-dot ${i < brightnessDisplayValue ? 'active' : ''}"
-                    data-value="${i + 1}"
-                  ></div>
-                `,
-              )}
+              ${[...Array(BRIGHTNESS.DOTS)].map((_, i) => html`
+                <div
+                  class="brightness-dot ${i < brightnessDisplayValue ? 'active' : ''}"
+                  data-value="${i + 1}"
+                ></div>
+              `)}
             </div>
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
@@ -446,14 +408,12 @@ export class Controls extends LitElement {
   }
 
   renderVolumeCard() {
-    const volumeDisplayValue = Math.round(
-      this.visualVolume / (VOLUME.MAX / VOLUME.DOTS),
-    );
+    const volumeDisplayValue = Math.round(this.visualVolume / (VOLUME.MAX / VOLUME.DOTS));
 
     return html`
       <div
         class="volume-card ${this.showVolumeCard ? 'show' : ''}"
-        style="transition: ${this.volumeCardTransition};"
+        style="transition: ${this.volumeCardTransition}"
       >
         <div class="volume-control">
           <div class="volume-dots-container">
@@ -465,14 +425,12 @@ export class Controls extends LitElement {
               @touchstart="${this.handleVolumeDrag}"
               @touchmove="${this.handleVolumeDrag}"
             >
-              ${[...Array(VOLUME.DOTS)].map(
-                (_, i) => html`
-                  <div
-                    class="volume-dot ${i < volumeDisplayValue ? 'active' : ''}"
-                    data-value="${i + 1}"
-                  ></div>
-                `,
-              )}
+              ${[...Array(VOLUME.DOTS)].map((_, i) => html`
+                <div
+                  class="volume-dot ${i < volumeDisplayValue ? 'active' : ''}"
+                  data-value="${i + 1}"
+                ></div>
+              `)}
             </div>
           </div>
           <span class="volume-value">${volumeDisplayValue}</span>
@@ -495,16 +453,13 @@ export class Controls extends LitElement {
         @touchend="${this.handleTouchEnd}"
       >
         ${this.renderError()}
-        ${!this.showBrightnessCard && !this.showVolumeCard
-          ? this.renderOverlay()
-          : ''}
+        ${!this.showBrightnessCard && !this.showVolumeCard ? this.renderOverlay() : ''}
         ${this.renderBrightnessCard()}
         ${this.renderVolumeCard()}
       </div>
     `;
   }
 
-  // Public Methods
   setBrightnessValue(value) {
     this.brightness = value;
     this.visualBrightness = value;
@@ -529,7 +484,6 @@ export class Controls extends LitElement {
     this.dismissAllCards();
   }
 
-  // Cleanup method
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearAllTimers();
