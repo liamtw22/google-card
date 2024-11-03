@@ -87,7 +87,13 @@ export const sharedStyles = css`
   }
 
   /* Typography Reset */
-  h1, h2, h3, h4, h5, h6, p {
+  h1, 
+  h2, 
+  h3, 
+  h4, 
+  h5, 
+  h6, 
+  p {
     margin: 0;
     font-weight: var(--font-weight-regular);
   }
@@ -141,35 +147,35 @@ export const sharedStyles = css`
   }
 
   /* Common Spacing Classes */
-  .m-0 { 
+  .m-0 {
     margin: 0; 
   }
-  .p-0 { 
+  .p-0 {
     padding: 0; 
   }
-  .m-1 { 
-    margin: var(--spacing-xsmall); 
+  .m-1 {
+    margin: var(--spacing-xsmall);
   }
-  .p-1 { 
-    padding: var(--spacing-xsmall); 
+  .p-1 {
+    padding: var(--spacing-xsmall);
   }
-  .m-2 { 
-    margin: var(--spacing-small); 
+  .m-2 {
+    margin: var(--spacing-small);
   }
-  .p-2 { 
-    padding: var(--spacing-small); 
+  .p-2 {
+    padding: var(--spacing-small);
   }
-  .m-3 { 
-    margin: var(--spacing-medium); 
+  .m-3 {
+    margin: var(--spacing-medium);
   }
-  .p-3 { 
-    padding: var(--spacing-medium); 
+  .p-3 {
+    padding: var(--spacing-medium);
   }
-  .m-4 { 
-    margin: var(--spacing-large); 
+  .m-4 {
+    margin: var(--spacing-large);
   }
-  .p-4 { 
-    padding: var(--spacing-large); 
+  .p-4 {
+    padding: var(--spacing-large);
   }
 
   /* Common Animation Classes */
@@ -182,20 +188,20 @@ export const sharedStyles = css`
   }
 
   @keyframes fadeIn {
-    from { 
-      opacity: 0; 
+    from {
+      opacity: 0;
     }
-    to { 
-      opacity: 1; 
+    to {
+      opacity: 1;
     }
   }
 
   @keyframes fadeOut {
-    from { 
-      opacity: 1; 
+    from {
+      opacity: 1;
     }
-    to { 
-      opacity: 0; 
+    to {
+      opacity: 0;
     }
   }
 
