@@ -5,7 +5,7 @@ export const weatherStyles = css`
   :host {
     display: block;
     position: relative;
-    font-family: "Product Sans Regular", "Rubik", sans-serif;
+    font-family: 'Product Sans Regular', 'Rubik', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -305,7 +305,7 @@ export const weatherStyles = css`
   }
 
   /* RTL Support */
-  :host([dir="rtl"]) {
+  :host([dir='rtl']) {
     .left-column {
       align-items: flex-end;
     }
