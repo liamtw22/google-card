@@ -131,7 +131,8 @@ export class NightMode extends LitElement {
         @touchstart="${this.handleTouchStart}"
         @touchmove="${this.handleTouchMove}"
         @touchend="${this.handleTouchEnd}"
-      >${this.renderTime()} ${this.renderError()}
+      >
+        ${this.renderTime()} ${this.renderError()}
       </div>
     `;
   }
