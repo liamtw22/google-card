@@ -1386,5 +1386,5 @@ window.customCards.push({
 
 customElements.define('google-card', GoogleCard);
 
-export { GoogleCard };
+
 //# sourceMappingURL=google-card.js.map
