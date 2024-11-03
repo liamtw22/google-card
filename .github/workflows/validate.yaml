@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-package-lock
 
+      - name: Create dist directory
+        run: mkdir -p dist
+
       - name: Build
         run: |
           npm run clean
@@ -31,11 +34,16 @@ jobs:
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add dist/
-          git commit -m "chore: update dist files" || echo "No changes to commit"
-          git push
+          if [ -f "dist/google-card.js" ]; then
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add dist/google-card.js
+            git commit -m "chore: update dist files" || echo "No changes to commit"
+            git push
+          else
+            echo "dist/google-card.js not found - build may have failed"
+            exit 1
+          fi
         
       - name: HACS validation
         uses: "hacs/action@main"
