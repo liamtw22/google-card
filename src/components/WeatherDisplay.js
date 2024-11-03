@@ -203,8 +203,7 @@ export class WeatherDisplay extends LitElement {
     const aqiColor = this.getAqiColor(this.aqi);
     const aqiDescription = this.getAqiDescription(this.aqi);
     return html`
-      <div class="aqi" style="background-color: ${aqiColor}" title="${aqiDescription}"> 
-          ${this.aqi} AQI
+      <div class="aqi" style="background-color: ${aqiColor}" title="${aqiDescription}"> ${this.aqi} AQI
       </div>
     `;
   }
@@ -220,7 +219,10 @@ export class WeatherDisplay extends LitElement {
 
   render() {
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet">
+      <link 
+        href="https://fonts.googleapis.com/css2?
+        family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet">
       <div class="weather-component">
         ${this.renderDateTime()}
         <div class="right-column">
