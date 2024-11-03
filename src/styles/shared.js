@@ -19,7 +19,7 @@ export const sharedStyles = css`
     --color-shadow: rgba(0, 0, 0, 0.1);
 
     /* Typography */
-    --font-family-primary: "Product Sans Regular", "Rubik", sans-serif;
+    --font-family-primary: 'Product Sans Regular', 'Rubik', sans-serif;
     --font-weight-light: 300;
     --font-weight-regular: 400;
     --font-weight-medium: 500;
@@ -141,16 +141,36 @@ export const sharedStyles = css`
   }
 
   /* Common Spacing Classes */
-  .m-0 { margin: 0; }
-  .p-0 { padding: 0; }
-  .m-1 { margin: var(--spacing-xsmall); }
-  .p-1 { padding: var(--spacing-xsmall); }
-  .m-2 { margin: var(--spacing-small); }
-  .p-2 { padding: var(--spacing-small); }
-  .m-3 { margin: var(--spacing-medium); }
-  .p-3 { padding: var(--spacing-medium); }
-  .m-4 { margin: var(--spacing-large); }
-  .p-4 { padding: var(--spacing-large); }
+  .m-0 { 
+    margin: 0; 
+  }
+  .p-0 { 
+    padding: 0; 
+  }
+  .m-1 { 
+    margin: var(--spacing-xsmall); 
+  }
+  .p-1 { 
+    padding: var(--spacing-xsmall); 
+  }
+  .m-2 { 
+    margin: var(--spacing-small); 
+  }
+  .p-2 { 
+    padding: var(--spacing-small); 
+  }
+  .m-3 { 
+    margin: var(--spacing-medium); 
+  }
+  .p-3 { 
+    padding: var(--spacing-medium); 
+  }
+  .m-4 { 
+    margin: var(--spacing-large); 
+  }
+  .p-4 { 
+    padding: var(--spacing-large); 
+  }
 
   /* Common Animation Classes */
   .fade-in {
@@ -162,13 +182,21 @@ export const sharedStyles = css`
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+      opacity: 0; 
+    }
+    to { 
+      opacity: 1; 
+    }
   }
 
   @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from { 
+      opacity: 1; 
+    }
+    to { 
+      opacity: 0; 
+    }
   }
 
   /* Common Utility Classes */
@@ -265,7 +293,7 @@ export const sharedStyles = css`
   }
 
   /* RTL Support */
-  :host([dir="rtl"]) {
+  :host([dir='rtl']) {
     direction: rtl;
   }
 
