@@ -37,7 +37,7 @@ jobs:
           if [ -f "dist/google-card.js" ]; then
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
-            git add dist/google-card.js
+            git add -f dist/google-card.js
             git commit -m "chore: update dist files" || echo "No changes to commit"
             git push
           else
