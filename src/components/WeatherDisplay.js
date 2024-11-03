@@ -90,8 +90,7 @@ export class WeatherDisplay extends LitElement {
     // Update date
     this.date = now.toLocaleDateString('en-US', DATE_FORMAT_OPTIONS);
     // Update time
-    this.time = now.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS)
-      .replace(/\s?[AP]M/, ''); // Remove AM/PM
+    this.time = now.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, ''); // Remove AM/PM
     this.requestUpdate();
   }
 
@@ -193,11 +192,7 @@ export class WeatherDisplay extends LitElement {
   renderWeatherInfo() {
     return html`
       <div class="weather-info">
-        <img 
-          src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
-          class="weather-icon"
-          alt="Weather icon for ${this.weatherState}"
-          @error=${this.handleWeatherIconError}>
+        <img src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg" class="weather-icon" alt="Weather icon for ${this.weatherState}" @error=${this.handleWeatherIconError}>
         <span class="temperature">${this.temperature}</span>
       </div>
     `;
@@ -208,11 +203,8 @@ export class WeatherDisplay extends LitElement {
     const aqiColor = this.getAqiColor(this.aqi);
     const aqiDescription = this.getAqiDescription(this.aqi);
     return html`
-      <div 
-        class="aqi" 
-        style="background-color: ${aqiColor}"
-        title="${aqiDescription}">
-        ${this.aqi} AQI
+      <div class="aqi" style="background-color: ${aqiColor}" title="${aqiDescription}"> 
+          ${this.aqi} AQI
       </div>
     `;
   }
@@ -232,8 +224,7 @@ export class WeatherDisplay extends LitElement {
       <div class="weather-component">
         ${this.renderDateTime()}
         <div class="right-column">
-          ${this.renderWeatherInfo()}
-          ${this.renderAQI()}
+          ${this.renderWeatherInfo()} ${this.renderAQI()}
         </div>
         ${this.renderError()}
       </div>
