@@ -758,7 +758,6 @@ customElements.define('google-controls', class extends LitElement {
   static get styles() {
     return controlsStyles;
   }
-  // Timer Management
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout((() => {
@@ -795,7 +794,6 @@ customElements.define('google-controls', class extends LitElement {
       this.volumeCardDismissTimer = null;
     }
   }
-  // Brightness Control Methods
   updateBrightnessValue(value) {
     var _this = this;
     return _asyncToGenerator((function*() {
@@ -829,7 +827,6 @@ customElements.define('google-controls', class extends LitElement {
       _this2.emitBrightnessChange(brightnessValue);
     }))();
   }
-  // Volume Control Methods
   updateVolumeValue(value) {
     var _this3 = this;
     return _asyncToGenerator((function*() {
@@ -857,8 +854,7 @@ customElements.define('google-controls', class extends LitElement {
           command: volumeValue
         }
       });
-      // Play test sound
-            yield _this4.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      yield _this4.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_play_sound',
         data: {
           sound: 'volume_change'
@@ -868,7 +864,6 @@ customElements.define('google-controls', class extends LitElement {
       _this4.emitVolumeChange(volumeValue);
     }))();
   }
-  // Event Handlers
   handleBrightnessChange(e) {
     var clickedDot = e.target.closest('.brightness-dot');
     if (clickedDot) {
@@ -897,7 +892,6 @@ customElements.define('google-controls', class extends LitElement {
       yield _this6.updateVolumeValue(newValue * (VOLUME$1_MAX / VOLUME$1_DOTS));
     }))();
   }
-  // Touch Event Handlers
   handleTouchStart(e) {
     this.touchStartY = e.touches[0].clientY;
   }
@@ -917,7 +911,6 @@ customElements.define('google-controls', class extends LitElement {
   handleTouchEnd() {
     this.touchStartY = null;
   }
-  // Settings Icon Long Press Handler
   handleSettingsIconTouchStart() {
     this.longPressTimer = setTimeout((() => {
       this.emitDebugToggle();
@@ -929,7 +922,6 @@ customElements.define('google-controls', class extends LitElement {
       this.longPressTimer = null;
     }
   }
-  // UI State Management
   dismissOverlay() {
     this.showOverlay = !1;
     this.clearOverlayDismissTimer();
@@ -972,7 +964,6 @@ customElements.define('google-controls', class extends LitElement {
     }
     this.requestUpdate();
   }
-  // Event Emitters
   emitBrightnessChange(value) {
     var event = new CustomEvent('brightness-change', {
       detail: {
@@ -1000,13 +991,11 @@ customElements.define('google-controls', class extends LitElement {
     });
     this.dispatchEvent(event);
   }
-  // Error Handling
   handleError(message, error) {
     console.error(message, error);
     this.error = message;
     this.requestUpdate();
-    // Emit error event
-        var errorEvent = new CustomEvent('control-error', {
+    var errorEvent = new CustomEvent('control-error', {
       detail: {
         error: message
       },
@@ -1015,17 +1004,16 @@ customElements.define('google-controls', class extends LitElement {
     });
     this.dispatchEvent(errorEvent);
   }
-  // Render Methods
   renderOverlay() {
-    return html(_templateObject$1 || (_templateObject$1 = _taggedTemplateLiteral([ '\n      <div class="overlay ', '">\n        <div class="icon-container">\n          <div class="icon-row">\n            <button class="icon-button" @click="', '">\n              <iconify-icon\n                icon="material-symbols-light:sunny-outline-rounded"\n              ></iconify-icon>\n            </button>\n            <button class="icon-button" @click="', '">\n              <iconify-icon\n                icon="material-symbols-light:volume-up-outline-rounded"\n              ></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon\n                icon="material-symbols-light:do-not-disturb-on-outline-rounded"\n              ></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon\n                icon="material-symbols-light:alarm-add-outline-rounded"\n              ></iconify-icon>\n            </button>\n            <button\n              class="icon-button"\n              @touchstart="', '"\n              @touchend="', '"\n              @touchcancel="', '"\n            >\n              <iconify-icon\n                icon="material-symbols-light:settings-outline-rounded"\n              ></iconify-icon>\n            </button>\n          </div>\n        </div>\n      </div>\n    ' ])), this.showOverlay ? 'show' : '', this.toggleBrightnessCard, this.toggleVolumeCard, this.handleSettingsIconTouchStart, this.handleSettingsIconTouchEnd, this.handleSettingsIconTouchEnd);
+    return html(_templateObject$1 || (_templateObject$1 = _taggedTemplateLiteral([ '\n      <div class="overlay ', '">\n        <div class="icon-container">\n          <div class="icon-row">\n            <button class="icon-button" @click="', '">\n              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button" @click="', '">\n              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>\n            </button>\n            <button\n              class="icon-button"\n              @touchstart="', '"\n              @touchend="', '"\n              @touchcancel="', '"\n            >\n              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>\n            </button>\n          </div>\n        </div>\n      </div>\n    ' ])), this.showOverlay ? 'show' : '', this.toggleBrightnessCard, this.toggleVolumeCard, this.handleSettingsIconTouchStart, this.handleSettingsIconTouchEnd, this.handleSettingsIconTouchEnd);
   }
   renderBrightnessCard() {
     var brightnessDisplayValue = Math.round(this.visualBrightness / (BRIGHTNESS_MAX / BRIGHTNESS_DOTS));
-    return html(_templateObject2$1 || (_templateObject2$1 = _taggedTemplateLiteral([ '\n      <div\n        class="brightness-card ', '"\n        style="transition: ', ';"\n      >\n        <div class="brightness-control">\n          <div class="brightness-dots-container">\n            <div\n              class="brightness-dots"\n              @click="', '"\n              @mousedown="', '"\n              @mousemove="', '"\n              @touchstart="', '"\n              @touchmove="', '"\n            >\n              ', '\n            </div>\n          </div>\n          <span class="brightness-value">', '</span>\n        </div>\n      </div>\n    ' ])), this.showBrightnessCard ? 'show' : '', this.brightnessCardTransition, this.handleBrightnessChange, this.handleBrightnessDrag, (e => 1 === e.buttons && this.handleBrightnessDrag(e)), this.handleBrightnessDrag, this.handleBrightnessDrag, [ ...Array(BRIGHTNESS_DOTS) ].map(((_, i) => html(_templateObject3$1 || (_templateObject3$1 = _taggedTemplateLiteral([ '\n                  <div\n                    class="brightness-dot ', '"\n                    data-value="', '"\n                  ></div>\n                ' ])), i < brightnessDisplayValue ? 'active' : '', i + 1))), brightnessDisplayValue);
+    return html(_templateObject2$1 || (_templateObject2$1 = _taggedTemplateLiteral([ '\n      <div\n        class="brightness-card ', '"\n        style="transition: ', '"\n      >\n        <div class="brightness-control">\n          <div class="brightness-dots-container">\n            <div\n              class="brightness-dots"\n              @click="', '"\n              @mousedown="', '"\n              @mousemove="', '"\n              @touchstart="', '"\n              @touchmove="', '"\n            >\n              ', '\n            </div>\n          </div>\n          <span class="brightness-value">', '</span>\n        </div>\n      </div>\n    ' ])), this.showBrightnessCard ? 'show' : '', this.brightnessCardTransition, this.handleBrightnessChange, this.handleBrightnessDrag, (e => 1 === e.buttons && this.handleBrightnessDrag(e)), this.handleBrightnessDrag, this.handleBrightnessDrag, [ ...Array(BRIGHTNESS_DOTS) ].map(((_, i) => html(_templateObject3$1 || (_templateObject3$1 = _taggedTemplateLiteral([ '\n                <div\n                  class="brightness-dot ', '"\n                  data-value="', '"\n                ></div>\n              ' ])), i < brightnessDisplayValue ? 'active' : '', i + 1))), brightnessDisplayValue);
   }
   renderVolumeCard() {
     var volumeDisplayValue = Math.round(this.visualVolume / (VOLUME$1_MAX / VOLUME$1_DOTS));
-    return html(_templateObject4$1 || (_templateObject4$1 = _taggedTemplateLiteral([ '\n      <div\n        class="volume-card ', '"\n        style="transition: ', ';"\n      >\n        <div class="volume-control">\n          <div class="volume-dots-container">\n            <div\n              class="volume-dots"\n              @click="', '"\n              @mousedown="', '"\n              @mousemove="', '"\n              @touchstart="', '"\n              @touchmove="', '"\n            >\n              ', '\n            </div>\n          </div>\n          <span class="volume-value">', '</span>\n        </div>\n      </div>\n    ' ])), this.showVolumeCard ? 'show' : '', this.volumeCardTransition, this.handleVolumeChange, this.handleVolumeDrag, (e => 1 === e.buttons && this.handleVolumeDrag(e)), this.handleVolumeDrag, this.handleVolumeDrag, [ ...Array(VOLUME$1_DOTS) ].map(((_, i) => html(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral([ '\n                  <div\n                    class="volume-dot ', '"\n                    data-value="', '"\n                  ></div>\n                ' ])), i < volumeDisplayValue ? 'active' : '', i + 1))), volumeDisplayValue);
+    return html(_templateObject4$1 || (_templateObject4$1 = _taggedTemplateLiteral([ '\n      <div\n        class="volume-card ', '"\n        style="transition: ', '"\n      >\n        <div class="volume-control">\n          <div class="volume-dots-container">\n            <div\n              class="volume-dots"\n              @click="', '"\n              @mousedown="', '"\n              @mousemove="', '"\n              @touchstart="', '"\n              @touchmove="', '"\n            >\n              ', '\n            </div>\n          </div>\n          <span class="volume-value">', '</span>\n        </div>\n      </div>\n    ' ])), this.showVolumeCard ? 'show' : '', this.volumeCardTransition, this.handleVolumeChange, this.handleVolumeDrag, (e => 1 === e.buttons && this.handleVolumeDrag(e)), this.handleVolumeDrag, this.handleVolumeDrag, [ ...Array(VOLUME$1_DOTS) ].map(((_, i) => html(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral([ '\n                <div\n                  class="volume-dot ', '"\n                  data-value="', '"\n                ></div>\n              ' ])), i < volumeDisplayValue ? 'active' : '', i + 1))), volumeDisplayValue);
   }
   renderError() {
     return this.error ? html(_templateObject6 || (_templateObject6 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
@@ -1033,7 +1021,6 @@ customElements.define('google-controls', class extends LitElement {
   render() {
     return html(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral([ '\n      <div\n        class="controls-container"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderError(), this.showBrightnessCard || this.showVolumeCard ? '' : this.renderOverlay(), this.renderBrightnessCard(), this.renderVolumeCard());
   }
-  // Public Methods
   setBrightnessValue(value) {
     this.brightness = value;
     this.visualBrightness = value;
@@ -1053,7 +1040,6 @@ customElements.define('google-controls', class extends LitElement {
   hideAllControls() {
     this.dismissAllCards();
   }
-  // Cleanup method
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearAllTimers();
