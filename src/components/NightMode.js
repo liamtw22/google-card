@@ -131,9 +131,7 @@ export class NightMode extends LitElement {
         @touchstart="${this.handleTouchStart}"
         @touchmove="${this.handleTouchMove}"
         @touchend="${this.handleTouchEnd}"
-      >
-        ${this.renderTime()}
-        ${this.renderError()}
+      >${this.renderTime()} ${this.renderError()}
       </div>
     `;
   }
@@ -158,7 +156,6 @@ export class NightMode extends LitElement {
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
-    
     const errorEvent = new CustomEvent('night-mode-error', {
       detail: { error },
       bubbles: true,
