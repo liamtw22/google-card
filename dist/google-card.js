@@ -512,34 +512,30 @@ customElements.define('weather-display', class extends LitElement {
     console.error('Error loading weather icon');
     e.target.src = 'https://basmilius.github.io/weather-icons/production/fill/all/'.concat(WEATHER_ICONS.default, '.svg');
   }
-  // Render helper methods
   renderDateTime() {
     return html(_templateObject$5 || (_templateObject$5 = _taggedTemplateLiteral([ '\n      <div class="left-column">\n        <div class="date">', '</div>\n        <div class="time">', '</div>\n      </div>\n    ' ])), this.date, this.time);
   }
   renderWeatherInfo() {
-    return html(_templateObject2$3 || (_templateObject2$3 = _taggedTemplateLiteral([ '\n      <div class="weather-info">\n        <img src="https://basmilius.github.io/weather-icons/production/fill/all/', '.svg" class="weather-icon" alt="Weather icon for ', '" @error=', '>\n        <span class="temperature">', '</span>\n      </div>\n    ' ])), this.weatherIcon, this.weatherState, this.handleWeatherIconError, this.temperature);
+    return html(_templateObject2$3 || (_templateObject2$3 = _taggedTemplateLiteral([ '\n      <div class="weather-info">\n        <img\n          src="https://basmilius.github.io/weather-icons/production/fill/all/', '.svg"\n          class="weather-icon"\n          alt="Weather icon for ', '"\n          @error=', '\n        />\n        <span class="temperature">', '</span>\n      </div>\n    ' ])), this.weatherIcon, this.weatherState, this.handleWeatherIconError, this.temperature);
   }
   renderAQI() {
     if (!this.aqi) return null;
     var aqiColor = this.getAqiColor(this.aqi), aqiDescription = this.getAqiDescription(this.aqi);
-    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="aqi" style="background-color: ', '" title="', '"> ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
+    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="aqi" style="background-color: ', '" title="', '">\n        ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
   }
   renderError() {
-    return this.error ? html(_templateObject4$2 || (_templateObject4$2 = _taggedTemplateLiteral([ '\n      <div class="error-message">\n        ', '\n      </div>\n    ' ])), this.error) : null;
+    return this.error ? html(_templateObject4$2 || (_templateObject4$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject5$1 || (_templateObject5$1 = _taggedTemplateLiteral([ '\n      <link \n        href="https://fonts.googleapis.com/css2?\n        family=Product+Sans:wght@400;500&display=swap"\n        rel="stylesheet">\n      <div class="weather-component">\n        ', '\n        <div class="right-column">\n          ', ' ', '\n        </div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
+    return html(_templateObject5$1 || (_templateObject5$1 = _taggedTemplateLiteral([ '\n      <link\n        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"\n        rel="stylesheet"\n      />\n      <div class="weather-component">\n        ', '\n        <div class="right-column">', ' ', '</div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
   }
-  // Public methods
   forceUpdate() {
     this.updateWeather();
     this.updateDateTime();
   }
-  // Method to manually update just the time
   updateTime() {
     this.updateDateTime();
   }
-  // Method to manually update just the weather
   refreshWeather() {
     this.updateWeather();
   }
