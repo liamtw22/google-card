@@ -1381,7 +1381,10 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'google-card',
   name: 'Google Card',
-  description: 'A card to mimic nest display'
+  description: 'A Google Nest Hub-inspired card for Home Assistant',
+  preview: !0,
+  documentationURL: 'https://github.com/liamtw22/google-card',
+  configurable: !0
 });
 
 export { GoogleCard };
