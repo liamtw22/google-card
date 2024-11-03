@@ -13,16 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Required for some git operations
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-          cache: 'npm'  # Enables npm caching
+          cache: 'npm'
 
+      # This will use package-lock.json for exact dependency versions
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: |
