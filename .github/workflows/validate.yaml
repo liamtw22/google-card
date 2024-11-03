@@ -1,12 +1,10 @@
 name: Validate
-
 on:
   push:
   pull_request:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * **"
   workflow_dispatch:
-
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -14,23 +12,21 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-
       - name: Install dependencies
         run: npm install --no-package-lock
-
       - name: Create dist directory
         run: mkdir -p dist
-
       - name: Build
         run: |
           npm run clean
           npm run build
-
+      - name: Remove export line
+        run: |
+          sed -i 's/export { GoogleCard };//' dist/google-card.js
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -44,16 +40,13 @@ jobs:
             echo "dist/google-card.js not found - build may have failed"
             exit 1
           fi
-        
       - name: HACS validation
         uses: "hacs/action@main"
         with:
           category: "plugin"
-
       - name: Lint
         run: npm run lint
         continue-on-error: true
-
 permissions:
   contents: write
   issues: write
