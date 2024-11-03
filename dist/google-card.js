@@ -136,6 +136,7 @@ var _templateObject$9, _templateObject$8, _templateObject$7, _templateObject2$4,
 customElements.define('background-rotator', class extends LitElement {
   static get properties() {
     return {
+      // Image properties
       imageA: {
         type: String
       },
@@ -154,15 +155,18 @@ customElements.define('background-rotator', class extends LitElement {
       crossfadeTime: {
         type: Number
       },
+      // Screen properties
       screenWidth: {
         type: Number
       },
       screenHeight: {
         type: Number
       },
+      // Config properties
       config: {
         type: Object
       },
+      // State properties
       error: {
         type: String
       },
@@ -180,18 +184,22 @@ customElements.define('background-rotator', class extends LitElement {
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
   initializeProperties() {
+    // Initialize image properties
     this.imageA = '';
     this.imageB = '';
     this.activeImage = 'A';
     this.preloadedImage = '';
     this.isTransitioning = !1;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
-    this.screenWidth = window.innerWidth;
+    // Initialize screen properties
+        this.screenWidth = window.innerWidth;
     this.screenHeight = window.innerHeight;
-    this.error = null;
+    // Initialize state properties
+        this.error = null;
     this.imageList = [];
     this.currentImageIndex = -1;
-    this.imageUpdateInterval = null;
+    // Initialize timers
+        this.imageUpdateInterval = null;
     this.imageListUpdateInterval = null;
   }
   static get styles() {
@@ -291,7 +299,8 @@ customElements.define('background-rotator', class extends LitElement {
         yield new Promise((resolve => setTimeout(resolve, TIMING_TRANSITION_BUFFER)));
         _this5.activeImage = 'A';
       }
-      yield new Promise((resolve => setTimeout(resolve, 1e3 * _this5.crossfadeTime + TIMING_TRANSITION_BUFFER)));
+      // Wait for crossfade to complete
+            yield new Promise((resolve => setTimeout(resolve, 1e3 * _this5.crossfadeTime + TIMING_TRANSITION_BUFFER)));
       _this5.isTransitioning = !1;
       _this5.requestUpdate();
     }))();
@@ -316,12 +325,14 @@ customElements.define('background-rotator', class extends LitElement {
   }
   render() {
     var imageAOpacity = 'A' === this.activeImage ? 1 : 0, imageBOpacity = 'B' === this.activeImage ? 1 : 0;
-    return html(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        <div class="background-image" style="', '"></div>\n        <div class="background-image" style="', '"></div>\n      </div>\n    ' ])), this.error ? html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.styleMap(this.getImageStyle(this.imageA, imageAOpacity)), this.styleMap(this.getImageStyle(this.imageB, imageBOpacity)));
+    return html(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        \n        <div \n          class="background-image" \n          style="', '">\n        </div>\n        \n        <div \n          class="background-image" \n          style="', '">\n        </div>\n      </div>\n    ' ])), this.error ? html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n          <div class="error-message">\n            ', '\n          </div>\n        ' ])), this.error) : '', this.styleMap(this.getImageStyle(this.imageA, imageAOpacity)), this.styleMap(this.getImageStyle(this.imageB, imageBOpacity)));
   }
+  // Public methods for parent component
   setImageList(list) {
     this.imageList = list;
     this.currentImageIndex = -1;
-    this.requestUpdate();
+ // Reset index when new list is set
+        this.requestUpdate();
   }
   setCrossfadeTime(time) {
     this.crossfadeTime = time;
@@ -331,22 +342,27 @@ customElements.define('background-rotator', class extends LitElement {
     this.config = config;
     this.requestUpdate();
   }
+  // Method to force an immediate image update
   forceImageUpdate() {
     var _this6 = this;
     return _asyncToGenerator((function*() {
       yield _this6.updateImage();
     }))();
   }
+  // Method to pause rotation
   pauseRotation() {
     this.clearTimers();
   }
+  // Method to resume rotation
   resumeRotation() {
     this.startImageRotation();
   }
+  // Error handling methods
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
-    var errorEvent = new CustomEvent('background-error', {
+    // Emit error event for parent component
+        var errorEvent = new CustomEvent('background-error', {
       detail: {
         error: error
       },
@@ -355,6 +371,7 @@ customElements.define('background-rotator', class extends LitElement {
     });
     this.dispatchEvent(errorEvent);
   }
+  // Method to clear error state
   clearError() {
     this.error = null;
     this.requestUpdate();
