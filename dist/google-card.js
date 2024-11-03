@@ -628,60 +628,47 @@ customElements.define('night-mode', class extends LitElement {
     return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '');
  // Remove AM/PM
     }
-  // Touch event handlers
   handleTouchStart(e) {
-    // Store the initial touch position
     this.touchStartY = e.touches[0].clientY;
   }
   handleTouchMove(e) {
     if (this.touchStartY) {
       var currentY = e.touches[0].clientY;
-      // If user has swiped up significantly, emit event
-      this.touchStartY - currentY > 50 && 
-      // 50px threshold
-      this.dispatchEvent(new CustomEvent('exit-night-mode', {
+      this.touchStartY - currentY > 50 && this.dispatchEvent(new CustomEvent('exit-night-mode', {
         bubbles: !0,
         composed: !0
       }));
     }
   }
   handleTouchEnd() {
-    // Reset touch tracking
     this.touchStartY = null;
   }
-  // Animation helpers
   getAnimationClass() {
     return this.isAnimating ? 'fade-dim' : '';
   }
-  // Render helper methods
   renderTime() {
-    return html(_templateObject$3 || (_templateObject$3 = _taggedTemplateLiteral([ '\n      <div class="night-time ', '">\n        ', '\n      </div>\n    ' ])), this.getAnimationClass(), this.currentTime);
+    return html(_templateObject$3 || (_templateObject$3 = _taggedTemplateLiteral([ '<div class="night-time ', '">', '</div>' ])), this.getAnimationClass(), this.currentTime);
   }
   renderError() {
-    return this.error ? html(_templateObject2$2 || (_templateObject2$2 = _taggedTemplateLiteral([ '\n      <div class="error-message">\n        ', '\n      </div>\n    ' ])), this.error) : null;
+    return this.error ? html(_templateObject2$2 || (_templateObject2$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '\n      <div class="night-mode"\n           @touchstart="', '"\n           @touchmove="', '"\n           @touchend="', '">\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
+    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '\n      <div\n        class="night-mode"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
   }
-  // Public methods
   setBrightness(value) {
     this.brightness = Math.max(BRIGHTNESS_MIN, Math.min(BRIGHTNESS_NIGHT_MODE, value));
     this.requestUpdate();
   }
-  // Force an immediate time update
   forceUpdate() {
     this.updateTime();
   }
-  // Toggle the fade animation
   toggleAnimation() {
     this.fadeTimer ? this.stopFadeAnimation() : this.startFadeAnimation();
   }
-  // Method to handle errors
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
-    // Emit error event
-        var errorEvent = new CustomEvent('night-mode-error', {
+    var errorEvent = new CustomEvent('night-mode-error', {
       detail: {
         error: error
       },
