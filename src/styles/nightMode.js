@@ -143,7 +143,7 @@ export const nightModeStyles = css`
   }
 
   @keyframes fadeInOut {
-    0%, 
+    0%,
     100% {
       opacity: 0;
     }
@@ -153,7 +153,7 @@ export const nightModeStyles = css`
   }
 
   @keyframes pulse {
-    0%, 
+    0%,
     100% {
       opacity: 0.7;
     }
