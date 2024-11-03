@@ -11,7 +11,7 @@ export const nightModeStyles = css`
     height: 100vh;
     background-color: black;
     z-index: 1000;
-    font-family: "Product Sans Regular", "Rubik", sans-serif;
+    font-family: 'Product Sans Regular', 'Rubik', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -252,7 +252,7 @@ export const nightModeStyles = css`
   }
 
   /* RTL Support */
-  :host([dir="rtl"]) {
+  :host([dir='rtl']) {
     .swipe-hint {
       transform: translateX(50%);
     }
