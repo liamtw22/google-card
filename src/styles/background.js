@@ -136,11 +136,7 @@ export const backgroundStyles = css`
     left: 0;
     right: 0;
     height: 150px;
-    background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.5) 0%,
-      rgba(0, 0, 0, 0) 100%
-    );
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
   }
 
   .gradient-bottom {
@@ -149,11 +145,7 @@ export const backgroundStyles = css`
     left: 0;
     right: 0;
     height: 150px;
-    background: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.5) 0%,
-      rgba(0, 0, 0, 0) 100%
-    );
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
   }
 
   /* High DPI Screen Optimizations */
