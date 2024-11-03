@@ -10,19 +10,15 @@ import {
 export class BackgroundRotator extends LitElement {
   static get properties() {
     return {
-      // Image properties
       imageA: { type: String },
       imageB: { type: String },
       activeImage: { type: String },
       preloadedImage: { type: String },
       isTransitioning: { type: Boolean },
       crossfadeTime: { type: Number },
-      // Screen properties
       screenWidth: { type: Number },
       screenHeight: { type: Number },
-      // Config properties
       config: { type: Object },
-      // State properties
       error: { type: String },
       imageList: { type: Array },
       currentImageIndex: { type: Number }
@@ -36,24 +32,17 @@ export class BackgroundRotator extends LitElement {
   }
 
   initializeProperties() {
-    // Initialize image properties
     this.imageA = '';
     this.imageB = '';
     this.activeImage = 'A';
     this.preloadedImage = '';
     this.isTransitioning = false;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
-    
-    // Initialize screen properties
     this.screenWidth = window.innerWidth;
     this.screenHeight = window.innerHeight;
-    
-    // Initialize state properties
     this.error = null;
     this.imageList = [];
     this.currentImageIndex = -1;
-    
-    // Initialize timers
     this.imageUpdateInterval = null;
     this.imageListUpdateInterval = null;
   }
@@ -161,7 +150,6 @@ export class BackgroundRotator extends LitElement {
       this.activeImage = 'A';
     }
 
-    // Wait for crossfade to complete
     await new Promise(resolve => 
       setTimeout(resolve, this.crossfadeTime * 1000 + TIMING.TRANSITION_BUFFER)
     );
@@ -195,29 +183,16 @@ export class BackgroundRotator extends LitElement {
 
     return html`
       <div class="background-container">
-        ${this.error ? html`
-          <div class="error-message">
-            ${this.error}
-          </div>
-        ` : ''}
-        
-        <div 
-          class="background-image" 
-          style="${this.styleMap(this.getImageStyle(this.imageA, imageAOpacity))}">
-        </div>
-        
-        <div 
-          class="background-image" 
-          style="${this.styleMap(this.getImageStyle(this.imageB, imageBOpacity))}">
-        </div>
+        ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
+        <div class="background-image" style="${this.styleMap(this.getImageStyle(this.imageA, imageAOpacity))}"></div>
+        <div class="background-image" style="${this.styleMap(this.getImageStyle(this.imageB, imageBOpacity))}"></div>
       </div>
     `;
   }
 
-  // Public methods for parent component
   setImageList(list) {
     this.imageList = list;
-    this.currentImageIndex = -1; // Reset index when new list is set
+    this.currentImageIndex = -1;
     this.requestUpdate();
   }
 
@@ -231,26 +206,21 @@ export class BackgroundRotator extends LitElement {
     this.requestUpdate();
   }
 
-  // Method to force an immediate image update
   async forceImageUpdate() {
     await this.updateImage();
   }
 
-  // Method to pause rotation
   pauseRotation() {
     this.clearTimers();
   }
 
-  // Method to resume rotation
   resumeRotation() {
     this.startImageRotation();
   }
 
-  // Error handling methods
   handleError(error) {
     this.error = error.message;
     this.requestUpdate();
-    // Emit error event for parent component
     const errorEvent = new CustomEvent('background-error', {
       detail: { error },
       bubbles: true,
@@ -259,7 +229,6 @@ export class BackgroundRotator extends LitElement {
     this.dispatchEvent(errorEvent);
   }
 
-  // Method to clear error state
   clearError() {
     this.error = null;
     this.requestUpdate();
