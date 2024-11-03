@@ -19,11 +19,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-          cache: 'npm'
 
-      # This will use package-lock.json for exact dependency versions
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-package-lock
 
       - name: Build
         run: |
