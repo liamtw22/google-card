@@ -11,7 +11,7 @@ export const controlsStyles = css`
     --icon-size: 50px;
     --border-radius: 20px;
     --transition-timing: 0.3s ease-in-out;
-    font-family: "Product Sans Regular", "Rubik", sans-serif;
+    font-family: 'Product Sans Regular', 'Rubik', sans-serif;
   }
 
   /* Base Control Container */
@@ -377,7 +377,7 @@ export const controlsStyles = css`
   }
 
   /* RTL Support */
-  :host([dir="rtl"]) {
+  :host([dir='rtl']) {
     .brightness-dots-container,
     .volume-dots-container {
       margin-right: 0;
