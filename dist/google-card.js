@@ -1374,8 +1374,6 @@ class GoogleCard extends LitElement {
   }
 }
 
-customElements.define('google-card', GoogleCard);
-
 window.customCards = window.customCards || [];
 
 window.customCards.push({
@@ -1383,9 +1381,10 @@ window.customCards.push({
   name: 'Google Card',
   description: 'A Google Nest Hub-inspired card for Home Assistant',
   preview: !0,
-  documentationURL: 'https://github.com/liamtw22/google-card',
-  configurable: !0
+  documentationURL: 'https://github.com/liamtw22/google-card'
 });
+
+customElements.define('google-card', GoogleCard);
 
 export { GoogleCard };
 //# sourceMappingURL=google-card.js.map
