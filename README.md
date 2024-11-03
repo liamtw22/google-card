@@ -1,145 +1,81 @@
-# Google Card for Home Assistant
+# Google Nest Hub-Inspired Card
 
-A sleek, Google Nest Hub-inspired card for Home Assistant dashboards.
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
+A custom card for Home Assistant that mimics the style of a Google Nest Hub display, providing a clean and modern interface for your smart home controls.
 
-## Overview
-
-Google Card brings the elegant design of Google Nest Hub to your Home Assistant dashboard. It features a rotating background image gallery, weather information, time display, and interactive controls for brightness and volume.
+![Example Card](https://raw.githubusercontent.com/liamtw22/google-card/main/images/example-card.png)
 
 ## Features
 
-- Dynamic background image rotation with smooth transitions
-- Real-time weather and AQI display
-- Interactive brightness and volume controls
-- Night mode with large clock display
-- Touch-optimized interface
-- Responsive design for all screen sizes
+- Clean, modern design inspired by Google Nest Hub
+- Customizable display options
+- Responsive layout
+- Easy integration with Home Assistant
 
 ## Installation
 
-### HACS Installation
-1. Search for "Google Card" in HACS
-2. Click Install
-3. Add configuration to your dashboard
+### HACS (Recommended)
+
+1. Make sure [HACS](https://hacs.xyz/) is installed in your Home Assistant instance
+2. Add this repository to HACS:
+   - Click on HACS in the sidebar
+   - Click on "Frontend" section
+   - Click the menu in the top right corner
+   - Select "Custom repositories"
+   - Add URL: `https://github.com/liamtw22/google-card`
+   - Category: "Plugin"
+3. Click "Install"
+4. Refresh your browser
 
 ### Manual Installation
-1. Download the `google-card.js` file from the latest release
-2. Copy it to your `www/community` folder
-3. Add the resource to your dashboard configuration
+
+1. Download `google-card.js` from the latest release
+2. Copy it to your `config/www` folder
+3. Add the resource in your `configuration.yaml`:
+```yaml
+lovelace:
+  resources:
+    - url: /local/google-card.js
+      type: module
+```
 
 ## Usage
 
-Add to your dashboard:
+Add the card to your dashboard:
 
-```yaml
-type: custom:google-card
-entity: weather.your_weather_entity
-image_url: "your_image_url"
-```
-
-### Configuration Options
-
-|
- Name 
-|
- Type 
-|
- Default 
-|
- Description 
-|
-|
-------
-|
-------
-|
----------
-|
--------------
-|
-|
- entity 
-|
- string 
-|
- Required 
-|
- Weather entity ID 
-|
-|
- image_url 
-|
- string 
-|
- Required 
-|
- URL for background images 
-|
-|
- display_time 
-|
- number 
-|
- 15 
-|
- Time to display each image (seconds) 
-|
-|
- crossfade_time 
-|
- number 
-|
- 3 
-|
- Transition duration between images 
-|
-|
- image_fit 
-|
- string 
-|
- "contain" 
-|
- Image fitting mode (contain/cover) 
-|
-|
- show_debug 
-|
- boolean 
-|
- false 
-|
- Enable debug information 
-|
-
-## Examples
-
-Basic configuration:
 ```yaml
 type: custom:google-card
 entity: weather.home
-image_url: "https://source.unsplash.com/random"
+# Add other configuration options as needed
 ```
 
-Advanced configuration:
-```yaml
-type: custom:google-card
-entity: weather.home
-image_url: "https://source.unsplash.com/random"
-display_time: 20
-crossfade_time: 2
-image_fit: "cover"
-show_debug: true
-```
+## Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| entity | string | required | Weather entity ID |
+| name | string | optional | Custom name for the card |
+| show_forecast | boolean | true | Show weather forecast |
+
+## Screenshots
+
+### Weather Display
+![Weather Display](https://raw.githubusercontent.com/liamtw22/google-card/main/images/weather.png)
+
+### Forecast View
+![Forecast View](https://raw.githubusercontent.com/liamtw22/google-card/main/images/forecast.png)
+
+## Contributing
+
+Feel free to submit issues and pull requests!
 
 ## Support
 
-Having issues? Open an issue on GitHub or join our discussion.
+If you're having issues or need help, please:
+1. Check the [FAQ](https://github.com/liamtw22/google-card/wiki/FAQ) section
+2. Open an [issue](https://github.com/liamtw22/google-card/issues)
 
-[releases-shield]: https://img.shields.io/github/release/your-username/google-card-mod.svg?style=for-the-badge
-[releases]: https://github.com/your-username/google-card-mod/releases
-[license-shield]: https://img.shields.io/github/license/your-username/google-card-mod.svg?style=for-the-badge
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
