@@ -648,7 +648,7 @@ customElements.define('night-mode', class extends LitElement {
     return this.error ? html(_templateObject2$2 || (_templateObject2$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '\n      <div\n        class="night-mode"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
+    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '\n      <div\n        class="night-mode"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >', ' ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
   }
   setBrightness(value) {
     this.brightness = Math.max(BRIGHTNESS_MIN, Math.min(BRIGHTNESS_NIGHT_MODE, value));
