@@ -87,9 +87,7 @@ export class NightMode extends LitElement {
   }
 
   formatTime(date) {
-    return date
-      .toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS)
-      .replace(/\s?[AP]M/, ''); // Remove AM/PM
+    return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, ''); // Remove AM/PM
   }
 
   handleTouchStart(e) {
