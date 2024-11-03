@@ -586,14 +586,11 @@ customElements.define('night-mode', class extends LitElement {
     this.stopFadeAnimation();
   }
   startTimeUpdate() {
-    // Initial update
     this.updateTime();
-    // Set up interval for updates
-        this.updateTimer = setInterval((() => {
+    this.updateTimer = setInterval((() => {
       this.updateTime();
     }), 1e3);
- // Update every second
-    }
+  }
   stopTimeUpdate() {
     if (this.updateTimer) {
       clearInterval(this.updateTimer);
@@ -605,8 +602,7 @@ customElements.define('night-mode', class extends LitElement {
       this.isAnimating = !this.isAnimating;
       this.requestUpdate();
     }), 20 * TIMING_NIGHT_MODE_TRANSITION_DELAY);
- // Slow pulse animation
-    }
+  }
   stopFadeAnimation() {
     if (this.fadeTimer) {
       clearInterval(this.fadeTimer);
@@ -626,8 +622,7 @@ customElements.define('night-mode', class extends LitElement {
   }
   formatTime(date) {
     return date.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '');
- // Remove AM/PM
-    }
+  }
   handleTouchStart(e) {
     this.touchStartY = e.touches[0].clientY;
   }
@@ -653,7 +648,7 @@ customElements.define('night-mode', class extends LitElement {
     return this.error ? html(_templateObject2$2 || (_templateObject2$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '\n      <div\n        class="night-mode"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
+    return html(_templateObject3$2 || (_templateObject3$2 = _taggedTemplateLiteral([ '<div class="night-mode" @touchstart="', '" @touchmove="', '" @touchend="', '">\n      ', '\n      ', '\n    </div>' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderTime(), this.renderError());
   }
   setBrightness(value) {
     this.brightness = Math.max(BRIGHTNESS_MIN, Math.min(BRIGHTNESS_NIGHT_MODE, value));
