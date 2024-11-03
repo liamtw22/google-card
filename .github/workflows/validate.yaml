@@ -1,17 +1,53 @@
 name: Validate
 
 on:
-  push: 
+  push:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
-  validate-hacs:
-    runs-on: "ubuntu-latest"
+  validate:
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Required for some git operations
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'  # Enables npm caching
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: |
+          npm run clean
+          npm run build
+
+      - name: Commit dist
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add dist/
+          git commit -m "chore: update dist files" || echo "No changes to commit"
+          git push
+        
       - name: HACS validation
         uses: "hacs/action@main"
         with:
           category: "plugin"
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
