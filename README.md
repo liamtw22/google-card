@@ -4,7 +4,7 @@
 
 A custom card for Home Assistant that mimics the style of a Google Nest Hub display, providing a clean and modern interface for your smart home controls.
 
-![Example Card](https://raw.githubusercontent.com/liamtw22/google-card/main/images/example-card.png)
+![Example Card](https://github.com/liamtw22/google-card/blob/main/images/example-card.png)
 
 ## Features
 
