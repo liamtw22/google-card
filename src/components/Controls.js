@@ -1,7 +1,7 @@
 // src/components/Controls.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { controlsStyles } from '../styles/controls.js';
-import { TIMING, BRIGHTNESS, VOLUME, UI } from '../constants.js';
+import { TIMING, BRIGHTNESS, VOLUME, UI, ENTITIES, CSS_CLASSES } from '../constants.js';
 
 export class Controls extends LitElement {
   static get properties() {
