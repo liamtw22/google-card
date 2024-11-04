@@ -1,5 +1,5 @@
 // src/components/WeatherDisplay.js
-import { LitElement, html } from 'lit-element';
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { weatherStyles } from '../styles/weather.js';
 import {
   UI,
