@@ -1,0 +1,65 @@
+name: Build and Release
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm install --no-package-lock
+        
+      - name: Create dist directory
+        run: mkdir -p dist
+        
+      - name: Build
+        run: |
+          npm run clean
+          npm run build
+          
+      - name: Remove export line
+        run: |
+          sed -i 's/export { GoogleCard };//' dist/google-card.js
+          
+      - name: Commit dist
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ -f "dist/google-card.js" ]; then
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add -f dist/google-card.js
+            git commit -m "chore: update dist files" || echo "No changes to commit"
+            git push
+          else
+            echo "dist/google-card.js not found - build may have failed"
+            exit 1
+          fi
+          
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/google-card.js
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write
