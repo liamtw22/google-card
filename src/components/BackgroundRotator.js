@@ -1,6 +1,7 @@
+// src/components/BackgroundRotator.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { backgroundStyles } from '../styles/background.js';
-import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG, CSS_CLASSES } from '../constants.js';
+import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG } from '../constants.js';
 
 export class BackgroundRotator extends LitElement {
   static get properties() {
@@ -17,12 +18,13 @@ export class BackgroundRotator extends LitElement {
       error: { type: String },
       imageList: { type: Array },
       currentImageIndex: { type: Number },
+      imageUpdateInterval: { type: Object },
+      imageListUpdateInterval: { type: Object }
     };
   }
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
     this.initializeProperties();
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
@@ -43,13 +45,81 @@ export class BackgroundRotator extends LitElement {
     this.imageListUpdateInterval = null;
   }
 
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: black;
+      }
+
+      .background-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        z-index: 1;
+      }
+
+      .background-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        will-change: opacity;
+        transition-property: opacity;
+        transition-timing-function: ease-in-out;
+      }
+
+      .error-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #ff4444;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        text-align: center;
+        z-index: 2;
+        max-width: 80%;
+      }
+
+      /* High DPI Screen Optimizations */
+      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+        .background-image {
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+      }
+
+      /* Reduced Motion Preferences */
+      @media (prefers-reduced-motion: reduce) {
+        .background-image {
+          transition-duration: 0.5s !important;
+        }
+      }
+    `;
+  }
+
   connectedCallback() {
+    super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
     this.startImageRotation();
-    this.render();
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
     this.clearTimers();
   }
@@ -63,7 +133,7 @@ export class BackgroundRotator extends LitElement {
     const pixelRatio = window.devicePixelRatio || 1;
     this.screenWidth = Math.round(window.innerWidth * pixelRatio);
     this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    this.render();
+    this.requestUpdate();
   }
 
   async startImageRotation() {
@@ -82,7 +152,7 @@ export class BackgroundRotator extends LitElement {
     } catch (error) {
       console.error('Error updating image:', error);
       this.error = `Error updating image: ${error.message}`;
-      this.render();
+      this.requestUpdate();
     }
   }
 
@@ -137,7 +207,7 @@ export class BackgroundRotator extends LitElement {
     );
 
     this.isTransitioning = false;
-    this.render();
+    this.requestUpdate();
   }
 
   getBackgroundSize() {
@@ -147,17 +217,17 @@ export class BackgroundRotator extends LitElement {
   setImageList(list) {
     this.imageList = list;
     this.currentImageIndex = -1;
-    this.render();
+    this.requestUpdate();
   }
 
   setCrossfadeTime(time) {
     this.crossfadeTime = time;
-    this.render();
+    this.requestUpdate();
   }
 
   setConfig(config) {
     this.config = config;
-    this.render();
+    this.requestUpdate();
   }
 
   async forceImageUpdate() {
@@ -173,69 +243,26 @@ export class BackgroundRotator extends LitElement {
   }
 
   render() {
-    const styles = `
-      :host {
-        display: block;
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: black;
-      }
-
-      .background-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-        z-index: 1;
-      }
-
-      .background-image {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-size: ${this.getBackgroundSize()};
-        background-position: center;
-        background-repeat: no-repeat;
-        will-change: opacity;
-        transition: opacity ${this.crossfadeTime}s ease-in-out;
-      }
-
-      .error-message {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: rgba(0, 0, 0, 0.8);
-        color: #ff4444;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        text-align: center;
-        z-index: 2;
-        max-width: 80%;
-      }
-    `;
-
-    const imageAOpacity = this.activeImage === 'A' ? 1 : 0;
-    const imageBOpacity = this.activeImage === 'B' ? 1 : 0;
-
-    this.shadowRoot.innerHTML = `
-      <style>${styles}</style>
+    return html`
       <div class="background-container">
-        ${this.error ? `<div class="error-message">${this.error}</div>` : ''}
+        ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
         <div
           class="background-image"
-          style="background-image: url('${this.imageA}'); opacity: ${imageAOpacity};"
+          style="
+            background-image: url('${this.imageA}');
+            opacity: ${this.activeImage === 'A' ? 1 : 0};
+            transition-duration: ${this.crossfadeTime}s;
+            background-size: ${this.getBackgroundSize()};
+          "
         ></div>
         <div
           class="background-image"
-          style="background-image: url('${this.imageB}'); opacity: ${imageBOpacity};"
+          style="
+            background-image: url('${this.imageB}');
+            opacity: ${this.activeImage === 'B' ? 1 : 0};
+            transition-duration: ${this.crossfadeTime}s;
+            background-size: ${this.getBackgroundSize()};
+          "
         ></div>
       </div>
     `;
