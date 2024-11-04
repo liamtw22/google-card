@@ -20,9 +20,7 @@ jobs:
           node-version: '16'
           
       - name: Install dependencies
-        run: |
-          npm install --no-package-lock
-          npm install --no-save prettier
+        run: npm install --no-package-lock
         
       - name: Create dist directory
         run: mkdir -p dist
@@ -38,7 +36,20 @@ jobs:
           
       - name: Format CSS in template literals
         run: |
-          npx prettier --write "dist/google-card.js" --parser babel
+          # Create a temporary formatting script
+          cat > format_css.sed << 'EOF'
+          # Find the CSS template literal and format it
+          s/\\n        :host {/\n        :host {/g
+          s/}/}\n        /g
+          s/\\n        /\n        /g
+          s/;/;\n        /g
+          # Clean up any extra newlines
+          s/\n        }/}/g
+          s/\n        \n        /\n        /g
+          EOF
+          
+          # Apply the formatting
+          sed -i -f format_css.sed dist/google-card.js
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
