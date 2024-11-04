@@ -1,5 +1,5 @@
 // src/components/BackgroundRotator.js
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from '../styles/shared.js';
 import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG } from '../constants.js';
 
@@ -19,7 +19,8 @@ export class BackgroundRotator extends LitElement {
       imageList: { type: Array },
       currentImageIndex: { type: Number },
       imageUpdateInterval: { type: Object },
-      imageListUpdateInterval: { type: Object }
+      imageListUpdateInterval: { type: Object },
+      displayTime: { type: Number }
     };
   }
 
@@ -36,6 +37,7 @@ export class BackgroundRotator extends LitElement {
     this.preloadedImage = '';
     this.isTransitioning = false;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
+    this.displayTime = DEFAULT_CONFIG.display_time;
     this.screenWidth = window.innerWidth;
     this.screenHeight = window.innerHeight;
     this.error = null;
@@ -106,7 +108,7 @@ export class BackgroundRotator extends LitElement {
     super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
     await this.initializeImageList();
-    await this.startImageRotation();
+    this.startImageRotation();
   }
 
   disconnectedCallback() {
@@ -124,20 +126,37 @@ export class BackgroundRotator extends LitElement {
     const pixelRatio = window.devicePixelRatio || 1;
     this.screenWidth = Math.round(window.innerWidth * pixelRatio);
     this.screenHeight = Math.round(window.innerHeight * pixelRatio);
+
+    // Notify parent component of screen size update
+    this.dispatchEvent(new CustomEvent('screen-size-update', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        width: this.screenWidth,
+        height: this.screenHeight
+      }
+    }));
+
     this.requestUpdate();
   }
 
   async initializeImageList() {
-    if (this.config?.image_url) {
-      try {
-        const imageUrl = this.getImageUrl(this.config.image_url);
-        this.imageList = [imageUrl];
-        this.currentImageIndex = -1;
-        this.error = null;
-      } catch (error) {
-        console.error('Error initializing image list:', error);
-        this.error = 'Error initializing images';
-      }
+    if (!this.config?.image_url) {
+      this.error = 'No image URL configured';
+      return;
+    }
+
+    try {
+      const imageUrl = this.getImageUrl(this.config.image_url);
+      this.imageList = [imageUrl];
+      this.currentImageIndex = -1;
+      this.error = null;
+      
+      // Load initial image
+      await this.preloadImage(imageUrl);
+    } catch (error) {
+      console.error('Error initializing image list:', error);
+      this.error = 'Error initializing images';
     }
   }
 
@@ -154,9 +173,9 @@ export class BackgroundRotator extends LitElement {
   async startImageRotation() {
     try {
       await this.updateImage(); // Initial image load
-      this.imageUpdateInterval = setInterval(async () => {
-        await this.updateImage();
-      }, (this.config?.display_time || DEFAULT_CONFIG.display_time) * 1000);
+      this.imageUpdateInterval = setInterval(() => {
+        this.updateImage();
+      }, this.displayTime * 1000);
     } catch (error) {
       console.error('Error starting image rotation:', error);
       this.error = 'Error starting image rotation';
@@ -165,7 +184,10 @@ export class BackgroundRotator extends LitElement {
   }
 
   async updateImage() {
-    if (this.isTransitioning) return;
+    if (this.isTransitioning) {
+      console.log('Skipping update - transition in progress');
+      return;
+    }
     
     try {
       const newImage = await this.getNextImage();
@@ -181,27 +203,15 @@ export class BackgroundRotator extends LitElement {
   }
 
   async getNextImage() {
-    // First check preloaded image
-    if (this.preloadedImage) {
-      const image = this.preloadedImage;
-      this.preloadedImage = '';
-      return image;
+    if (!this.config?.image_url) {
+      throw new Error('No image URL configured');
     }
 
-    // If no image list, try to get image URL
-    if (!this.imageList || this.imageList.length === 0) {
-      if (!this.config?.image_url) {
-        throw new Error('No image URL configured');
-      }
-      const imageUrl = this.getImageUrl(this.config.image_url);
-      this.imageList = [imageUrl];
-      this.currentImageIndex = -1;
-    }
-
-    // Get next image and preload it
-    this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
+    // Generate a new image URL with current timestamp
     const nextImageUrl = this.getImageUrl(this.config.image_url);
+    
     try {
+      // Ensure the image is loaded before returning
       await this.preloadImage(nextImageUrl);
       return nextImageUrl;
     } catch (error) {
@@ -220,6 +230,11 @@ export class BackgroundRotator extends LitElement {
   }
 
   async transitionToNewImage(newImage) {
+    if (this.isTransitioning) {
+      console.log('Transition already in progress');
+      return;
+    }
+
     this.isTransitioning = true;
 
     try {
@@ -237,14 +252,14 @@ export class BackgroundRotator extends LitElement {
 
       // Switch active image
       this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
-      this.requestUpdate();
-
+      
       // Wait for transition to complete
       await new Promise(resolve => 
         setTimeout(resolve, (this.crossfadeTime * 1000) + 50)
       );
     } finally {
       this.isTransitioning = false;
+      this.requestUpdate();
     }
   }
 
@@ -262,8 +277,9 @@ export class BackgroundRotator extends LitElement {
 
   setConfig(config) {
     this.config = config;
-    this.initializeImageList();
     this.crossfadeTime = config.crossfade_time || DEFAULT_CONFIG.crossfade_time;
+    this.displayTime = config.display_time || DEFAULT_CONFIG.display_time;
+    this.initializeImageList();
     this.requestUpdate();
   }
 
