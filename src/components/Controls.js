@@ -131,7 +131,6 @@ export class Controls extends LitElement {
         justify-content: space-between;
         align-items: center;
         width: 85%;
-        max-width: 500px;
       }
 
       .icon-button {
@@ -141,7 +140,7 @@ export class Controls extends LitElement {
         color: #333;
         padding: 10px;
         border-radius: 50%;
-        transition: background-color 0.2s ease;
+        transition: background-color 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
