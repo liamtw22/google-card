@@ -1168,19 +1168,27 @@ class GoogleCard extends LitElement {
       },
       longPressTimer: {
         type: Number
+      },
+      screenWidth: {
+        type: Number
+      },
+      screenHeight: {
+        type: Number
       }
     };
   }
   constructor() {
     super();
     this.initializeProperties();
-    // Bind methods
-        this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    this.bindMethods();
+  }
+  bindMethods() {
     this.handleTouchStart = this.handleTouchStart.bind(this);
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
     this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleScreenSizeUpdate = this.handleScreenSizeUpdate.bind(this);
   }
   initializeProperties() {
     this.error = null;
@@ -1188,8 +1196,7 @@ class GoogleCard extends LitElement {
     this.showDebugInfo = !1;
     this.isNightMode = !1;
     this.brightness = 128;
- // Default brightness
-        this.visualBrightness = 128;
+    this.visualBrightness = 128;
     this.showBrightnessCard = !1;
     this.brightnessCardTransition = 'none';
     this.showOverlay = !1;
@@ -1202,15 +1209,19 @@ class GoogleCard extends LitElement {
     this.brightnessCardDismissTimer = null;
     this.brightnessUpdateTimer = null;
     this.brightnessStabilizeTimer = null;
-  }
-  static get styles() {
-    return [ sharedStyles, css$1(_templateObject || (_templateObject = _taggedTemplateLiteral([ '\n        :host {\n          --crossfade-time: 3s;\n          --overlay-height: 120px;\n          display: block;\n          position: fixed;\n          top: 0;\n          left: 0;\n          width: 100vw;\n          height: 100vh;\n          z-index: 1;\n          font-family: "Product Sans Regular", sans-serif;\n          font-weight: 400;\n        }\n\n        weather-display {\n          position: fixed;\n          bottom: 30px;\n          left: 30px;\n          z-index: 2;\n        }\n\n        .overlay {\n          position: fixed;\n          bottom: 0;\n          left: 0;\n          width: 100%;\n          height: var(--overlay-height);\n          background-color: rgba(255, 255, 255, 0.95);\n          color: #333;\n          box-sizing: border-box;\n          transition: transform 0.3s ease-in-out;\n          transform: translateY(100%);\n          z-index: 4;\n          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);\n          display: flex;\n          flex-direction: column;\n          justify-content: center;\n          align-items: center;\n          border-top-left-radius: 20px;\n          border-top-right-radius: 20px;\n          backdrop-filter: blur(10px);\n          -webkit-backdrop-filter: blur(10px);\n        }\n\n        .overlay.show {\n          transform: translateY(0);\n        }\n\n        .icon-container {\n          width: 100%;\n          height: 100%;\n          display: flex;\n          justify-content: center;\n          align-items: center;\n        }\n\n        .icon-row {\n          display: flex;\n          justify-content: space-between;\n          align-items: center;\n          width: 85%;\n          max-width: 500px;\n        }\n\n        .icon-button {\n          background: none;\n          border: none;\n          cursor: pointer;\n          color: #333;\n          padding: 10px;\n          border-radius: 50%;\n          transition: background-color 0.2s ease;\n          display: flex;\n          align-items: center;\n          justify-content: center;\n        }\n\n        .icon-button:hover {\n          background-color: rgba(0, 0, 0, 0.1);\n        }\n\n        iconify-icon {\n          font-size: 50px;\n          display: block;\n          width: 50px;\n          height: 50px;\n        }\n\n        .brightness-card {\n          position: fixed;\n          bottom: 20px;\n          left: 20px;\n          right: 20px;\n          background-color: rgba(255, 255, 255, 0.95);\n          border-radius: 20px;\n          padding: 40px 20px;\n          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);\n          z-index: 3;\n          transform: translateY(calc(100% + 20px));\n          transition: transform 0.3s ease-in-out;\n          backdrop-filter: blur(10px);\n          -webkit-backdrop-filter: blur(10px);\n          max-width: 600px;\n          margin: 0 auto;\n        }\n\n        .brightness-card.show {\n          transform: translateY(0);\n        }\n\n        .brightness-control {\n          display: flex;\n          align-items: center;\n          width: 100%;\n        }\n\n        .brightness-dots-container {\n          flex-grow: 1;\n          margin-right: 10px;\n          padding: 0 10px;\n        }\n\n        .brightness-dots {\n          display: flex;\n          justify-content: space-between;\n          align-items: center;\n          height: 30px;\n        }\n\n        .brightness-dot {\n          width: 12px;\n          height: 12px;\n          border-radius: 50%;\n          background-color: #d1d1d1;\n          transition: background-color 0.2s ease;\n          cursor: pointer;\n        }\n\n        .brightness-dot.active {\n          background-color: #333;\n          transform: scale(1.1);\n        }\n\n        .brightness-value {\n          min-width: 60px;\n          text-align: right;\n          font-size: 40px;\n          color: black;\n          font-weight: 300;\n          margin-right: 20px;\n        }\n\n        .debug-info {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background: rgba(0, 0, 0, 0.7);\n          color: white;\n          padding: 16px;\n          font-size: 14px;\n          z-index: 10;\n          max-width: 80%;\n          max-height: 80%;\n          overflow: auto;\n          border-radius: 8px;\n        }\n\n        @media (max-width: 768px) {\n          .icon-row {\n            width: 95%;\n          }\n\n          .brightness-card {\n            bottom: 10px;\n            left: 10px;\n            right: 10px;\n            padding: 30px 15px;\n          }\n\n          .brightness-value {\n            font-size: 32px;\n            min-width: 50px;\n            margin-right: 15px;\n          }\n        }\n\n        @media (prefers-color-scheme: dark) {\n          .overlay,\n          .brightness-card {\n            background-color: rgba(30, 30, 30, 0.95);\n          }\n\n          .icon-button {\n            color: white;\n          }\n\n          .brightness-dot {\n            background-color: #666;\n          }\n\n          .brightness-dot.active {\n            background-color: white;\n          }\n\n          .brightness-value {\n            color: white;\n          }\n        }\n      ' ]))) ];
+    this.screenWidth = window.innerWidth;
+    this.screenHeight = window.innerHeight;
   }
   setConfig(config) {
     if (!config.image_url) throw new Error('You need to define an image_url');
     this.config = _objectSpread2(_objectSpread2({}, DEFAULT_CONFIG), config);
     this.showDebugInfo = this.config.show_debug;
-    this.debugInfo.config = this.config;
+    this.debugInfo = {
+      config: this.config,
+      screenWidth: this.screenWidth,
+      screenHeight: this.screenHeight,
+      devicePixelRatio: window.devicePixelRatio || 1
+    };
   }
   connectedCallback() {
     super.connectedCallback();
@@ -1218,6 +1229,7 @@ class GoogleCard extends LitElement {
     this.addEventListener('touchstart', this.handleTouchStart);
     this.addEventListener('touchmove', this.handleTouchMove);
     this.addEventListener('touchend', this.handleTouchEnd);
+    this.addEventListener('screen-size-update', this.handleScreenSizeUpdate);
   }
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -1225,7 +1237,17 @@ class GoogleCard extends LitElement {
     this.removeEventListener('touchstart', this.handleTouchStart);
     this.removeEventListener('touchmove', this.handleTouchMove);
     this.removeEventListener('touchend', this.handleTouchEnd);
+    this.removeEventListener('screen-size-update', this.handleScreenSizeUpdate);
     this.clearAllTimers();
+  }
+  handleScreenSizeUpdate(e) {
+    this.screenWidth = e.detail.width;
+    this.screenHeight = e.detail.height;
+    this.debugInfo = _objectSpread2(_objectSpread2({}, this.debugInfo), {}, {
+      screenWidth: this.screenWidth,
+      screenHeight: this.screenHeight
+    });
+    this.requestUpdate();
   }
   clearAllTimers() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer);
@@ -1237,16 +1259,10 @@ class GoogleCard extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
       if (Date.now() - this.lastBrightnessUpdateTime > 2e3) {
-        // 2 seconds stabilization delay
         this.updateNightMode();
         this.updateBrightness();
       }
     }
-  }
-  updateScreenSize() {
-    var pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
   }
   updateBrightnessValue(value) {
     var _this = this;
@@ -1343,20 +1359,6 @@ class GoogleCard extends LitElement {
   handleTouchEnd() {
     this.touchStartY = null;
   }
-  handleBrightnessChange(e) {
-    var clickedDot = e.target.closest('.brightness-dot');
-    if (clickedDot) {
-      var newBrightness = parseInt(clickedDot.dataset.value);
-      this.updateBrightnessValue(25.5 * newBrightness);
-    }
-  }
-  handleBrightnessDrag(e) {
-    var _this5 = this;
-    return _asyncToGenerator((function*() {
-      var rect = _this5.shadowRoot.querySelector('.brightness-dots').getBoundingClientRect(), x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
-      yield _this5.updateBrightnessValue(25.5 * newValue);
-    }))();
-  }
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout((() => {
@@ -1423,6 +1425,9 @@ class GoogleCard extends LitElement {
   getBrightnessDisplayValue() {
     return Math.round(this.visualBrightness / 25.5);
   }
+  renderDebugInfo() {
+    return this.showDebugInfo ? html(_templateObject || (_templateObject = _taggedTemplateLiteral([ '\n      <div class="debug-info">\n        <h2>Background Card Debug Info</h2>\n        <h3>Background Card Version: 23</h3>\n        <p><strong>Night Mode:</strong> ', '</p>\n        <p><strong>Screen Width:</strong> ', '</p>\n        <p><strong>Screen Height:</strong> ', '</p>\n        <p><strong>Device Pixel Ratio:</strong> ', '</p>\n        <p><strong>Is Adjusting Brightness:</strong> ', '</p>\n        <p><strong>Current Brightness:</strong> ', '</p>\n        <p><strong>Visual Brightness:</strong> ', '</p>\n        <p><strong>Last Brightness Update:</strong> ', '</p>\n        <p><strong>Error:</strong> ', '</p>\n        <h3>Config:</h3>\n        <pre>', '</pre>\n      </div>\n    ' ])), this.isNightMode, this.screenWidth, this.screenHeight, window.devicePixelRatio || 1, this.isAdjustingBrightness, this.brightness, this.visualBrightness, new Date(this.lastBrightnessUpdateTime).toLocaleString(), this.error, JSON.stringify(this.config, null, 2)) : null;
+  }
   renderOverlay() {
     return html(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral([ '\n      <div class="overlay ', '">\n        <div class="icon-container">\n          <div class="icon-row">\n            <button class="icon-button" @click="', '">\n              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button">\n              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>\n            </button>\n            <button class="icon-button"\n              @touchstart="', '"\n              @touchend="', '"\n              @touchcancel="', '">\n              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>\n            </button>\n          </div>\n        </div>\n      </div>\n    ' ])), this.showOverlay ? 'show' : '', this.toggleBrightnessCard, this.handleSettingsIconTouchStart, this.handleSettingsIconTouchEnd, this.handleSettingsIconTouchEnd);
   }
@@ -1430,21 +1435,20 @@ class GoogleCard extends LitElement {
     var brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral([ '\n      <div class="brightness-card ', '" \n           style="transition: ', '">\n        <div class="brightness-control">\n          <div class="brightness-dots-container">\n            <div class="brightness-dots" \n                 @click="', '"\n                 @mousedown="', '"\n                 @mousemove="', '"\n                 @touchstart="', '"\n                 @touchmove="', '">\n              ', '\n            </div>\n          </div>\n          <span class="brightness-value">', '</span>\n        </div>\n      </div>\n    ' ])), this.showBrightnessCard ? 'show' : '', this.brightnessCardTransition, this.handleBrightnessChange, this.handleBrightnessDrag, (e => 1 === e.buttons && this.handleBrightnessDrag(e)), this.handleBrightnessDrag, this.handleBrightnessDrag, [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral([ '\n                <div class="brightness-dot ', '" \n                     data-value="', '">\n                </div>\n              ' ])), value <= brightnessDisplayValue ? 'active' : '', value))), brightnessDisplayValue);
   }
-  renderDebugInfo() {
-    return this.showDebugInfo ? html(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral([ '\n      <div class="debug-info">\n        <h2>Background Card Debug Info</h2>\n        <h3>Background Card Version: 23</h3>\n        <p><strong>Night Mode:</strong> ', '</p>\n        <p><strong>Screen Width:</strong> ', '</p>\n        <p><strong>Screen Height:</strong> ', '</p>\n        <p><strong>Device Pixel Ratio:</strong> ', '</p>\n        <p><strong>Is Adjusting Brightness:</strong> ', '</p>\n        <p><strong>Current Brightness:</strong> ', '</p>\n        <p><strong>Visual Brightness:</strong> ', '</p>\n        <p><strong>Last Brightness Update:</strong> ', '</p>\n        <p><strong>Error:</strong> ', '</p>\n        <h3>Config:</h3>\n        <pre>', '</pre>\n      </div>\n    ' ])), this.isNightMode, this.screenWidth, this.screenHeight, window.devicePixelRatio || 1, this.isAdjustingBrightness, this.brightness, this.visualBrightness, new Date(this.lastBrightnessUpdateTime).toLocaleString(), this.error, JSON.stringify(this.config, null, 2)) : null;
+  static get styles() {
+    return [ sharedStyles, css$1(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral([ '\n        :host {\n          --crossfade-time: 3s;\n          --overlay-height: 120px;\n          display: block;\n          position: fixed;\n          top: 0;\n          left: 0;\n          width: 100vw;\n          height: 100vh;\n          z-index: 1;\n          font-family: var(--font-family-primary);\n          font-weight: var(--font-weight-regular);\n        }\n\n        .debug-info {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background: rgba(0, 0, 0, 0.8);\n          color: white;\n          padding: var(--spacing-4);\n          border-radius: var(--border-radius-lg);\n          font-size: var(--font-size-sm);\n          z-index: var(--z-index-overlay);\n          max-width: 80%;\n          max-height: 80%;\n          overflow: auto;\n        }\n\n        .debug-info h2,\n        .debug-info h3 {\n          margin-bottom: var(--spacing-2);\n        }\n\n        .debug-info p {\n          margin-bottom: var(--spacing-1);\n        }\n\n        .debug-info pre {\n          margin-top: var(--spacing-2);\n          white-space: pre-wrap;\n          word-break: break-all;\n        }\n\n        .overlay {\n          position: fixed;\n          bottom: 0;\n          left: 0;\n          width: 100%;\n          height: var(--overlay-height);\n          background-color: var(--color-background-translucent);\n          color: var(--color-text);\n          box-sizing: border-box;\n          transition: transform var(--transition-duration-normal) var(--transition-timing-default);\n          transform: translateY(100%);\n          z-index: var(--z-index-floating);\n          box-shadow: var(--shadow-lg);\n          display: flex;\n          flex-direction: column;\n          justify-content: center;\n          align-items: center;\n          border-top-left-radius: var(--border-radius-lg);\n          border-top-right-radius: var(--border-radius-lg);\n          backdrop-filter: blur(10px);\n          -webkit-backdrop-filter: blur(10px);\n        }\n\n        .overlay.show {\n          transform: translateY(0);\n        }\n\n        .icon-container {\n          width: 100%;\n          height: 100%;\n          display: flex;\n          justify-content: center;\n          align-items: center;\n        }\n\n        .icon-row {\n          display: flex;\n          justify-content: space-between;\n          align-items: center;\n          width: 85%;\n          max-width: 500px;\n        }\n\n        .icon-button {\n          background: none;\n          border: none;\n          cursor: pointer;\n          color: var(--color-text);\n          padding: var(--spacing-2);\n          border-radius: 50%;\n          transition: background-color var(--transition-duration-fast) var(--transition-timing-default);\n          display: flex;\n          align-items: center;\n          justify-content: center;\n        }\n\n        .icon-button:hover {\n          background-color: var(--color-overlay);\n        }\n\n        iconify-icon {\n          font-size: 50px;\n          display: block;\n          width: 50px;\n          height: 50px;\n        }\n\n        .brightness-card {\n          position: fixed;\n          bottom: var(--spacing-5);\n          left: var(--spacing-5);\n          right: var(--spacing-5);\n          background-color: var(--color-background-translucent);\n          border-radius: var(--border-radius-lg);\n          padding: var(--spacing-10) var(--spacing-5);\n          box-shadow: var(--shadow-lg);\n          z-index: var(--z-index-floating);\n          transform: translateY(calc(100% + var(--spacing-5)));\n          transition: transform var(--transition-duration-normal) var(--transition-timing-default);\n          backdrop-filter: blur(10px);\n          -webkit-backdrop-filter: blur(10px);\n          max-width: 600px;\n          margin: 0 auto;\n        }\n\n        .brightness-card.show {\n          transform: translateY(0);\n        }\n\n        .brightness-control {\n          display: flex;\n          align-items: center;\n          width: 100%;\n        }\n\n        .brightness-dots-container {\n          flex-grow: 1;\n          margin-right: var(--spacing-2);\n          padding: 0 var(--spacing-2);\n        }\n\n        .brightness-dots {\n          display: flex;\n          justify-content: space-between;\n          align-items: center;\n          height: 30px;\n        }\n\n        .brightness-dot {\n          width: 12px;\n          height: 12px;\n          border-radius: 50%;\n          background-color: var(--color-border);\n          transition: all var(--transition-duration-fast) var(--transition-timing-default);\n          cursor: pointer;\n        }\n\n        .brightness-dot.active {\n          background-color: var(--color-text);\n          transform: scale(1.1);\n        }\n\n        .brightness-value {\n          min-width: 60px;\n          text-align: right;\n          font-size: var(--font-size-3xl);\n          color: var(--color-text);\n          font-weight: var(--font-weight-light);\n          margin-right: var(--spacing-5);\n        }\n\n        @media (max-width: 768px) {\n          .icon-row {\n            width: 95%;\n          }\n\n          .brightness-card {\n            bottom: var(--spacing-2);\n            left: var(--spacing-2);\n            right: var(--spacing-2);\n            padding: var(--spacing-8) var(--spacing-4);\n          }\n\n          .brightness-value {\n            font-size: var(--font-size-2xl);\n            min-width: 50px;\n            margin-right: var(--spacing-4);\n          }\n        }\n\n        @media (prefers-reduced-motion: reduce) {\n          .overlay,\n          .brightness-card,\n          .brightness-dot {\n            transition: none;\n          }\n        }\n      ' ]))) ];
   }
   render() {
     return this.isNightMode ? html(_templateObject6 || (_templateObject6 = _taggedTemplateLiteral([ '<night-mode .currentTime="', '"></night-mode>' ])), (new Date).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: !0
-    }).replace(/\s?[AP]M/, '')) : html(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral([ '\n      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">\n      <background-rotator .config="', '"></background-rotator>\n      <weather-display .hass="', '"></weather-display>\n      ', '\n      ', '\n      ', '\n    ' ])), this.config, this.hass, this.showDebugInfo ? this.renderDebugInfo() : '', this.showBrightnessCard ? '' : this.renderOverlay(), this.renderBrightnessCard());
+    }).replace(/\s?[AP]M/, '')) : html(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral([ '\n      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">\n      <background-rotator \n        .config="', '"\n        .hass="', '"\n        @screen-size-update="', '"\n      ></background-rotator>\n      <weather-display .hass="', '"></weather-display>\n      ', '\n      ', '\n      ', '\n    ' ])), this.config, this.hass, this.handleScreenSizeUpdate, this.hass, this.showDebugInfo ? this.renderDebugInfo() : '', this.showBrightnessCard ? '' : this.renderOverlay(), this.renderBrightnessCard());
   }
 }
 
 customElements.define('google-card', GoogleCard);
 
-// Register the custom card with Home Assistant
 window.customCards = window.customCards || [];
 
 window.customCards.push({
