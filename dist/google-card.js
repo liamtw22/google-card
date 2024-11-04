@@ -1019,7 +1019,7 @@ customElements.define('google-controls', class extends LitElement {
     return this.error ? html(_templateObject6 || (_templateObject6 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral([ '\n      <div\n        class="controls-container"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n        ', '\n        ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderError(), this.showBrightnessCard || this.showVolumeCard ? '' : this.renderOverlay(), this.renderBrightnessCard(), this.renderVolumeCard());
+    return html(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral([ '\n      <div\n        class="controls-container"\n        @touchstart="', '"\n        @touchmove="', '"\n        @touchend="', '"\n      >\n        ', '\n        ', '\n        ', ' ', '\n      </div>\n    ' ])), this.handleTouchStart, this.handleTouchMove, this.handleTouchEnd, this.renderError(), this.showBrightnessCard || this.showVolumeCard ? '' : this.renderOverlay(), this.renderBrightnessCard(), this.renderVolumeCard());
   }
   setBrightnessValue(value) {
     this.brightness = value;
