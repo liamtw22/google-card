@@ -1,5 +1,5 @@
 // src/components/BackgroundRotator.js
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from '../styles/shared.js';
 import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG } from '../constants.js';
 
@@ -46,75 +46,64 @@ export class BackgroundRotator extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: black;
-      }
-
-      .background-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-        z-index: 1;
-      }
-
-      .background-image {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        will-change: opacity;
-        transition-property: opacity;
-        transition-timing-function: ease-in-out;
-      }
-
-      .error-message {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: rgba(0, 0, 0, 0.8);
-        color: #ff4444;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        text-align: center;
-        z-index: 2;
-        max-width: 80%;
-      }
-
-      /* High DPI Screen Optimizations */
-      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-        .background-image {
-          transform: translateZ(0);
-          backface-visibility: hidden;
+    return [
+      sharedStyles,
+      css`
+        :host {
+          display: block;
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          background-color: black;
         }
-      }
 
-      /* Reduced Motion Preferences */
-      @media (prefers-reduced-motion: reduce) {
-        .background-image {
-          transition-duration: 0.5s !important;
+        .background-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: black;
+          z-index: 1;
         }
-      }
-    `;
+
+        .background-image {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: contain;
+          background-position: center;
+          background-repeat: no-repeat;
+          will-change: opacity;
+          transition-property: opacity;
+          transition-timing-function: ease-in-out;
+        }
+
+        .error-message {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: var(--color-error);
+          color: white;
+          padding: var(--spacing-4);
+          border-radius: var(--border-radius-md);
+          font-size: var(--font-size-base);
+          text-align: center;
+          z-index: 2;
+          max-width: 80%;
+        }
+      `
+    ];
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
+    await this.initializeImageList();
     this.startImageRotation();
   }
 
@@ -136,6 +125,30 @@ export class BackgroundRotator extends LitElement {
     this.requestUpdate();
   }
 
+  async initializeImageList() {
+    if (this.config?.image_url) {
+      try {
+        const imageUrl = this.getImageUrl(this.config.image_url);
+        this.imageList = [imageUrl];
+        this.currentImageIndex = -1;
+        this.error = null;
+      } catch (error) {
+        console.error('Error initializing image list:', error);
+        this.error = 'Error initializing images';
+      }
+    }
+  }
+
+  getImageUrl(template) {
+    const timestamp_ms = Date.now();
+    const timestamp = Math.floor(timestamp_ms / 1000);
+    return template
+      .replace(/\${width}/g, this.screenWidth)
+      .replace(/\${height}/g, this.screenHeight)
+      .replace(/\${timestamp_ms}/g, timestamp_ms)
+      .replace(/\${timestamp}/g, timestamp);
+  }
+
   async startImageRotation() {
     await this.updateImage();
     this.imageUpdateInterval = setInterval(() => {
@@ -149,6 +162,7 @@ export class BackgroundRotator extends LitElement {
       const newImage = await this.getNextImage();
       await this.transitionToNewImage(newImage);
       this.preloadNextImage();
+      this.error = null;
     } catch (error) {
       console.error('Error updating image:', error);
       this.error = `Error updating image: ${error.message}`;
@@ -157,16 +171,24 @@ export class BackgroundRotator extends LitElement {
   }
 
   async getNextImage() {
+    if (!this.imageList || this.imageList.length === 0) {
+      if (this.config?.image_url) {
+        const imageUrl = this.getImageUrl(this.config.image_url);
+        this.imageList = [imageUrl];
+      } else {
+        throw new Error('No image URL configured');
+      }
+    }
+
     if (this.preloadedImage) {
       const image = this.preloadedImage;
       this.preloadedImage = '';
       return image;
     }
-    if (this.imageList.length === 0) {
-      throw new Error('No images available');
-    }
+
     this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-    return this.imageList[this.currentImageIndex];
+    const nextImage = this.imageList[this.currentImageIndex];
+    return this.preloadImage(nextImage);
   }
 
   async preloadImage(url) {
@@ -210,36 +232,11 @@ export class BackgroundRotator extends LitElement {
     this.requestUpdate();
   }
 
-  getBackgroundSize() {
-    return this.config?.image_fit || DEFAULT_CONFIG.image_fit;
-  }
-
-  setImageList(list) {
-    this.imageList = list;
-    this.currentImageIndex = -1;
-    this.requestUpdate();
-  }
-
-  setCrossfadeTime(time) {
-    this.crossfadeTime = time;
-    this.requestUpdate();
-  }
-
   setConfig(config) {
     this.config = config;
+    this.initializeImageList();
+    this.crossfadeTime = config.crossfade_time || DEFAULT_CONFIG.crossfade_time;
     this.requestUpdate();
-  }
-
-  async forceImageUpdate() {
-    await this.updateImage();
-  }
-
-  pauseRotation() {
-    this.clearTimers();
-  }
-
-  resumeRotation() {
-    this.startImageRotation();
   }
 
   render() {
@@ -252,7 +249,7 @@ export class BackgroundRotator extends LitElement {
             background-image: url('${this.imageA}');
             opacity: ${this.activeImage === 'A' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
-            background-size: ${this.getBackgroundSize()};
+            background-size: ${this.config?.image_fit || DEFAULT_CONFIG.image_fit};
           "
         ></div>
         <div
@@ -261,11 +258,24 @@ export class BackgroundRotator extends LitElement {
             background-image: url('${this.imageB}');
             opacity: ${this.activeImage === 'B' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
-            background-size: ${this.getBackgroundSize()};
+            background-size: ${this.config?.image_fit || DEFAULT_CONFIG.image_fit};
           "
         ></div>
       </div>
     `;
+  }
+
+  // Public methods for external control
+  async forceImageUpdate() {
+    await this.updateImage();
+  }
+
+  pauseRotation() {
+    this.clearTimers();
+  }
+
+  resumeRotation() {
+    this.startImageRotation();
   }
 }
 
