@@ -1069,6 +1069,8 @@ class GoogleCard extends LitElement {
   }
 }
 
+customElements.define('google-card', GoogleCard);
+
 window.customCards = window.customCards || [];
 
 window.customCards.push({
@@ -1078,8 +1080,6 @@ window.customCards.push({
   preview: !0,
   documentationURL: 'https://github.com/liamtw22/google-card'
 });
-
-customElements.define('google-card', GoogleCard);
 
 
 //# sourceMappingURL=google-card.js.map
