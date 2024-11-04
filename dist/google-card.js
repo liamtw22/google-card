@@ -82,23 +82,30 @@ function _taggedTemplateLiteral(e, t) {
   }));
 }
 
-var _templateObject$6, _templateObject$5, _templateObject2$4, _templateObject3$4, _templateObject$4, sharedStyles = css$1(_templateObject$6 || (_templateObject$6 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-small: 14px;\n    --font-size-regular: 16px;\n    --font-size-large: 18px;\n    --font-size-xlarge: 24px;\n    --font-size-xxlarge: 32px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-loose: 1.8;\n\n    /* Spacing */\n    --spacing-xxsmall: 4px;\n    --spacing-xsmall: 8px;\n    --spacing-small: 12px;\n    --spacing-medium: 16px;\n    --spacing-large: 24px;\n    --spacing-xlarge: 32px;\n    --spacing-xxlarge: 48px;\n\n    /* Borders */\n    --border-radius-small: 4px;\n    --border-radius-medium: 8px;\n    --border-radius-large: 16px;\n    --border-radius-xlarge: 24px;\n    --border-width-thin: 1px;\n    --border-width-regular: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-small: 0 2px 4px var(--color-shadow);\n    --shadow-medium: 0 4px 8px var(--color-shadow);\n    --shadow-large: 0 8px 16px var(--color-shadow);\n    --shadow-xlarge: 0 12px 24px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 0.15s;\n    --transition-duration-normal: 0.3s;\n    --transition-duration-slow: 0.5s;\n    --transition-timing: ease-in-out;\n\n    /* Z-index */\n    --z-index-base: 1;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-tooltip: 3000;\n    --z-index-maximum: 9999;\n\n    /* Component-specific */\n    --overlay-height: 120px;\n    --icon-size-small: 24px;\n    --icon-size-medium: 36px;\n    --icon-size-large: 48px;\n    --header-height: 60px;\n    --footer-height: 80px;\n  }\n\n  /* Base Styles */\n  * {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography Reset */\n  h1,\n  h2,\n  h3,\n  h4,\n  h5,\n  h6,\n  p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n  }\n\n  /* Common Text Styles */\n  .text-small {\n    font-size: var(--font-size-small);\n    line-height: var(--line-height-tight);\n  }\n\n  .text-regular {\n    font-size: var(--font-size-regular);\n    line-height: var(--line-height-normal);\n  }\n\n  .text-large {\n    font-size: var(--font-size-large);\n    line-height: var(--line-height-normal);\n  }\n\n  /* Common Layout Classes */\n  .flex {\n    display: flex;\n  }\n\n  .flex-column {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .flex-center {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n  }\n\n  .flex-between {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n  }\n\n  .flex-around {\n    display: flex;\n    justify-content: space-around;\n    align-items: center;\n  }\n\n  .flex-grow {\n    flex-grow: 1;\n  }\n\n  /* Common Spacing Classes */\n  .m-0 {\n    margin: 0;\n  }\n  .p-0 {\n    padding: 0;\n  }\n  .m-1 {\n    margin: var(--spacing-xsmall);\n  }\n  .p-1 {\n    padding: var(--spacing-xsmall);\n  }\n  .m-2 {\n    margin: var(--spacing-small);\n  }\n  .p-2 {\n    padding: var(--spacing-small);\n  }\n  .m-3 {\n    margin: var(--spacing-medium);\n  }\n  .p-3 {\n    padding: var(--spacing-medium);\n  }\n  .m-4 {\n    margin: var(--spacing-large);\n  }\n  .p-4 {\n    padding: var(--spacing-large);\n  }\n\n  /* Common Animation Classes */\n  .fade-in {\n    animation: fadeIn var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  .fade-out {\n    animation: fadeOut var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n    }\n    to {\n      opacity: 1;\n    }\n  }\n\n  @keyframes fadeOut {\n    from {\n      opacity: 1;\n    }\n    to {\n      opacity: 0;\n    }\n  }\n\n  /* Common Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  .no-select {\n    user-select: none;\n    -webkit-user-select: none;\n    -moz-user-select: none;\n    -ms-user-select: none;\n  }\n\n  /* Accessibility */\n  .screen-reader-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  /* Focus States */\n  :focus-visible {\n    outline: var(--border-width-regular) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-border: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    * {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Touch Device Optimization */\n  @media (hover: none) {\n    :host {\n      --spacing-small: 16px;\n      --spacing-medium: 20px;\n      --spacing-large: 28px;\n    }\n  }\n' ]))), TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_TRANSITION_BUFFER = 50, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS_GOOD = {
-  max: 50,
-  color: '#68a03a'
-}, AQI_COLORS_MODERATE = {
-  max: 100,
-  color: '#f9bf33'
-}, AQI_COLORS_UNHEALTHY_SENSITIVE = {
-  max: 150,
-  color: '#f47c06'
-}, AQI_COLORS_UNHEALTHY = {
-  max: 200,
-  color: '#c43828'
-}, AQI_COLORS_VERY_UNHEALTHY = {
-  max: 300,
-  color: '#ab1457'
-}, AQI_COLORS_HAZARDOUS = {
-  color: '#83104c'
+var _templateObject$5, _templateObject$4, _templateObject2$4, _templateObject3$4, _templateObject$3, _templateObject2$3, _templateObject3$3, _templateObject4$2, _templateObject5$2, _templateObject6$2, _templateObject$2, _templateObject2$2, _templateObject3$2, _templateObject$1, _templateObject2$1, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6$1, _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, sharedStyles = css$1(_templateObject$5 || (_templateObject$5 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-small: 14px;\n    --font-size-regular: 16px;\n    --font-size-large: 18px;\n    --font-size-xlarge: 24px;\n    --font-size-xxlarge: 32px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-loose: 1.8;\n\n    /* Spacing */\n    --spacing-xxsmall: 4px;\n    --spacing-xsmall: 8px;\n    --spacing-small: 12px;\n    --spacing-medium: 16px;\n    --spacing-large: 24px;\n    --spacing-xlarge: 32px;\n    --spacing-xxlarge: 48px;\n\n    /* Borders */\n    --border-radius-small: 4px;\n    --border-radius-medium: 8px;\n    --border-radius-large: 16px;\n    --border-radius-xlarge: 24px;\n    --border-width-thin: 1px;\n    --border-width-regular: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-small: 0 2px 4px var(--color-shadow);\n    --shadow-medium: 0 4px 8px var(--color-shadow);\n    --shadow-large: 0 8px 16px var(--color-shadow);\n    --shadow-xlarge: 0 12px 24px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 0.15s;\n    --transition-duration-normal: 0.3s;\n    --transition-duration-slow: 0.5s;\n    --transition-timing: ease-in-out;\n\n    /* Z-index */\n    --z-index-base: 1;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-tooltip: 3000;\n    --z-index-maximum: 9999;\n\n    /* Component-specific */\n    --overlay-height: 120px;\n    --icon-size-small: 24px;\n    --icon-size-medium: 36px;\n    --icon-size-large: 48px;\n    --header-height: 60px;\n    --footer-height: 80px;\n  }\n\n  /* Base Styles */\n  * {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography Reset */\n  h1,\n  h2,\n  h3,\n  h4,\n  h5,\n  h6,\n  p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n  }\n\n  /* Common Text Styles */\n  .text-small {\n    font-size: var(--font-size-small);\n    line-height: var(--line-height-tight);\n  }\n\n  .text-regular {\n    font-size: var(--font-size-regular);\n    line-height: var(--line-height-normal);\n  }\n\n  .text-large {\n    font-size: var(--font-size-large);\n    line-height: var(--line-height-normal);\n  }\n\n  /* Common Layout Classes */\n  .flex {\n    display: flex;\n  }\n\n  .flex-column {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .flex-center {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n  }\n\n  .flex-between {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n  }\n\n  .flex-around {\n    display: flex;\n    justify-content: space-around;\n    align-items: center;\n  }\n\n  .flex-grow {\n    flex-grow: 1;\n  }\n\n  /* Common Spacing Classes */\n  .m-0 {\n    margin: 0;\n  }\n  .p-0 {\n    padding: 0;\n  }\n  .m-1 {\n    margin: var(--spacing-xsmall);\n  }\n  .p-1 {\n    padding: var(--spacing-xsmall);\n  }\n  .m-2 {\n    margin: var(--spacing-small);\n  }\n  .p-2 {\n    padding: var(--spacing-small);\n  }\n  .m-3 {\n    margin: var(--spacing-medium);\n  }\n  .p-3 {\n    padding: var(--spacing-medium);\n  }\n  .m-4 {\n    margin: var(--spacing-large);\n  }\n  .p-4 {\n    padding: var(--spacing-large);\n  }\n\n  /* Common Animation Classes */\n  .fade-in {\n    animation: fadeIn var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  .fade-out {\n    animation: fadeOut var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n    }\n    to {\n      opacity: 1;\n    }\n  }\n\n  @keyframes fadeOut {\n    from {\n      opacity: 1;\n    }\n    to {\n      opacity: 0;\n    }\n  }\n\n  /* Common Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  .no-select {\n    user-select: none;\n    -webkit-user-select: none;\n    -moz-user-select: none;\n    -ms-user-select: none;\n  }\n\n  /* Accessibility */\n  .screen-reader-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  /* Focus States */\n  :focus-visible {\n    outline: var(--border-width-regular) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-border: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    * {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Touch Device Optimization */\n  @media (hover: none) {\n    :host {\n      --spacing-small: 16px;\n      --spacing-medium: 20px;\n      --spacing-large: 28px;\n    }\n  }\n' ]))), TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_TRANSITION_BUFFER = 50, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS = {
+  GOOD: {
+    max: 50,
+    color: '#68a03a'
+  },
+  MODERATE: {
+    max: 100,
+    color: '#f9bf33'
+  },
+  UNHEALTHY_SENSITIVE: {
+    max: 150,
+    color: '#f47c06'
+  },
+  UNHEALTHY: {
+    max: 200,
+    color: '#c43828'
+  },
+  VERY_UNHEALTHY: {
+    max: 300,
+    color: '#ab1457'
+  },
+  HAZARDOUS: {
+    color: '#83104c'
+  }
 }, WEATHER_ICONS = {
   'clear-night': 'clear-night',
   cloudy: 'cloudy',
@@ -203,7 +210,7 @@ customElements.define('background-rotator', class extends LitElement {
     this.imageListUpdateInterval = null;
   }
   static get styles() {
-    return css$1(_templateObject$5 || (_templateObject$5 = _taggedTemplateLiteral([ '\n      :host {\n        display: block;\n        position: relative;\n        width: 100%;\n        height: 100%;\n        overflow: hidden;\n        background-color: black;\n      }\n\n      .background-container {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-color: black;\n        z-index: 1;\n      }\n\n      .background-image {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-size: contain;\n        background-position: center;\n        background-repeat: no-repeat;\n        will-change: opacity;\n        transition-property: opacity;\n        transition-timing-function: ease-in-out;\n      }\n\n      .error-message {\n        position: absolute;\n        top: 50%;\n        left: 50%;\n        transform: translate(-50%, -50%);\n        background-color: rgba(0, 0, 0, 0.8);\n        color: #ff4444;\n        padding: 1rem;\n        border-radius: 0.5rem;\n        font-size: 1rem;\n        text-align: center;\n        z-index: 2;\n        max-width: 80%;\n      }\n\n      /* High DPI Screen Optimizations */\n      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {\n        .background-image {\n          transform: translateZ(0);\n          backface-visibility: hidden;\n        }\n      }\n\n      /* Reduced Motion Preferences */\n      @media (prefers-reduced-motion: reduce) {\n        .background-image {\n          transition-duration: 0.5s !important;\n        }\n      }\n    ' ])));
+    return css$1(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n      :host {\n        display: block;\n        position: relative;\n        width: 100%;\n        height: 100%;\n        overflow: hidden;\n        background-color: black;\n      }\n\n      .background-container {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-color: black;\n        z-index: 1;\n      }\n\n      .background-image {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-size: contain;\n        background-position: center;\n        background-repeat: no-repeat;\n        will-change: opacity;\n        transition-property: opacity;\n        transition-timing-function: ease-in-out;\n      }\n\n      .error-message {\n        position: absolute;\n        top: 50%;\n        left: 50%;\n        transform: translate(-50%, -50%);\n        background-color: rgba(0, 0, 0, 0.8);\n        color: #ff4444;\n        padding: 1rem;\n        border-radius: 0.5rem;\n        font-size: 1rem;\n        text-align: center;\n        z-index: 2;\n        max-width: 80%;\n      }\n\n      /* High DPI Screen Optimizations */\n      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {\n        .background-image {\n          transform: translateZ(0);\n          backface-visibility: hidden;\n        }\n      }\n\n      /* Reduced Motion Preferences */\n      @media (prefers-reduced-motion: reduce) {\n        .background-image {\n          transition-duration: 0.5s !important;\n        }\n      }\n    ' ])));
   }
   connectedCallback() {
     super.connectedCallback();
@@ -336,8 +343,6 @@ customElements.define('background-rotator', class extends LitElement {
   }
 });
 
-var _templateObject$3, _templateObject2$3, _templateObject3$3, _templateObject4$2, _templateObject5$2, _templateObject$2, _templateObject2$2, _templateObject3$2, _templateObject$1, _templateObject2$1, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6$1, _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, weatherStyles = css$1(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n  :host {\n    display: block;\n    position: relative;\n    font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    -webkit-font-smoothing: antialiased;\n    -moz-osx-font-smoothing: grayscale;\n  }\n\n  /* Main Container */\n  .weather-component {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    color: white;\n    width: 100%;\n    max-width: 400px;\n    padding: 10px;\n    box-sizing: border-box;\n    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* Left Column - Date & Time */\n  .left-column {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-start;\n    overflow: hidden;\n  }\n\n  .date {\n    font-size: 25px;\n    margin-bottom: 5px;\n    font-weight: 400;\n    margin-left: 10px;\n    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    transition: font-size 0.3s ease;\n  }\n\n  .time {\n    font-size: 90px;\n    line-height: 1;\n    font-weight: 500;\n    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);\n    margin-left: 8px;\n    transition: font-size 0.3s ease;\n  }\n\n  /* Right Column - Weather & AQI */\n  .right-column {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    min-width: 120px;\n  }\n\n  /* Weather Info Section */\n  .weather-info {\n    display: flex;\n    align-items: center;\n    margin-top: 10px;\n    font-weight: 500;\n    margin-right: -5px;\n    transition: all 0.3s ease;\n  }\n\n  .weather-icon {\n    width: 50px;\n    height: 50px;\n    margin-right: 8px;\n    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));\n    transition: all 0.3s ease;\n  }\n\n  .weather-icon.loading {\n    opacity: 0.5;\n    animation: pulse 1.5s infinite;\n  }\n\n  .temperature {\n    font-size: 35px;\n    font-weight: 500;\n    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n    transition: font-size 0.3s ease;\n  }\n\n  /* AQI Section */\n  .aqi {\n    font-size: 20px;\n    padding: 7px 10px 5px;\n    border-radius: 8px;\n    font-weight: 500;\n    margin-top: 2px;\n    margin-left: 25px;\n    align-self: flex-end;\n    min-width: 70px;\n    text-align: center;\n    transition: all 0.3s ease;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* AQI Color Classes */\n  .aqi.good {\n    background-color: #68a03a;\n  }\n\n  .aqi.moderate {\n    background-color: #f9bf33;\n  }\n\n  .aqi.unhealthy-sensitive {\n    background-color: #f47c06;\n  }\n\n  .aqi.unhealthy {\n    background-color: #c43828;\n  }\n\n  .aqi.very-unhealthy {\n    background-color: #ab1457;\n  }\n\n  .aqi.hazardous {\n    background-color: #83104c;\n  }\n\n  /* Loading States */\n  @keyframes pulse {\n    0% {\n      opacity: 0.5;\n    }\n    50% {\n      opacity: 0.8;\n    }\n    100% {\n      opacity: 0.5;\n    }\n  }\n\n  .loading {\n    opacity: 0.7;\n    animation: pulse 1.5s infinite;\n  }\n\n  /* Error States */\n  .error-message {\n    background-color: rgba(255, 59, 48, 0.9);\n    color: white;\n    padding: 8px 12px;\n    border-radius: 6px;\n    font-size: 14px;\n    margin-top: 8px;\n    text-align: center;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* Weather Description */\n  .weather-description {\n    font-size: 16px;\n    margin-top: 4px;\n    opacity: 0.9;\n    text-align: right;\n  }\n\n  /* Hover Effects */\n  .weather-info:hover .weather-icon {\n    transform: scale(1.1);\n  }\n\n  .aqi:hover {\n    transform: translateY(-2px);\n    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);\n  }\n\n  /* Animations */\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n      transform: translateY(10px);\n    }\n    to {\n      opacity: 1;\n      transform: translateY(0);\n    }\n  }\n\n  .fade-in {\n    animation: fadeIn 0.3s ease forwards;\n  }\n\n  /* Responsive Design */\n  @media (max-width: 480px) {\n    .weather-component {\n      padding: 8px;\n      max-width: 100%;\n    }\n\n    .date {\n      font-size: 20px;\n      margin-left: 8px;\n    }\n\n    .time {\n      font-size: 70px;\n      margin-left: 6px;\n    }\n\n    .weather-icon {\n      width: 40px;\n      height: 40px;\n    }\n\n    .temperature {\n      font-size: 28px;\n    }\n\n    .aqi {\n      font-size: 16px;\n      padding: 5px 8px 4px;\n      margin-left: 15px;\n      min-width: 60px;\n    }\n  }\n\n  @media (max-width: 360px) {\n    .date {\n      font-size: 18px;\n    }\n\n    .time {\n      font-size: 60px;\n    }\n\n    .weather-icon {\n      width: 35px;\n      height: 35px;\n    }\n\n    .temperature {\n      font-size: 24px;\n    }\n\n    .aqi {\n      font-size: 14px;\n      min-width: 50px;\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    .weather-component {\n      text-shadow: none;\n    }\n\n    .aqi {\n      border: 2px solid rgba(255, 255, 255, 0.8);\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    .weather-info:hover .weather-icon {\n      transform: none;\n    }\n\n    .aqi:hover {\n      transform: none;\n    }\n\n    .loading {\n      animation: none;\n      opacity: 0.7;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    .weather-component {\n      color: black;\n      text-shadow: none;\n    }\n\n    .aqi {\n      print-color-adjust: exact;\n      -webkit-print-color-adjust: exact;\n    }\n  }\n\n  /* Dark Mode Adjustments */\n  @media (prefers-color-scheme: dark) {\n    .error-message {\n      background-color: rgba(255, 59, 48, 0.7);\n    }\n  }\n\n  /* Focus States for Accessibility */\n  :host(:focus-within) {\n    outline: 2px solid white;\n    outline-offset: 2px;\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    .left-column {\n      align-items: flex-end;\n    }\n\n    .right-column {\n      align-items: flex-start;\n    }\n\n    .date,\n    .time {\n      margin-left: 0;\n      margin-right: 10px;\n    }\n\n    .aqi {\n      margin-left: 0;\n      margin-right: 25px;\n    }\n\n    .weather-info {\n      margin-right: 0;\n      margin-left: -5px;\n    }\n  }\n\n  /* Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .no-wrap {\n    white-space: nowrap;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n' ])));
-
 customElements.define('weather-display', class extends LitElement {
   static get properties() {
     return {
@@ -367,12 +372,21 @@ customElements.define('weather-display', class extends LitElement {
       },
       error: {
         type: String
+      },
+      updateTimer: {
+        type: Object
       }
     };
   }
   constructor() {
     super();
     this.initializeProperties();
+    this.bindMethods();
+  }
+  bindMethods() {
+    this.updateWeather = this.updateWeather.bind(this);
+    this.updateDateTime = this.updateDateTime.bind(this);
+    this.handleWeatherIconError = this.handleWeatherIconError.bind(this);
   }
   initializeProperties() {
     this.date = '';
@@ -386,7 +400,7 @@ customElements.define('weather-display', class extends LitElement {
     this.updateTimer = null;
   }
   static get styles() {
-    return weatherStyles;
+    return css(_templateObject$3 || (_templateObject$3 = _taggedTemplateLiteral([ '\n      :host {\n        display: block;\n        position: relative;\n        font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;\n        -webkit-font-smoothing: antialiased;\n        -moz-osx-font-smoothing: grayscale;\n      }\n\n      .weather-component {\n        display: flex;\n        justify-content: space-between;\n        align-items: center;\n        color: white;\n        width: 100%;\n        max-width: 400px;\n        padding: 10px;\n        box-sizing: border-box;\n        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .left-column {\n        display: flex;\n        flex-direction: column;\n        align-items: flex-start;\n        overflow: hidden;\n      }\n\n      .date {\n        font-size: 25px;\n        margin-bottom: 5px;\n        font-weight: 400;\n        margin-left: 10px;\n        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n        white-space: nowrap;\n        text-overflow: ellipsis;\n        transition: font-size 0.3s ease;\n      }\n\n      .time {\n        font-size: 90px;\n        line-height: 1;\n        font-weight: 500;\n        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);\n        margin-left: 8px;\n        transition: font-size 0.3s ease;\n      }\n\n      .right-column {\n        display: flex;\n        flex-direction: column;\n        align-items: flex-end;\n        min-width: 120px;\n      }\n\n      .weather-info {\n        display: flex;\n        align-items: center;\n        margin-top: 10px;\n        font-weight: 500;\n        margin-right: -5px;\n        transition: all 0.3s ease;\n      }\n\n      .weather-icon {\n        width: 50px;\n        height: 50px;\n        margin-right: 8px;\n        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));\n        transition: all 0.3s ease;\n      }\n\n      .temperature {\n        font-size: 35px;\n        font-weight: 500;\n        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n        transition: font-size 0.3s ease;\n      }\n\n      .aqi {\n        font-size: 20px;\n        padding: 7px 10px 5px;\n        border-radius: 8px;\n        font-weight: 500;\n        margin-top: 2px;\n        margin-left: 25px;\n        align-self: flex-end;\n        min-width: 70px;\n        text-align: center;\n        transition: all 0.3s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .error-message {\n        background-color: rgba(255, 59, 48, 0.9);\n        color: white;\n        padding: 8px 12px;\n        border-radius: 6px;\n        font-size: 14px;\n        margin-top: 8px;\n        text-align: center;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      @media (max-width: 480px) {\n        .date {\n          font-size: 20px;\n          margin-left: 8px;\n        }\n\n        .time {\n          font-size: 70px;\n          margin-left: 6px;\n        }\n\n        .weather-icon {\n          width: 40px;\n          height: 40px;\n        }\n\n        .temperature {\n          font-size: 28px;\n        }\n\n        .aqi {\n          font-size: 16px;\n          padding: 5px 8px 4px;\n          margin-left: 15px;\n          min-width: 60px;\n        }\n      }\n\n      @media (max-width: 360px) {\n        .date {\n          font-size: 18px;\n        }\n\n        .time {\n          font-size: 60px;\n        }\n\n        .weather-icon {\n          width: 35px;\n          height: 35px;\n        }\n\n        .temperature {\n          font-size: 24px;\n        }\n\n        .aqi {\n          font-size: 14px;\n          min-width: 50px;\n        }\n      }\n\n      @media (prefers-contrast: more) {\n        .weather-component {\n          text-shadow: none;\n        }\n\n        .aqi {\n          border: 2px solid rgba(255, 255, 255, 0.8);\n        }\n      }\n\n      @media (prefers-reduced-motion: reduce) {\n        .date,\n        .time,\n        .weather-info,\n        .weather-icon,\n        .temperature,\n        .aqi {\n          transition: none;\n        }\n      }\n\n      @media print {\n        .weather-component {\n          color: black;\n          text-shadow: none;\n        }\n\n        .aqi {\n          print-color-adjust: exact;\n          -webkit-print-color-adjust: exact;\n        }\n      }\n\n      @media (prefers-color-scheme: dark) {\n        .error-message {\n          background-color: rgba(255, 59, 48, 0.7);\n        }\n      }\n    ' ])));
   }
   connectedCallback() {
     super.connectedCallback();
@@ -397,16 +411,15 @@ customElements.define('weather-display', class extends LitElement {
     this.stopUpdates();
   }
   startUpdates() {
-    // Initial update
     this.updateWeather();
     this.updateDateTime();
-    // Set up regular updates
-        this.updateTimer = setInterval((() => {
+    this.updateTimer = setInterval((() => {
       this.updateDateTime();
-      // Update weather data every minute
-            Date.now() - this.lastUpdate >= 6e4 && this.updateWeather();
+      Date.now() - this.lastUpdate >= 6e4 && 
+      // Update weather every minute
+      this.updateWeather();
     }), 1e3);
- // Update every second for time
+ // Update time every second
     }
   stopUpdates() {
     if (this.updateTimer) {
@@ -419,12 +432,9 @@ customElements.define('weather-display', class extends LitElement {
   }
   updateDateTime() {
     var now = new Date;
-    // Update date
-        this.date = now.toLocaleDateString('en-US', DATE_FORMAT_OPTIONS);
-    // Update time
-        this.time = now.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '');
- // Remove AM/PM
-        this.requestUpdate();
+    this.date = now.toLocaleDateString('en-US', DATE_FORMAT_OPTIONS);
+    this.time = now.toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '');
+    this.requestUpdate();
   }
   updateWeather() {
     if (this.hass) {
@@ -443,11 +453,9 @@ customElements.define('weather-display', class extends LitElement {
   updateWeatherData() {
     var weatherEntity = this.hass.states[ENTITIES_WEATHER];
     if (!weatherEntity) throw new Error('Weather entity not available');
-    // Update temperature
-        var temp = weatherEntity.attributes.temperature;
+    var temp = weatherEntity.attributes.temperature;
     this.temperature = ''.concat(Math.round(temp), '°');
-    // Update weather state and icon
-        this.weatherState = weatherEntity.state;
+    this.weatherState = weatherEntity.state;
     this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
   }
   updateAQIData() {
@@ -460,42 +468,45 @@ customElements.define('weather-display', class extends LitElement {
   }
   getAqiColor(aqi) {
     var aqiValue = parseInt(aqi);
-    return isNaN(aqiValue) ? AQI_COLORS_HAZARDOUS.color : aqiValue <= AQI_COLORS_GOOD.max ? AQI_COLORS_GOOD.color : aqiValue <= AQI_COLORS_MODERATE.max ? AQI_COLORS_MODERATE.color : aqiValue <= AQI_COLORS_UNHEALTHY_SENSITIVE.max ? AQI_COLORS_UNHEALTHY_SENSITIVE.color : aqiValue <= AQI_COLORS_UNHEALTHY.max ? AQI_COLORS_UNHEALTHY.color : aqiValue <= AQI_COLORS_VERY_UNHEALTHY.max ? AQI_COLORS_VERY_UNHEALTHY.color : AQI_COLORS_HAZARDOUS.color;
+    if (isNaN(aqiValue)) return AQI_COLORS.HAZARDOUS.color;
+    for (var [level, data] of Object.entries(AQI_COLORS)) if (!data.max || aqiValue <= data.max) return data.color;
+    return AQI_COLORS.HAZARDOUS.color;
   }
   getAqiDescription(aqi) {
     var aqiValue = parseInt(aqi);
-    return isNaN(aqiValue) ? 'Unknown' : aqiValue <= AQI_COLORS_GOOD.max ? 'Good' : aqiValue <= AQI_COLORS_MODERATE.max ? 'Moderate' : aqiValue <= AQI_COLORS_UNHEALTHY_SENSITIVE.max ? 'Unhealthy for Sensitive Groups' : aqiValue <= AQI_COLORS_UNHEALTHY.max ? 'Unhealthy' : aqiValue <= AQI_COLORS_VERY_UNHEALTHY.max ? 'Very Unhealthy' : 'Hazardous';
+    return isNaN(aqiValue) ? 'Unknown' : aqiValue <= AQI_COLORS.GOOD.max ? 'Good' : aqiValue <= AQI_COLORS.MODERATE.max ? 'Moderate' : aqiValue <= AQI_COLORS.UNHEALTHY_SENSITIVE.max ? 'Unhealthy for Sensitive Groups' : aqiValue <= AQI_COLORS.UNHEALTHY.max ? 'Unhealthy' : aqiValue <= AQI_COLORS.VERY_UNHEALTHY.max ? 'Very Unhealthy' : 'Hazardous';
   }
   handleWeatherIconError(e) {
     console.error('Error loading weather icon');
     e.target.src = 'https://basmilius.github.io/weather-icons/production/fill/all/'.concat(WEATHER_ICONS.default, '.svg');
   }
   renderDateTime() {
-    return html(_templateObject$3 || (_templateObject$3 = _taggedTemplateLiteral([ '\n      <div class="left-column">\n        <div class="date">', '</div>\n        <div class="time">', '</div>\n      </div>\n    ' ])), this.date, this.time);
+    return html(_templateObject2$3 || (_templateObject2$3 = _taggedTemplateLiteral([ '\n      <div class="left-column">\n        <div class="date">', '</div>\n        <div class="time">', '</div>\n      </div>\n    ' ])), this.date, this.time);
   }
   renderWeatherInfo() {
-    return html(_templateObject2$3 || (_templateObject2$3 = _taggedTemplateLiteral([ '\n      <div class="weather-info">\n        <img\n          src="https://basmilius.github.io/weather-icons/production/fill/all/', '.svg"\n          class="weather-icon"\n          alt="Weather icon for ', '"\n          @error=', '\n        />\n        <span class="temperature">', '</span>\n      </div>\n    ' ])), this.weatherIcon, this.weatherState, this.handleWeatherIconError, this.temperature);
+    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="weather-info">\n        <img\n          src="https://basmilius.github.io/weather-icons/production/fill/all/', '.svg"\n          class="weather-icon"\n          alt="Weather icon for ', '"\n          @error=', '\n        />\n        <span class="temperature">', '</span>\n      </div>\n    ' ])), this.weatherIcon, this.weatherState, this.handleWeatherIconError, this.temperature);
   }
   renderAQI() {
     if (!this.aqi) return null;
     var aqiColor = this.getAqiColor(this.aqi), aqiDescription = this.getAqiDescription(this.aqi);
-    return html(_templateObject3$3 || (_templateObject3$3 = _taggedTemplateLiteral([ '\n      <div class="aqi" style="background-color: ', '" title="', '">\n        ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
+    return html(_templateObject4$2 || (_templateObject4$2 = _taggedTemplateLiteral([ '\n      <div class="aqi" \n           style="background-color: ', '" \n           title="', '">\n        ', ' AQI\n      </div>\n    ' ])), aqiColor, aqiDescription, this.aqi);
   }
   renderError() {
-    return this.error ? html(_templateObject4$2 || (_templateObject4$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
+    return this.error ? html(_templateObject5$2 || (_templateObject5$2 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : null;
   }
   render() {
-    return html(_templateObject5$2 || (_templateObject5$2 = _taggedTemplateLiteral([ '\n      <link\n        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"\n        rel="stylesheet"\n      />\n      <div class="weather-component">\n        ', '\n        <div class="right-column">', ' ', '</div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
+    return html(_templateObject6$2 || (_templateObject6$2 = _taggedTemplateLiteral([ '\n      <div class="weather-component">\n        ', '\n        <div class="right-column">\n          ', '\n          ', '\n        </div>\n        ', '\n      </div>\n    ' ])), this.renderDateTime(), this.renderWeatherInfo(), this.renderAQI(), this.renderError());
   }
+  // Public methods for external control
   forceUpdate() {
     this.updateWeather();
     this.updateDateTime();
   }
-  updateTime() {
-    this.updateDateTime();
-  }
   refreshWeather() {
     this.updateWeather();
+  }
+  updateTime() {
+    this.updateDateTime();
   }
 });
 
