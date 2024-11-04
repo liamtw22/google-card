@@ -63,7 +63,7 @@ export class Controls extends LitElement {
   static get styles() {
     return controlsStyles;
   }
-
+  
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
@@ -198,7 +198,7 @@ export class Controls extends LitElement {
     this.updateVolumeValue(newVolume * (VOLUME.MAX / VOLUME.DOTS));
   }
 
-async handleBrightnessDrag(e) {
+  async handleBrightnessDrag(e) {
     const container = this.shadowRoot.querySelector('.brightness-dots');
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
@@ -414,9 +414,7 @@ async handleBrightnessDrag(e) {
   }
 
   renderVolumeCard() {
-    const volumeDisplayValue = Math.round(
-      this.visualVolume / (VOLUME.MAX / VOLUME.DOTS)
-    );
+    const volumeDisplayValue = Math.round(this.visualVolume / (VOLUME.MAX / VOLUME.DOTS));
 
     return html`
       <div
