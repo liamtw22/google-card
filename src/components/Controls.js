@@ -63,7 +63,7 @@ export class Controls extends LitElement {
   static get styles() {
     return controlsStyles;
   }
-  
+
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
@@ -462,8 +462,7 @@ export class Controls extends LitElement {
       >
         ${this.renderError()}
         ${!this.showBrightnessCard && !this.showVolumeCard ? this.renderOverlay() : ''}
-        ${this.renderBrightnessCard()}
-        ${this.renderVolumeCard()}
+        ${this.renderBrightnessCard()} ${this.renderVolumeCard()}
       </div>
     `;
   }
