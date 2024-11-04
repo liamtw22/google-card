@@ -121,7 +121,7 @@ css(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n  :hos
   'windy-variant': 'wind',
   exceptional: 'not-available',
   default: 'not-available-fill'
-}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = 'media-source', IMAGE_SOURCE_TYPES_UNSPLASH_API = 'unsplash-api', IMAGE_SOURCE_TYPES_IMMICH_API = 'immich-api', IMAGE_SOURCE_TYPES_PICSUM = 'picsum', IMAGE_SOURCE_TYPES_URL = 'url', DEFAULT_CONFIG = {
+}, DEFAULT_CONFIG = {
   image_url: '',
   display_time: 15,
   crossfade_time: 3,
@@ -130,7 +130,7 @@ css(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n  :hos
   image_order: 'sorted',
   show_debug: !1,
   sensor_update_delay: 500
-}, ENTITIES_WEATHER = 'weather.64_west_glen_ave', ENTITIES_AQI = 'sensor.ridgewood_air_quality_index', ENTITIES_LIGHT_SENSOR = 'sensor.liam_room_display_light_sensor', DATE_FORMAT_OPTIONS = {
+}, ENTITIES_WEATHER = 'weather.64_west_glen_ave', ENTITIES_AQI = 'sensor.ridgewood_air_quality_index', DATE_FORMAT_OPTIONS = {
   weekday: 'short',
   month: 'short',
   day: 'numeric'
@@ -1024,36 +1024,6 @@ class GoogleCard extends LitElement {
       config: {
         type: Object
       },
-      // Image-related properties
-      currentImageIndex: {
-        type: Number
-      },
-      imageList: {
-        type: Array
-      },
-      imageA: {
-        type: String
-      },
-      imageB: {
-        type: String
-      },
-      activeImage: {
-        type: String
-      },
-      preloadedImage: {
-        type: String
-      },
-      isTransitioning: {
-        type: Boolean
-      },
-      // Screen properties
-      screenWidth: {
-        type: Number
-      },
-      screenHeight: {
-        type: Number
-      },
-      // Debug properties
       error: {
         type: String
       },
@@ -1063,56 +1033,20 @@ class GoogleCard extends LitElement {
       showDebugInfo: {
         type: Boolean
       },
-      // UI state properties
-      showOverlay: {
-        type: Boolean
-      },
-      // Night mode properties
       isNightMode: {
         type: Boolean
-      },
-      previousBrightness: {
-        type: Number
-      },
-      isInNightMode: {
-        type: Boolean
-      },
-      // Control properties
-      brightness: {
-        type: Number
-      },
-      volume: {
-        type: Number
       }
     };
   }
   constructor() {
     super();
     this.initializeProperties();
-    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
   initializeProperties() {
-    // Initialize image-related properties
-    this.currentImageIndex = -1;
-    this.imageList = [];
-    this.imageA = '';
-    this.imageB = '';
-    this.activeImage = 'A';
-    this.preloadedImage = '';
-    this.isTransitioning = !1;
-    // Initialize UI state
-        this.showOverlay = !1;
-    this.showDebugInfo = !1;
     this.error = null;
     this.debugInfo = {};
-    // Initialize control values
-        this.brightness = BRIGHTNESS_DEFAULT;
-    this.volume = VOLUME_DEFAULT;
-    // Initialize night mode state
-        this.isNightMode = !1;
-    this.previousBrightness = BRIGHTNESS_DEFAULT;
-    this.isInNightMode = !1;
-    this.updateScreenSize();
+    this.showDebugInfo = !1;
+    this.isNightMode = !1;
   }
   static get styles() {
     return sharedStyles;
@@ -1120,181 +1054,18 @@ class GoogleCard extends LitElement {
   setConfig(config) {
     if (!config.image_url) throw new Error('You need to define an image_url');
     this.config = _objectSpread2(_objectSpread2({}, DEFAULT_CONFIG), config);
-    this.urlTemplate = this.config.image_url;
     this.showDebugInfo = this.config.show_debug;
     this.debugInfo.config = this.config;
   }
-  connectedCallback() {
-    super.connectedCallback();
-    this.setupEventListeners();
-    this.startTimers();
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.cleanupEventListeners();
-    this.clearTimers();
-  }
-  setupEventListeners() {
-    window.addEventListener('resize', this.boundUpdateScreenSize);
-  }
-  cleanupEventListeners() {
-    window.removeEventListener('resize', this.boundUpdateScreenSize);
-  }
-  startTimers() {
-    this.updateImageList();
-    this.startImageRotation();
-    this.imageListUpdateInterval = setInterval((() => {
-      this.updateImageList();
-    }), 1e3 * this.config.image_list_update_interval);
-  }
-  clearTimers() {
-    clearInterval(this.imageUpdateInterval);
-    clearInterval(this.imageListUpdateInterval);
-  }
-  updateImageList() {
-    var _this = this;
-    return _asyncToGenerator((function*() {
-      if (_this.screenWidth && _this.screenHeight) {
-        try {
-          var newImageList = yield _this.fetchImageList();
-          _this.imageList = 'random' === _this.config.image_order ? _this.shuffleArray(newImageList) : newImageList.sort();
-          _this.error = null;
-          _this.debugInfo.imageList = _this.imageList;
-        } catch (error) {
-          _this.error = 'Error updating image list: '.concat(error.message);
-        }
-        _this.requestUpdate();
-      } else {
-        _this.error = 'Screen dimensions not set';
-        _this.requestUpdate();
-      }
-    }))();
-  }
-  shuffleArray(array) {
-    return [ ...array ].sort((() => .5 - Math.random()));
-  }
-  fetchImageList() {
-    var _this2 = this;
-    return _asyncToGenerator((function*() {
-      switch (_this2.getImageSourceType()) {
-       case IMAGE_SOURCE_TYPES_MEDIA_SOURCE:
-        return _this2.getImagesFromMediaSource();
-
-       case IMAGE_SOURCE_TYPES_UNSPLASH_API:
-        return _this2.getImagesFromUnsplashAPI();
-
-       case IMAGE_SOURCE_TYPES_IMMICH_API:
-        return _this2.getImagesFromImmichAPI();
-
-       default:
-        return [ _this2.getImageUrl() ];
-      }
-    }))();
-  }
-  getImageSourceType() {
-    var {image_url: image_url} = this.config;
-    return image_url.startsWith('media-source://') ? IMAGE_SOURCE_TYPES_MEDIA_SOURCE : image_url.startsWith('https://api.unsplash') ? IMAGE_SOURCE_TYPES_UNSPLASH_API : image_url.startsWith('immich+') ? IMAGE_SOURCE_TYPES_IMMICH_API : image_url.includes('picsum.photos') ? IMAGE_SOURCE_TYPES_PICSUM : IMAGE_SOURCE_TYPES_URL;
-  }
-  getImageUrl() {
-    var timestamp = Date.now();
-    return this.urlTemplate.replace(/\${width}/g, this.screenWidth).replace(/\${height}/g, this.screenHeight).replace(/\${timestamp_ms}/g, timestamp).replace(/\${timestamp}/g, Math.floor(timestamp / 1e3));
-  }
-  updateScreenSize() {
-    var pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    this.updateImageList();
-  }
-  startImageRotation() {
-    this.updateImage();
-    this.imageUpdateInterval = setInterval((() => {
-      this.updateImage();
-    }), 1e3 * this.config.display_time);
-  }
-  updateImage() {
-    var _this3 = this;
-    return _asyncToGenerator((function*() {
-      if (!_this3.isTransitioning) try {
-        var newImage = yield _this3.getNextImage();
-        yield _this3.transitionToNewImage(newImage);
-        _this3.preloadNextImage();
-      } catch (error) {
-        console.error('Error updating image:', error);
-        _this3.error = 'Error updating image: '.concat(error.message);
-        _this3.requestUpdate();
-      }
-    }))();
-  }
-  getNextImage() {
-    var _this4 = this;
-    return _asyncToGenerator((function*() {
-      if (_this4.preloadedImage) {
-        var image = _this4.preloadedImage;
-        _this4.preloadedImage = '';
-        return image;
-      }
-      if (_this4.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM) return _this4.getImageUrl();
-      _this4.currentImageIndex = (_this4.currentImageIndex + 1) % _this4.imageList.length;
-      return _this4.imageList[_this4.currentImageIndex];
-    }))();
-  }
-  preloadImage(url) {
-    return _asyncToGenerator((function*() {
-      return new Promise(((resolve, reject) => {
-        var img = new Image;
-        img.onload = () => resolve(url);
-        img.onerror = () => reject(new Error('Failed to load image: '.concat(url)));
-        img.src = url;
-      }));
-    }))();
-  }
-  preloadNextImage() {
-    var _this5 = this;
-    return _asyncToGenerator((function*() {
-      try {
-        var nextImageToPreload = _this5.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? _this5.getImageUrl() : _this5.imageList[(_this5.currentImageIndex + 1) % _this5.imageList.length];
-        _this5.preloadedImage = yield _this5.preloadImage(nextImageToPreload);
-      } catch (error) {
-        console.error('Error preloading next image:', error);
-        _this5.preloadedImage = '';
-      }
-    }))();
-  }
-  // Event Handlers
-  handleBrightnessChange(event) {
-    this.brightness = event.detail.brightness;
-    this.requestUpdate();
-  }
-  handleVolumeChange(event) {
-    this.volume = event.detail.volume;
-    this.requestUpdate();
-  }
-  // Night Mode Handlers
-  updateNightMode() {
-    var _this6 = this;
-    return _asyncToGenerator((function*() {
-      var _this6$hass;
-      if (null !== (_this6$hass = _this6.hass) && void 0 !== _this6$hass && _this6$hass.states[ENTITIES_LIGHT_SENSOR]) {
-        var lightSensor = _this6.hass.states[ENTITIES_LIGHT_SENSOR], newNightMode = 0 === parseInt(lightSensor.state);
-        if (newNightMode !== _this6.isInNightMode) {
-          newNightMode ? yield _this6.enterNightMode() : yield _this6.exitNightMode();
-          _this6.isInNightMode = newNightMode;
-          _this6.isNightMode = newNightMode;
-          _this6.requestUpdate();
-        }
-      }
-    }))();
-  }
-  // Debug Info Methods
   renderDebugInfo() {
-    return this.showDebugInfo ? html(_templateObject || (_templateObject = _taggedTemplateLiteral([ '\n      <div class="debug-info">\n        <h2>Background Card Debug Info</h2>\n        <p><strong>Night Mode:</strong> ', '</p>\n        <p><strong>Screen Width:</strong> ', '</p>\n        <p><strong>Screen Height:</strong> ', '</p>\n        <p><strong>Current Image:</strong> ', '</p>\n        <p><strong>Is Transitioning:</strong> ', '</p>\n        <p><strong>Brightness:</strong> ', '</p>\n        <p><strong>Volume:</strong> ', '</p>\n        <h3>Config:</h3>\n        <pre>', '</pre>\n      </div>\n    ' ])), this.isNightMode, this.screenWidth, this.screenHeight, 'A' === this.activeImage ? this.imageA : this.imageB, this.isTransitioning, this.brightness, this.volume, JSON.stringify(this.config, null, 2)) : null;
+    return this.showDebugInfo ? html(_templateObject || (_templateObject = _taggedTemplateLiteral([ '\n      <div class="debug-info">\n        <h2>Background Card Debug Info</h2>\n        <p><strong>Night Mode:</strong> ', '</p>\n        <h3>Config:</h3>\n        <pre>', '</pre>\n      </div>\n    ' ])), this.isNightMode, JSON.stringify(this.config, null, 2)) : null;
   }
   render() {
     return this.isNightMode ? html(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral([ '\n        <night-mode\n          .currentTime="', '">\n        </night-mode>\n      ' ])), (new Date).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: !0
-    }).replace(/\s?[AP]M/, '')) : html(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral([ '\n      <background-rotator\n        .imageA="', '"\n        .imageB="', '"\n        .activeImage="', '"\n        .isTransitioning="', '"\n        .crossfadeTime="', '">\n      </background-rotator>\n      \n      <weather-display\n        .hass="', '">\n      </weather-display>\n      \n      <google-controls\n        .brightness="', '"\n        .volume="', '"\n        .showOverlay="', '"\n        @brightness-change="', '"\n        @volume-change="', '">\n      </google-controls>\n\n      ', '\n      ', '\n    ' ])), this.imageA, this.imageB, this.activeImage, this.isTransitioning, this.config.crossfade_time, this.hass, this.brightness, this.volume, this.showOverlay, this.handleBrightnessChange, this.handleVolumeChange, this.error ? html(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral([ '<div class="error">', '</div>' ])), this.error) : '', this.renderDebugInfo());
+    }).replace(/\s?[AP]M/, '')) : html(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral([ '\n      <background-rotator\n        .config="', '">\n      </background-rotator>\n      \n      <weather-display\n        .hass="', '">\n      </weather-display>\n      \n      <google-controls\n        .hass="', '">\n      </google-controls>\n\n      ', '\n      ', '\n    ' ])), this.config, this.hass, this.hass, this.error ? html(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral([ '<div class="error">', '</div>' ])), this.error) : '', this.renderDebugInfo());
   }
 }
 
