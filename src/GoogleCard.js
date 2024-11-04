@@ -38,16 +38,8 @@ export class GoogleCard extends LitElement {
     this.bindMethods();
   }
 
-  bindMethods() {
-    this.handleTouchStart = this.handleTouchStart.bind(this);
-    this.handleTouchMove = this.handleTouchMove.bind(this);
-    this.handleTouchEnd = this.handleTouchEnd.bind(this);
-    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
-    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
-    this.handleScreenSizeUpdate = this.handleScreenSizeUpdate.bind(this);
-  }
-
   initializeProperties() {
+    // Properties initialization
     this.error = null;
     this.debugInfo = {};
     this.showDebugInfo = false;
@@ -70,10 +62,23 @@ export class GoogleCard extends LitElement {
     this.screenHeight = window.innerHeight;
   }
 
+  bindMethods() {
+    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    this.handleTouchStart = this.handleTouchStart.bind(this);
+    this.handleTouchMove = this.handleTouchMove.bind(this);
+    this.handleTouchEnd = this.handleTouchEnd.bind(this);
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleScreenSizeUpdate = this.handleScreenSizeUpdate.bind(this);
+    this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this);
+    this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
+  }
+
   setConfig(config) {
     if (!config.image_url) {
       throw new Error("You need to define an image_url");
     }
+    
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.showDebugInfo = this.config.show_debug;
     this.debugInfo = {
@@ -82,6 +87,7 @@ export class GoogleCard extends LitElement {
       screenHeight: this.screenHeight,
       devicePixelRatio: window.devicePixelRatio || 1
     };
+    this.requestUpdate();
   }
 
   connectedCallback() {
@@ -103,6 +109,26 @@ export class GoogleCard extends LitElement {
     this.clearAllTimers();
   }
 
+  clearAllTimers() {
+    if (this.overlayDismissTimer) clearTimeout(this.overlayDismissTimer);
+    if (this.brightnessCardDismissTimer) clearTimeout(this.brightnessCardDismissTimer);
+    if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
+    if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
+    if (this.longPressTimer) clearTimeout(this.longPressTimer);
+  }
+
+  updateScreenSize() {
+    const pixelRatio = window.devicePixelRatio || 1;
+    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
+    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
+    this.debugInfo = {
+      ...this.debugInfo,
+      screenWidth: this.screenWidth,
+      screenHeight: this.screenHeight
+    };
+    this.requestUpdate();
+  }
+
   handleScreenSizeUpdate(e) {
     this.screenWidth = e.detail.width;
     this.screenHeight = e.detail.height;
@@ -112,24 +138,6 @@ export class GoogleCard extends LitElement {
       screenHeight: this.screenHeight
     };
     this.requestUpdate();
-  }
-
-  clearAllTimers() {
-    if (this.overlayDismissTimer) clearTimeout(this.overlayDismissTimer);
-    if (this.brightnessCardDismissTimer) clearTimeout(this.brightnessCardDismissTimer);
-    if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
-    if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
-    if (this.longPressTimer) clearTimeout(this.longPressTimer);
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
-      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
-      if (timeSinceLastUpdate > 2000) {
-        this.updateNightMode();
-        this.updateBrightness();
-      }
-    }
   }
 
   async updateBrightnessValue(value) {
@@ -173,6 +181,16 @@ export class GoogleCard extends LitElement {
     }
 
     this.startBrightnessCardDismissTimer();
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
+      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
+      if (timeSinceLastUpdate > 2000) {
+        this.updateNightMode();
+        this.updateBrightness();
+      }
+    }
   }
 
   updateNightMode() {
@@ -232,6 +250,36 @@ export class GoogleCard extends LitElement {
 
   handleTouchEnd() {
     this.touchStartY = null;
+  }
+
+  handleBrightnessChange(e) {
+    const clickedDot = e.target.closest('.brightness-dot');
+    if (!clickedDot) return;
+
+    const newBrightness = parseInt(clickedDot.dataset.value);
+    this.updateBrightnessValue(newBrightness * 25.5);
+  }
+
+  handleBrightnessDrag(e) {
+    const container = this.shadowRoot.querySelector('.brightness-dots');
+    const rect = container.getBoundingClientRect();
+    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
+    const newValue = Math.round((relativeX / rect.width) * 10);
+    this.updateBrightnessValue(newValue * 25.5);
+  }
+
+  handleSettingsIconTouchStart() {
+    this.longPressTimer = setTimeout(() => {
+      this.toggleDebugInfo();
+    }, 1000);
+  }
+
+  handleSettingsIconTouchEnd() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
 
   startOverlayDismissTimer() {
@@ -297,19 +345,6 @@ export class GoogleCard extends LitElement {
     this.requestUpdate();
   }
 
-  handleSettingsIconTouchStart() {
-    this.longPressTimer = setTimeout(() => {
-      this.toggleDebugInfo();
-    }, 1000);
-  }
-
-  handleSettingsIconTouchEnd() {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-      this.longPressTimer = null;
-    }
-  }
-
   getBrightnessDisplayValue() {
     return Math.round(this.visualBrightness / 25.5);
   }
@@ -343,7 +378,6 @@ export class GoogleCard extends LitElement {
           <div class="icon-row">
             <button class="icon-button" @click="${this.toggleBrightnessCard}">
               <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-            </button>
             <button class="icon-button">
               <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
