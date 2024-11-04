@@ -1,5 +1,6 @@
 // src/components/NightMode.js
 import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { sharedStyles } from '../styles/shared.js';
 import { TIME_FORMAT_OPTIONS, BRIGHTNESS, TIMING } from '../constants.js';
 
 export class NightMode extends LitElement {
