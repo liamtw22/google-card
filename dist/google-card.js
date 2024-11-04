@@ -214,7 +214,7 @@ customElements.define('background-rotator', class extends LitElement {
     this.imageListUpdateInterval = null;
   }
   static get styles() {
-    return [ sharedStyles, css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n        :host {\n          display: block;\n          position: relative;\n          width: 100%;\n          height: 100%;\n          overflow: hidden;\n          background-color: black;\n        }\n\n        .background-container {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-color: black;\n          z-index: 1;\n        }\n\n        .background-image {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-size: contain;\n          background-position: center;\n          background-repeat: no-repeat;\n          will-change: opacity;\n          transition-property: opacity;\n          transition-timing-function: ease-in-out;\n          transform: translateZ(0);\n          backface-visibility: hidden;\n        }\n\n        .error-message {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background-color: var(--color-error);\n          color: white;\n          padding: var(--spacing-4);\n          border-radius: var(--border-radius-md);\n          font-size: var(--font-size-base);\n          text-align: center;\n          z-index: 2;\n          max-width: 80%;\n        }\n      ' ]))) ];
+    return [ sharedStyles, css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n        :host {\n          display: block;\n          position: relative;\n          width: 100%;\n          height: 100%;\n          overflow: hidden;\n          background-color: black;\n        }\n\n        .background-container {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-color: black;\n          z-index: 1;\n        }\n\n        .background-image {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-size: cover;\n          background-position: center;\n          background-repeat: no-repeat;\n          will-change: opacity, transform;\n          transition-property: opacity;\n          transition-timing-function: ease-in-out;\n          transform: translateZ(0);\n          backface-visibility: hidden;\n          -webkit-backface-visibility: hidden;\n          image-rendering: -webkit-optimize-contrast;\n          image-rendering: crisp-edges;\n        }\n\n        .error-message {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background-color: var(--color-error);\n          color: white;\n          padding: var(--spacing-4);\n          border-radius: var(--border-radius-md);\n          font-size: var(--font-size-base);\n          text-align: center;\n          z-index: 2;\n          max-width: 80%;\n        }\n      ' ]))) ];
   }
   connectedCallback() {
     var _superprop_getConnectedCallback = () => super.connectedCallback, _this = this;
@@ -222,7 +222,7 @@ customElements.define('background-rotator', class extends LitElement {
       _superprop_getConnectedCallback().call(_this);
       window.addEventListener('resize', _this.boundUpdateScreenSize);
       yield _this.initializeImageList();
-      _this.startImageRotation();
+      yield _this.startImageRotation();
     }))();
   }
   disconnectedCallback() {
@@ -236,10 +236,11 @@ customElements.define('background-rotator', class extends LitElement {
   }
   updateScreenSize() {
     var pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    // Notify parent component of screen size update
-        this.dispatchEvent(new CustomEvent('screen-size-update', {
+    this.screenWidth = Math.ceil(window.innerWidth * pixelRatio);
+    this.screenHeight = Math.ceil(window.innerHeight * pixelRatio);
+    // Force image update when screen size changes
+        this.updateImage();
+    this.dispatchEvent(new CustomEvent('screen-size-update', {
       bubbles: !0,
       composed: !0,
       detail: {
@@ -248,6 +249,11 @@ customElements.define('background-rotator', class extends LitElement {
       }
     }));
     this.requestUpdate();
+  }
+  getImageUrl(template) {
+    var pixelRatio = window.devicePixelRatio || 1, width = 100 * Math.ceil(this.screenWidth * pixelRatio / 100), height = 100 * Math.ceil(this.screenHeight * pixelRatio / 100), timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3);
+    // Multiply dimensions by pixel ratio and round up to nearest 100 for better caching
+        return template.replace(/\${width}/g, width).replace(/\${height}/g, height).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
   }
   initializeImageList() {
     var _this2 = this;
@@ -265,10 +271,6 @@ customElements.define('background-rotator', class extends LitElement {
         _this2.error = 'Error initializing images';
       } else _this2.error = 'No image URL configured';
     }))();
-  }
-  getImageUrl(template) {
-    var timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3);
-    return template.replace(/\${width}/g, this.screenWidth).replace(/\${height}/g, this.screenHeight).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
   }
   startImageRotation() {
     var _this3 = this;
@@ -373,7 +375,7 @@ customElements.define('background-rotator', class extends LitElement {
   }
   render() {
     var _this$config, imageFit = (null === (_this$config = this.config) || void 0 === _this$config ? void 0 : _this$config.image_fit) || DEFAULT_CONFIG.image_fit;
-    return html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n      </div>\n    ' ])), this.error ? html(_templateObject3$4 || (_templateObject3$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.imageA || '', 'A' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit, this.imageB || '', 'B' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit);
+    return html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n            image-rendering: -webkit-optimize-contrast;\n            image-rendering: crisp-edges;\n          "\n        ></div>\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n            image-rendering: -webkit-optimize-contrast;\n            image-rendering: crisp-edges;\n          "\n        ></div>\n      </div>\n    ' ])), this.error ? html(_templateObject3$4 || (_templateObject3$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.imageA || '', 'A' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit, this.imageB || '', 'B' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit);
   }
   // Public methods for external control
   forceImageUpdate() {
