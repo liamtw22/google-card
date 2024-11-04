@@ -354,8 +354,7 @@ export class GoogleCard extends LitElement {
     
     return html`
       <div class="debug-info">
-        <h2>Background Card Debug Info</h2>
-        <h3>Background Card Version: 23</h3>
+        <h2>Google Card Debug Info</h2>
         <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
         <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
         <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
