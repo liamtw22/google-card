@@ -89,6 +89,8 @@ export class GoogleCard extends LitElement {
   }
 }
 
+customElements.define('google-card', GoogleCard);
+
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'google-card',
@@ -98,4 +100,3 @@ window.customCards.push({
     documentationURL: 'https://github.com/liamtw22/google-card'
 });
 
-customElements.define('google-card', GoogleCard);
