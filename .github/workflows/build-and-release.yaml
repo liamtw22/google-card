@@ -20,7 +20,9 @@ jobs:
           node-version: '16'
           
       - name: Install dependencies
-        run: npm install --no-package-lock
+        run: |
+          npm install --no-package-lock
+          npm install --no-save prettier
         
       - name: Create dist directory
         run: mkdir -p dist
@@ -33,6 +35,10 @@ jobs:
       - name: Remove export line
         run: |
           sed -i 's/export { GoogleCard };//' dist/google-card.js
+          
+      - name: Format CSS in template literals
+        run: |
+          npx prettier --write "dist/google-card.js" --parser babel
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
