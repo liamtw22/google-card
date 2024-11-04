@@ -82,7 +82,7 @@ function _taggedTemplateLiteral(e, t) {
   }));
 }
 
-var _templateObject$5, _templateObject$4, _templateObject2$4, _templateObject3$4, _templateObject$3, _templateObject2$3, _templateObject3$3, _templateObject4$2, _templateObject5$2, _templateObject6$2, _templateObject$2, _templateObject2$2, _templateObject3$2, _templateObject$1, _templateObject2$1, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6$1, _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, sharedStyles = css$1(_templateObject$5 || (_templateObject$5 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-info: #007aff;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n    --color-overlay: rgba(0, 0, 0, 0.5);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-xs: 12px;\n    --font-size-sm: 14px;\n    --font-size-base: 16px;\n    --font-size-lg: 18px;\n    --font-size-xl: 24px;\n    --font-size-2xl: 32px;\n    --font-size-3xl: 40px;\n    --font-size-4xl: 48px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-relaxed: 1.8;\n\n    /* Spacing */\n    --spacing-0: 0;\n    --spacing-1: 4px;\n    --spacing-2: 8px;\n    --spacing-3: 12px;\n    --spacing-4: 16px;\n    --spacing-5: 20px;\n    --spacing-6: 24px;\n    --spacing-8: 32px;\n    --spacing-10: 40px;\n    --spacing-12: 48px;\n    --spacing-16: 64px;\n\n    /* Borders */\n    --border-radius-sm: 4px;\n    --border-radius-md: 8px;\n    --border-radius-lg: 16px;\n    --border-radius-xl: 24px;\n    --border-radius-full: 9999px;\n    --border-width-thin: 1px;\n    --border-width-normal: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-sm: 0 1px 2px var(--color-shadow);\n    --shadow-md: 0 2px 4px var(--color-shadow);\n    --shadow-lg: 0 4px 8px var(--color-shadow);\n    --shadow-xl: 0 8px 16px var(--color-shadow);\n    --shadow-inner: inset 0 2px 4px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 150ms;\n    --transition-duration-normal: 300ms;\n    --transition-duration-slow: 500ms;\n    --transition-timing-default: cubic-bezier(0.4, 0, 0.2, 1);\n    --transition-timing-in: cubic-bezier(0.4, 0, 1, 1);\n    --transition-timing-out: cubic-bezier(0, 0, 0.2, 1);\n\n    /* Z-index Scale */\n    --z-index-below: -1;\n    --z-index-base: 1;\n    --z-index-above: 10;\n    --z-index-floating: 100;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-popover: 3000;\n    --z-index-tooltip: 4000;\n    --z-index-max: 9999;\n\n    /* Component Specific */\n    --header-height: 60px;\n    --footer-height: 80px;\n    --sidebar-width: 280px;\n    --modal-width: 500px;\n    --container-max-width: 1200px;\n    --card-padding: 20px;\n  }\n\n  /* Base Resets */\n  *,\n  *::before,\n  *::after {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography */\n  h1, h2, h3, h4, h5, h6, p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n    line-height: var(--line-height-tight);\n  }\n\n  /* Accessibility */\n  .sr-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  .focusable:focus {\n    outline: var(--border-width-normal) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Layout Utilities */\n  .container {\n    width: 100%;\n    max-width: var(--container-max-width);\n    margin: 0 auto;\n    padding: 0 var(--spacing-4);\n  }\n\n  .flex {\n    display: flex;\n  }\n\n  .flex-col {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .items-center {\n    align-items: center;\n  }\n\n  .justify-center {\n    justify-content: center;\n  }\n\n  .justify-between {\n    justify-content: space-between;\n  }\n\n  .gap-1 { gap: var(--spacing-1); }\n  .gap-2 { gap: var(--spacing-2); }\n  .gap-4 { gap: var(--spacing-4); }\n\n  /* Spacing Utilities */\n  .m-0 { margin: var(--spacing-0); }\n  .m-1 { margin: var(--spacing-1); }\n  .m-2 { margin: var(--spacing-2); }\n  .m-4 { margin: var(--spacing-4); }\n\n  .p-0 { padding: var(--spacing-0); }\n  .p-1 { padding: var(--spacing-1); }\n  .p-2 { padding: var(--spacing-2); }\n  .p-4 { padding: var(--spacing-4); }\n\n  /* Text Utilities */\n  .text-sm { font-size: var(--font-size-sm); }\n  .text-base { font-size: var(--font-size-base); }\n  .text-lg { font-size: var(--font-size-lg); }\n  .text-xl { font-size: var(--font-size-xl); }\n\n  .font-light { font-weight: var(--font-weight-light); }\n  .font-normal { font-weight: var(--font-weight-regular); }\n  .font-medium { font-weight: var(--font-weight-medium); }\n  .font-bold { font-weight: var(--font-weight-bold); }\n\n  .text-center { text-align: center; }\n  .text-left { text-align: left; }\n  .text-right { text-align: right; }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  /* Animation Classes */\n  .animate-fade {\n    animation: fade var(--transition-duration-normal) var(--transition-timing-default);\n  }\n\n  .animate-slide-up {\n    animation: slideUp var(--transition-duration-normal) var(--transition-timing-default);\n  }\n\n  @keyframes fade {\n    from { opacity: 0; }\n    to { opacity: 1; }\n  }\n\n  @keyframes slideUp {\n    from {\n      transform: translateY(20px);\n      opacity: 0;\n    }\n    to {\n      transform: translateY(0);\n      opacity: 1;\n    }\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n      --color-overlay: rgba(0, 0, 0, 0.7);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-shadow: #000000;\n      --shadow-sm: none;\n      --shadow-md: none;\n      --shadow-lg: none;\n      --shadow-xl: none;\n    }\n\n    .focusable:focus {\n      outline-width: var(--border-width-thick);\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    *,\n    *::before,\n    *::after {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n\n    .animate-fade,\n    .animate-slide-up {\n      animation: none !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-shadow: none;\n    }\n\n    * {\n      print-color-adjust: exact;\n      -webkit-print-color-adjust: exact;\n    }\n\n    .no-print {\n      display: none !important;\n    }\n  }\n\n  /* Touch Device Optimizations */\n  @media (hover: none) {\n    :host {\n      --spacing-4: 20px;\n      --spacing-6: 28px;\n    }\n\n    .focusable:focus {\n      outline: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Responsive Breakpoints */\n  @media (max-width: 1280px) {\n    :host {\n      --container-max-width: 1024px;\n    }\n  }\n\n  @media (max-width: 1024px) {\n    :host {\n      --container-max-width: 768px;\n      --sidebar-width: 240px;\n    }\n  }\n\n  @media (max-width: 768px) {\n    :host {\n      --container-max-width: 100%;\n      --header-height: 50px;\n      --footer-height: 60px;\n      --card-padding: 16px;\n    }\n  }\n\n  @media (max-width: 640px) {\n    :host {\n      --font-size-xl: 20px;\n      --font-size-2xl: 28px;\n      --font-size-3xl: 36px;\n      --spacing-8: 24px;\n      --spacing-10: 32px;\n      --spacing-12: 40px;\n    }\n  }\n' ]))), TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_TRANSITION_BUFFER = 50, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS = {
+var _templateObject$5, _templateObject$4, _templateObject2$4, _templateObject3$4, _templateObject$3, _templateObject2$3, _templateObject3$3, _templateObject4$2, _templateObject5$2, _templateObject6$2, _templateObject$2, _templateObject2$2, _templateObject3$2, _templateObject$1, _templateObject2$1, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6$1, _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, sharedStyles = css$1(_templateObject$5 || (_templateObject$5 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-info: #007aff;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n    --color-overlay: rgba(0, 0, 0, 0.5);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-xs: 12px;\n    --font-size-sm: 14px;\n    --font-size-base: 16px;\n    --font-size-lg: 18px;\n    --font-size-xl: 24px;\n    --font-size-2xl: 32px;\n    --font-size-3xl: 40px;\n    --font-size-4xl: 48px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-relaxed: 1.8;\n\n    /* Spacing */\n    --spacing-0: 0;\n    --spacing-1: 4px;\n    --spacing-2: 8px;\n    --spacing-3: 12px;\n    --spacing-4: 16px;\n    --spacing-5: 20px;\n    --spacing-6: 24px;\n    --spacing-8: 32px;\n    --spacing-10: 40px;\n    --spacing-12: 48px;\n    --spacing-16: 64px;\n\n    /* Borders */\n    --border-radius-sm: 4px;\n    --border-radius-md: 8px;\n    --border-radius-lg: 16px;\n    --border-radius-xl: 24px;\n    --border-radius-full: 9999px;\n    --border-width-thin: 1px;\n    --border-width-normal: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-sm: 0 1px 2px var(--color-shadow);\n    --shadow-md: 0 2px 4px var(--color-shadow);\n    --shadow-lg: 0 4px 8px var(--color-shadow);\n    --shadow-xl: 0 8px 16px var(--color-shadow);\n    --shadow-inner: inset 0 2px 4px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 150ms;\n    --transition-duration-normal: 300ms;\n    --transition-duration-slow: 500ms;\n    --transition-timing-default: cubic-bezier(0.4, 0, 0.2, 1);\n    --transition-timing-in: cubic-bezier(0.4, 0, 1, 1);\n    --transition-timing-out: cubic-bezier(0, 0, 0.2, 1);\n\n    /* Z-index Scale */\n    --z-index-below: -1;\n    --z-index-base: 1;\n    --z-index-above: 10;\n    --z-index-floating: 100;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-popover: 3000;\n    --z-index-tooltip: 4000;\n    --z-index-max: 9999;\n\n    /* Component Specific */\n    --header-height: 60px;\n    --footer-height: 80px;\n    --sidebar-width: 280px;\n    --modal-width: 500px;\n    --container-max-width: 1200px;\n    --card-padding: 20px;\n  }\n\n  /* Base Resets */\n  *,\n  *::before,\n  *::after {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography */\n  h1, h2, h3, h4, h5, h6, p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n    line-height: var(--line-height-tight);\n  }\n\n  /* Accessibility */\n  .sr-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  .focusable:focus {\n    outline: var(--border-width-normal) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Layout Utilities */\n  .container {\n    width: 100%;\n    max-width: var(--container-max-width);\n    margin: 0 auto;\n    padding: 0 var(--spacing-4);\n  }\n\n  .flex {\n    display: flex;\n  }\n\n  .flex-col {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .items-center {\n    align-items: center;\n  }\n\n  .justify-center {\n    justify-content: center;\n  }\n\n  .justify-between {\n    justify-content: space-between;\n  }\n\n  .gap-1 { gap: var(--spacing-1); }\n  .gap-2 { gap: var(--spacing-2); }\n  .gap-4 { gap: var(--spacing-4); }\n\n  /* Spacing Utilities */\n  .m-0 { margin: var(--spacing-0); }\n  .m-1 { margin: var(--spacing-1); }\n  .m-2 { margin: var(--spacing-2); }\n  .m-4 { margin: var(--spacing-4); }\n\n  .p-0 { padding: var(--spacing-0); }\n  .p-1 { padding: var(--spacing-1); }\n  .p-2 { padding: var(--spacing-2); }\n  .p-4 { padding: var(--spacing-4); }\n\n  /* Text Utilities */\n  .text-sm { font-size: var(--font-size-sm); }\n  .text-base { font-size: var(--font-size-base); }\n  .text-lg { font-size: var(--font-size-lg); }\n  .text-xl { font-size: var(--font-size-xl); }\n\n  .font-light { font-weight: var(--font-weight-light); }\n  .font-normal { font-weight: var(--font-weight-regular); }\n  .font-medium { font-weight: var(--font-weight-medium); }\n  .font-bold { font-weight: var(--font-weight-bold); }\n\n  .text-center { text-align: center; }\n  .text-left { text-align: left; }\n  .text-right { text-align: right; }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  /* Animation Classes */\n  .animate-fade {\n    animation: fade var(--transition-duration-normal) var(--transition-timing-default);\n  }\n\n  .animate-slide-up {\n    animation: slideUp var(--transition-duration-normal) var(--transition-timing-default);\n  }\n\n  @keyframes fade {\n    from { opacity: 0; }\n    to { opacity: 1; }\n  }\n\n  @keyframes slideUp {\n    from {\n      transform: translateY(20px);\n      opacity: 0;\n    }\n    to {\n      transform: translateY(0);\n      opacity: 1;\n    }\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n      --color-overlay: rgba(0, 0, 0, 0.7);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-shadow: #000000;\n      --shadow-sm: none;\n      --shadow-md: none;\n      --shadow-lg: none;\n      --shadow-xl: none;\n    }\n\n    .focusable:focus {\n      outline-width: var(--border-width-thick);\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    *,\n    *::before,\n    *::after {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n\n    .animate-fade,\n    .animate-slide-up {\n      animation: none !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-shadow: none;\n    }\n\n    * {\n      print-color-adjust: exact;\n      -webkit-print-color-adjust: exact;\n    }\n\n    .no-print {\n      display: none !important;\n    }\n  }\n\n  /* Touch Device Optimizations */\n  @media (hover: none) {\n    :host {\n      --spacing-4: 20px;\n      --spacing-6: 28px;\n    }\n\n    .focusable:focus {\n      outline: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Responsive Breakpoints */\n  @media (max-width: 1280px) {\n    :host {\n      --container-max-width: 1024px;\n    }\n  }\n\n  @media (max-width: 1024px) {\n    :host {\n      --container-max-width: 768px;\n      --sidebar-width: 240px;\n    }\n  }\n\n  @media (max-width: 768px) {\n    :host {\n      --container-max-width: 100%;\n      --header-height: 50px;\n      --footer-height: 60px;\n      --card-padding: 16px;\n    }\n  }\n\n  @media (max-width: 640px) {\n    :host {\n      --font-size-xl: 20px;\n      --font-size-2xl: 28px;\n      --font-size-3xl: 36px;\n      --spacing-8: 24px;\n      --spacing-10: 32px;\n      --spacing-12: 40px;\n    }\n  }\n' ]))), TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS = {
   GOOD: {
     max: 50,
     color: '#68a03a'
@@ -210,7 +210,7 @@ customElements.define('background-rotator', class extends LitElement {
     this.imageListUpdateInterval = null;
   }
   static get styles() {
-    return [ sharedStyles, css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n        :host {\n          display: block;\n          position: relative;\n          width: 100%;\n          height: 100%;\n          overflow: hidden;\n          background-color: black;\n        }\n\n        .background-container {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-color: black;\n          z-index: 1;\n        }\n\n        .background-image {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-size: contain;\n          background-position: center;\n          background-repeat: no-repeat;\n          will-change: opacity;\n          transition-property: opacity;\n          transition-timing-function: ease-in-out;\n        }\n\n        .error-message {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background-color: var(--color-error);\n          color: white;\n          padding: var(--spacing-4);\n          border-radius: var(--border-radius-md);\n          font-size: var(--font-size-base);\n          text-align: center;\n          z-index: 2;\n          max-width: 80%;\n        }\n      ' ]))) ];
+    return [ sharedStyles, css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n        :host {\n          display: block;\n          position: relative;\n          width: 100%;\n          height: 100%;\n          overflow: hidden;\n          background-color: black;\n        }\n\n        .background-container {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-color: black;\n          z-index: 1;\n        }\n\n        .background-image {\n          position: absolute;\n          top: 0;\n          left: 0;\n          width: 100%;\n          height: 100%;\n          background-size: contain;\n          background-position: center;\n          background-repeat: no-repeat;\n          will-change: opacity;\n          transition-property: opacity;\n          transition-timing-function: ease-in-out;\n          transform: translateZ(0);\n          backface-visibility: hidden;\n        }\n\n        .error-message {\n          position: absolute;\n          top: 50%;\n          left: 50%;\n          transform: translate(-50%, -50%);\n          background-color: var(--color-error);\n          color: white;\n          padding: var(--spacing-4);\n          border-radius: var(--border-radius-md);\n          font-size: var(--font-size-base);\n          text-align: center;\n          z-index: 2;\n          max-width: 80%;\n        }\n      ' ]))) ];
   }
   connectedCallback() {
     var _superprop_getConnectedCallback = () => super.connectedCallback, _this = this;
@@ -218,7 +218,7 @@ customElements.define('background-rotator', class extends LitElement {
       _superprop_getConnectedCallback().call(_this);
       window.addEventListener('resize', _this.boundUpdateScreenSize);
       yield _this.initializeImageList();
-      _this.startImageRotation();
+      yield _this.startImageRotation();
     }))();
   }
   disconnectedCallback() {
@@ -258,11 +258,18 @@ customElements.define('background-rotator', class extends LitElement {
   startImageRotation() {
     var _this3 = this;
     return _asyncToGenerator((function*() {
-      var _this3$config;
-      yield _this3.updateImage();
-      _this3.imageUpdateInterval = setInterval((() => {
-        _this3.updateImage();
-      }), 1e3 * ((null === (_this3$config = _this3.config) || void 0 === _this3$config ? void 0 : _this3$config.display_time) || DEFAULT_CONFIG.display_time));
+      try {
+        var _this3$config;
+        yield _this3.updateImage();
+ // Initial image load
+                _this3.imageUpdateInterval = setInterval( _asyncToGenerator((function*() {
+          yield _this3.updateImage();
+        })), 1e3 * ((null === (_this3$config = _this3.config) || void 0 === _this3$config ? void 0 : _this3$config.display_time) || DEFAULT_CONFIG.display_time));
+      } catch (error) {
+        console.error('Error starting image rotation:', error);
+        _this3.error = 'Error starting image rotation';
+        _this3.requestUpdate();
+      }
     }))();
   }
   updateImage() {
@@ -270,9 +277,10 @@ customElements.define('background-rotator', class extends LitElement {
     return _asyncToGenerator((function*() {
       if (!_this4.isTransitioning) try {
         var newImage = yield _this4.getNextImage();
-        yield _this4.transitionToNewImage(newImage);
-        _this4.preloadNextImage();
-        _this4.error = null;
+        if (newImage) {
+          yield _this4.transitionToNewImage(newImage);
+          yield _this4.preloadNextImage();
+        }
       } catch (error) {
         console.error('Error updating image:', error);
         _this4.error = 'Error updating image: '.concat(error.message);
@@ -283,60 +291,73 @@ customElements.define('background-rotator', class extends LitElement {
   getNextImage() {
     var _this5 = this;
     return _asyncToGenerator((function*() {
-      if (!_this5.imageList || 0 === _this5.imageList.length) {
-        var _this5$config;
-        if (null === (_this5$config = _this5.config) || void 0 === _this5$config || !_this5$config.image_url) throw new Error('No image URL configured');
-        var imageUrl = _this5.getImageUrl(_this5.config.image_url);
-        _this5.imageList = [ imageUrl ];
-      }
+      // First check preloaded image
       if (_this5.preloadedImage) {
         var image = _this5.preloadedImage;
         _this5.preloadedImage = '';
         return image;
       }
-      _this5.currentImageIndex = (_this5.currentImageIndex + 1) % _this5.imageList.length;
-      var nextImage = _this5.imageList[_this5.currentImageIndex];
-      return _this5.preloadImage(nextImage);
+      // If no image list, try to get image URL
+            if (!_this5.imageList || 0 === _this5.imageList.length) {
+        var _this5$config;
+        if (null === (_this5$config = _this5.config) || void 0 === _this5$config || !_this5$config.image_url) throw new Error('No image URL configured');
+        var imageUrl = _this5.getImageUrl(_this5.config.image_url);
+        _this5.imageList = [ imageUrl ];
+        _this5.currentImageIndex = -1;
+      }
+      // Get next image and preload it
+            _this5.currentImageIndex = (_this5.currentImageIndex + 1) % _this5.imageList.length;
+      var nextImageUrl = _this5.getImageUrl(_this5.config.image_url);
+      try {
+        yield _this5.preloadImage(nextImageUrl);
+        return nextImageUrl;
+      } catch (error) {
+        throw new Error('Failed to load image: '.concat(nextImageUrl));
+      }
     }))();
   }
   preloadImage(url) {
     return _asyncToGenerator((function*() {
-      return new Promise(((resolve, reject) => {
+      return url ? new Promise(((resolve, reject) => {
         var img = new Image;
         img.onload = () => resolve(url);
         img.onerror = () => reject(new Error('Failed to load image: '.concat(url)));
         img.src = url;
-      }));
-    }))();
-  }
-  preloadNextImage() {
-    var _this6 = this;
-    return _asyncToGenerator((function*() {
-      try {
-        var nextIndex = (_this6.currentImageIndex + 1) % _this6.imageList.length, nextImageUrl = _this6.imageList[nextIndex];
-        _this6.preloadedImage = yield _this6.preloadImage(nextImageUrl);
-      } catch (error) {
-        console.error('Error preloading next image:', error);
-        _this6.preloadedImage = '';
-      }
+      })) : null;
     }))();
   }
   transitionToNewImage(newImage) {
+    var _this6 = this;
+    return _asyncToGenerator((function*() {
+      _this6.isTransitioning = !0;
+      try {
+        // Set new image
+        'A' === _this6.activeImage ? _this6.imageB = newImage : _this6.imageA = newImage;
+        // Force a reflow before changing opacity
+                _this6.requestUpdate();
+        yield _this6.updateComplete;
+        yield new Promise((resolve => setTimeout(resolve, 50)));
+        // Switch active image
+                _this6.activeImage = 'A' === _this6.activeImage ? 'B' : 'A';
+        _this6.requestUpdate();
+        // Wait for transition to complete
+                yield new Promise((resolve => setTimeout(resolve, 1e3 * _this6.crossfadeTime + 50)));
+      } finally {
+        _this6.isTransitioning = !1;
+      }
+    }))();
+  }
+  preloadNextImage() {
     var _this7 = this;
     return _asyncToGenerator((function*() {
-      _this7.isTransitioning = !0;
-      if ('A' === _this7.activeImage) {
-        _this7.imageB = newImage;
-        yield new Promise((resolve => setTimeout(resolve, TIMING_TRANSITION_BUFFER)));
-        _this7.activeImage = 'B';
-      } else {
-        _this7.imageA = newImage;
-        yield new Promise((resolve => setTimeout(resolve, TIMING_TRANSITION_BUFFER)));
-        _this7.activeImage = 'A';
+      var _this7$config;
+      if (null !== (_this7$config = _this7.config) && void 0 !== _this7$config && _this7$config.image_url) try {
+        var nextImageUrl = _this7.getImageUrl(_this7.config.image_url);
+        _this7.preloadedImage = yield _this7.preloadImage(nextImageUrl);
+      } catch (error) {
+        console.error('Error preloading next image:', error);
+        _this7.preloadedImage = '';
       }
-      yield new Promise((resolve => setTimeout(resolve, 1e3 * _this7.crossfadeTime + TIMING_TRANSITION_BUFFER)));
-      _this7.isTransitioning = !1;
-      _this7.requestUpdate();
     }))();
   }
   setConfig(config) {
@@ -346,8 +367,8 @@ customElements.define('background-rotator', class extends LitElement {
     this.requestUpdate();
   }
   render() {
-    var _this$config, _this$config2;
-    return html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n      </div>\n    ' ])), this.error ? html(_templateObject3$4 || (_templateObject3$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.imageA, 'A' === this.activeImage ? 1 : 0, this.crossfadeTime, (null === (_this$config = this.config) || void 0 === _this$config ? void 0 : _this$config.image_fit) || DEFAULT_CONFIG.image_fit, this.imageB, 'B' === this.activeImage ? 1 : 0, this.crossfadeTime, (null === (_this$config2 = this.config) || void 0 === _this$config2 ? void 0 : _this$config2.image_fit) || DEFAULT_CONFIG.image_fit);
+    var _this$config, imageFit = (null === (_this$config = this.config) || void 0 === _this$config ? void 0 : _this$config.image_fit) || DEFAULT_CONFIG.image_fit;
+    return html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n      <div class="background-container">\n        ', '\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n        <div\n          class="background-image"\n          style="\n            background-image: url(\'', '\');\n            opacity: ', ';\n            transition-duration: ', 's;\n            background-size: ', ';\n          "\n        ></div>\n      </div>\n    ' ])), this.error ? html(_templateObject3$4 || (_templateObject3$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.imageA || '', 'A' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit, this.imageB || '', 'B' === this.activeImage ? 1 : 0, this.crossfadeTime, imageFit);
   }
   // Public methods for external control
   forceImageUpdate() {
