@@ -1,6 +1,5 @@
 // src/components/BackgroundRotator.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { backgroundStyles } from '../styles/background.js';
 import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG } from '../constants.js';
 
 export class BackgroundRotator extends LitElement {
