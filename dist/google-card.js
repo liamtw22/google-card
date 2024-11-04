@@ -80,14 +80,7 @@ function _taggedTemplateLiteral(e, t) {
   }));
 }
 
-var _templateObject$8, _templateObject$7, sharedStyles = css(_templateObject$8 || (_templateObject$8 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-small: 14px;\n    --font-size-regular: 16px;\n    --font-size-large: 18px;\n    --font-size-xlarge: 24px;\n    --font-size-xxlarge: 32px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-loose: 1.8;\n\n    /* Spacing */\n    --spacing-xxsmall: 4px;\n    --spacing-xsmall: 8px;\n    --spacing-small: 12px;\n    --spacing-medium: 16px;\n    --spacing-large: 24px;\n    --spacing-xlarge: 32px;\n    --spacing-xxlarge: 48px;\n\n    /* Borders */\n    --border-radius-small: 4px;\n    --border-radius-medium: 8px;\n    --border-radius-large: 16px;\n    --border-radius-xlarge: 24px;\n    --border-width-thin: 1px;\n    --border-width-regular: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-small: 0 2px 4px var(--color-shadow);\n    --shadow-medium: 0 4px 8px var(--color-shadow);\n    --shadow-large: 0 8px 16px var(--color-shadow);\n    --shadow-xlarge: 0 12px 24px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 0.15s;\n    --transition-duration-normal: 0.3s;\n    --transition-duration-slow: 0.5s;\n    --transition-timing: ease-in-out;\n\n    /* Z-index */\n    --z-index-base: 1;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-tooltip: 3000;\n    --z-index-maximum: 9999;\n\n    /* Component-specific */\n    --overlay-height: 120px;\n    --icon-size-small: 24px;\n    --icon-size-medium: 36px;\n    --icon-size-large: 48px;\n    --header-height: 60px;\n    --footer-height: 80px;\n  }\n\n  /* Base Styles */\n  * {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography Reset */\n  h1,\n  h2,\n  h3,\n  h4,\n  h5,\n  h6,\n  p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n  }\n\n  /* Common Text Styles */\n  .text-small {\n    font-size: var(--font-size-small);\n    line-height: var(--line-height-tight);\n  }\n\n  .text-regular {\n    font-size: var(--font-size-regular);\n    line-height: var(--line-height-normal);\n  }\n\n  .text-large {\n    font-size: var(--font-size-large);\n    line-height: var(--line-height-normal);\n  }\n\n  /* Common Layout Classes */\n  .flex {\n    display: flex;\n  }\n\n  .flex-column {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .flex-center {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n  }\n\n  .flex-between {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n  }\n\n  .flex-around {\n    display: flex;\n    justify-content: space-around;\n    align-items: center;\n  }\n\n  .flex-grow {\n    flex-grow: 1;\n  }\n\n  /* Common Spacing Classes */\n  .m-0 {\n    margin: 0;\n  }\n  .p-0 {\n    padding: 0;\n  }\n  .m-1 {\n    margin: var(--spacing-xsmall);\n  }\n  .p-1 {\n    padding: var(--spacing-xsmall);\n  }\n  .m-2 {\n    margin: var(--spacing-small);\n  }\n  .p-2 {\n    padding: var(--spacing-small);\n  }\n  .m-3 {\n    margin: var(--spacing-medium);\n  }\n  .p-3 {\n    padding: var(--spacing-medium);\n  }\n  .m-4 {\n    margin: var(--spacing-large);\n  }\n  .p-4 {\n    padding: var(--spacing-large);\n  }\n\n  /* Common Animation Classes */\n  .fade-in {\n    animation: fadeIn var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  .fade-out {\n    animation: fadeOut var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n    }\n    to {\n      opacity: 1;\n    }\n  }\n\n  @keyframes fadeOut {\n    from {\n      opacity: 1;\n    }\n    to {\n      opacity: 0;\n    }\n  }\n\n  /* Common Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  .no-select {\n    user-select: none;\n    -webkit-user-select: none;\n    -moz-user-select: none;\n    -ms-user-select: none;\n  }\n\n  /* Accessibility */\n  .screen-reader-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  /* Focus States */\n  :focus-visible {\n    outline: var(--border-width-regular) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-border: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    * {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Touch Device Optimization */\n  @media (hover: none) {\n    :host {\n      --spacing-small: 16px;\n      --spacing-medium: 20px;\n      --spacing-large: 28px;\n    }\n  }\n' ])));
-
-css(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n  :host {\n    display: block;\n    position: relative;\n    width: 100%;\n    height: 100%;\n    overflow: hidden;\n    background-color: black;\n  }\n\n  /* Background Container */\n  .background-container {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background-color: black;\n    z-index: 1;\n  }\n\n  /* Background Images */\n  .background-image {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background-size: contain;\n    background-position: center;\n    background-repeat: no-repeat;\n    will-change: opacity;\n    transition-property: opacity;\n    transition-timing-function: ease-in-out;\n  }\n\n  /* Image Fit Options */\n  .background-image.cover {\n    background-size: cover;\n  }\n\n  .background-image.contain {\n    background-size: contain;\n  }\n\n  .background-image.fill {\n    background-size: 100% 100%;\n  }\n\n  .background-image.scale-down {\n    background-size: contain;\n    background-position: center;\n  }\n\n  /* Loading States */\n  .background-image.loading {\n    opacity: 0;\n  }\n\n  .background-image.loaded {\n    opacity: 1;\n  }\n\n  /* Transition Effects */\n  .background-image.fade {\n    transition-duration: var(--crossfade-time, 3s);\n  }\n\n  .background-image.slide {\n    transition-property: opacity, transform;\n    transition-duration: var(--crossfade-time, 3s);\n  }\n\n  .background-image.slide.slide-left {\n    transform: translateX(-100%);\n  }\n\n  .background-image.slide.slide-right {\n    transform: translateX(100%);\n  }\n\n  /* Error States */\n  .error-message {\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    background-color: rgba(0, 0, 0, 0.8);\n    color: #ff4444;\n    padding: 1rem;\n    border-radius: 0.5rem;\n    font-size: 1rem;\n    text-align: center;\n    z-index: 2;\n    max-width: 80%;\n  }\n\n  /* Loading Indicator */\n  .loading-indicator {\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 50px;\n    height: 50px;\n    border: 3px solid rgba(255, 255, 255, 0.3);\n    border-radius: 50%;\n    border-top-color: #ffffff;\n    animation: spin 1s ease-in-out infinite;\n    z-index: 2;\n  }\n\n  @keyframes spin {\n    to {\n      transform: translate(-50%, -50%) rotate(360deg);\n    }\n  }\n\n  /* Overlay Gradients */\n  .background-overlay {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    z-index: 2;\n    pointer-events: none;\n  }\n\n  .gradient-top {\n    position: absolute;\n    top: 0;\n    left: 0;\n    right: 0;\n    height: 150px;\n    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);\n  }\n\n  .gradient-bottom {\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 150px;\n    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);\n  }\n\n  /* High DPI Screen Optimizations */\n  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {\n    .background-image {\n      transform: translateZ(0);\n      backface-visibility: hidden;\n    }\n  }\n\n  /* Reduced Motion Preferences */\n  @media (prefers-reduced-motion: reduce) {\n    .background-image {\n      transition-duration: 0.5s !important;\n    }\n  }\n\n  /* Dark Mode Adjustments */\n  @media (prefers-color-scheme: dark) {\n    .error-message {\n      background-color: rgba(255, 255, 255, 0.1);\n    }\n  }\n\n  /* Performance Optimizations */\n  .hardware-accelerated {\n    transform: translateZ(0);\n    will-change: transform;\n  }\n\n  /* Image Position Variants */\n  .background-image.top {\n    background-position: center top;\n  }\n\n  .background-image.bottom {\n    background-position: center bottom;\n  }\n\n  .background-image.left {\n    background-position: left center;\n  }\n\n  .background-image.right {\n    background-position: right center;\n  }\n\n  /* Filter Effects */\n  .background-image.blur {\n    filter: blur(5px);\n  }\n\n  .background-image.brightness {\n    filter: brightness(0.8);\n  }\n\n  .background-image.contrast {\n    filter: contrast(1.2);\n  }\n\n  /* Animation Classes */\n  .zoom-in {\n    animation: zoomIn 20s ease-in-out infinite;\n  }\n\n  .zoom-out {\n    animation: zoomOut 20s ease-in-out infinite;\n  }\n\n  .pan-left {\n    animation: panLeft 30s linear infinite;\n  }\n\n  .pan-right {\n    animation: panRight 30s linear infinite;\n  }\n\n  @keyframes zoomIn {\n    from {\n      transform: scale(1);\n    }\n    to {\n      transform: scale(1.1);\n    }\n  }\n\n  @keyframes zoomOut {\n    from {\n      transform: scale(1.1);\n    }\n    to {\n      transform: scale(1);\n    }\n  }\n\n  @keyframes panLeft {\n    from {\n      background-position: 100% center;\n    }\n    to {\n      background-position: 0% center;\n    }\n  }\n\n  @keyframes panRight {\n    from {\n      background-position: 0% center;\n    }\n    to {\n      background-position: 100% center;\n    }\n  }\n\n  /* Responsive Design */\n  @media screen and (max-width: 768px) {\n    .gradient-top,\n    .gradient-bottom {\n      height: 100px;\n    }\n  }\n\n  @media screen and (max-width: 480px) {\n    .gradient-top,\n    .gradient-bottom {\n      height: 75px;\n    }\n\n    .error-message {\n      font-size: 0.875rem;\n      padding: 0.75rem;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    .background-container {\n      display: none;\n    }\n  }\n\n  /* Accessibility */\n  @media (prefers-reduced-motion: reduce) {\n    .zoom-in,\n    .zoom-out,\n    .pan-left,\n    .pan-right {\n      animation: none;\n    }\n  }\n\n  /* Focus States */\n  :host(:focus-within) .background-container {\n    outline: 2px solid #ffffff;\n    outline-offset: -2px;\n  }\n\n  /* Error States */\n  :host([has-error]) .background-container {\n    background-color: #ff000020;\n  }\n' ])));
-
-/**
- * Timing Constants
- * Defines various timeouts and delays used throughout the application
- */ var _templateObject$6, TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_TRANSITION_BUFFER = 50, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS_GOOD = {
+var _templateObject$9, _templateObject$8, _templateObject$7, _templateObject2$4, _templateObject3$4, _templateObject$6, sharedStyles = css(_templateObject$9 || (_templateObject$9 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {\n    /* Colors */\n    --color-primary: #333333;\n    --color-primary-light: #666666;\n    --color-primary-dark: #000000;\n    --color-background: #ffffff;\n    --color-background-translucent: rgba(255, 255, 255, 0.95);\n    --color-error: #ff3b30;\n    --color-success: #34c759;\n    --color-warning: #ffcc00;\n    --color-text: #333333;\n    --color-text-secondary: #666666;\n    --color-border: #e0e0e0;\n    --color-shadow: rgba(0, 0, 0, 0.1);\n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    --font-weight-light: 300;\n    --font-weight-regular: 400;\n    --font-weight-medium: 500;\n    --font-weight-bold: 600;\n    --font-size-small: 14px;\n    --font-size-regular: 16px;\n    --font-size-large: 18px;\n    --font-size-xlarge: 24px;\n    --font-size-xxlarge: 32px;\n    --line-height-tight: 1.2;\n    --line-height-normal: 1.5;\n    --line-height-loose: 1.8;\n\n    /* Spacing */\n    --spacing-xxsmall: 4px;\n    --spacing-xsmall: 8px;\n    --spacing-small: 12px;\n    --spacing-medium: 16px;\n    --spacing-large: 24px;\n    --spacing-xlarge: 32px;\n    --spacing-xxlarge: 48px;\n\n    /* Borders */\n    --border-radius-small: 4px;\n    --border-radius-medium: 8px;\n    --border-radius-large: 16px;\n    --border-radius-xlarge: 24px;\n    --border-width-thin: 1px;\n    --border-width-regular: 2px;\n    --border-width-thick: 4px;\n\n    /* Shadows */\n    --shadow-small: 0 2px 4px var(--color-shadow);\n    --shadow-medium: 0 4px 8px var(--color-shadow);\n    --shadow-large: 0 8px 16px var(--color-shadow);\n    --shadow-xlarge: 0 12px 24px var(--color-shadow);\n\n    /* Transitions */\n    --transition-duration-fast: 0.15s;\n    --transition-duration-normal: 0.3s;\n    --transition-duration-slow: 0.5s;\n    --transition-timing: ease-in-out;\n\n    /* Z-index */\n    --z-index-base: 1;\n    --z-index-overlay: 1000;\n    --z-index-modal: 2000;\n    --z-index-tooltip: 3000;\n    --z-index-maximum: 9999;\n\n    /* Component-specific */\n    --overlay-height: 120px;\n    --icon-size-small: 24px;\n    --icon-size-medium: 36px;\n    --icon-size-large: 48px;\n    --header-height: 60px;\n    --footer-height: 80px;\n  }\n\n  /* Base Styles */\n  * {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n  }\n\n  /* Typography Reset */\n  h1,\n  h2,\n  h3,\n  h4,\n  h5,\n  h6,\n  p {\n    margin: 0;\n    font-weight: var(--font-weight-regular);\n  }\n\n  /* Common Text Styles */\n  .text-small {\n    font-size: var(--font-size-small);\n    line-height: var(--line-height-tight);\n  }\n\n  .text-regular {\n    font-size: var(--font-size-regular);\n    line-height: var(--line-height-normal);\n  }\n\n  .text-large {\n    font-size: var(--font-size-large);\n    line-height: var(--line-height-normal);\n  }\n\n  /* Common Layout Classes */\n  .flex {\n    display: flex;\n  }\n\n  .flex-column {\n    display: flex;\n    flex-direction: column;\n  }\n\n  .flex-center {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n  }\n\n  .flex-between {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n  }\n\n  .flex-around {\n    display: flex;\n    justify-content: space-around;\n    align-items: center;\n  }\n\n  .flex-grow {\n    flex-grow: 1;\n  }\n\n  /* Common Spacing Classes */\n  .m-0 {\n    margin: 0;\n  }\n  .p-0 {\n    padding: 0;\n  }\n  .m-1 {\n    margin: var(--spacing-xsmall);\n  }\n  .p-1 {\n    padding: var(--spacing-xsmall);\n  }\n  .m-2 {\n    margin: var(--spacing-small);\n  }\n  .p-2 {\n    padding: var(--spacing-small);\n  }\n  .m-3 {\n    margin: var(--spacing-medium);\n  }\n  .p-3 {\n    padding: var(--spacing-medium);\n  }\n  .m-4 {\n    margin: var(--spacing-large);\n  }\n  .p-4 {\n    padding: var(--spacing-large);\n  }\n\n  /* Common Animation Classes */\n  .fade-in {\n    animation: fadeIn var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  .fade-out {\n    animation: fadeOut var(--transition-duration-normal) var(--transition-timing);\n  }\n\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n    }\n    to {\n      opacity: 1;\n    }\n  }\n\n  @keyframes fadeOut {\n    from {\n      opacity: 1;\n    }\n    to {\n      opacity: 0;\n    }\n  }\n\n  /* Common Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n\n  .no-select {\n    user-select: none;\n    -webkit-user-select: none;\n    -moz-user-select: none;\n    -ms-user-select: none;\n  }\n\n  /* Accessibility */\n  .screen-reader-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n  }\n\n  /* Focus States */\n  :focus-visible {\n    outline: var(--border-width-regular) solid var(--color-primary);\n    outline-offset: var(--border-width-thin);\n  }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {\n    :host {\n      --color-primary: #ffffff;\n      --color-primary-light: #cccccc;\n      --color-primary-dark: #999999;\n      --color-background: #000000;\n      --color-background-translucent: rgba(0, 0, 0, 0.95);\n      --color-text: #ffffff;\n      --color-text-secondary: #cccccc;\n      --color-border: #333333;\n      --color-shadow: rgba(0, 0, 0, 0.3);\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --color-border: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    * {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n      scroll-behavior: auto !important;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    :host {\n      --color-primary: #000000;\n      --color-background: #ffffff;\n      --color-text: #000000;\n      --shadow-small: none;\n      --shadow-medium: none;\n      --shadow-large: none;\n      --shadow-xlarge: none;\n    }\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    direction: rtl;\n  }\n\n  /* Touch Device Optimization */\n  @media (hover: none) {\n    :host {\n      --spacing-small: 16px;\n      --spacing-medium: 20px;\n      --spacing-large: 28px;\n    }\n  }\n' ]))), backgroundStyles = css(_templateObject$8 || (_templateObject$8 = _taggedTemplateLiteral([ '\n  :host {\n    display: block;\n    position: relative;\n    width: 100%;\n    height: 100%;\n    overflow: hidden;\n    background-color: black;\n  }\n\n  /* Background Container */\n  .background-container {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background-color: black;\n    z-index: 1;\n  }\n\n  /* Background Images */\n  .background-image {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background-size: contain;\n    background-position: center;\n    background-repeat: no-repeat;\n    will-change: opacity;\n    transition-property: opacity;\n    transition-timing-function: ease-in-out;\n  }\n\n  /* Image Fit Options */\n  .background-image.cover {\n    background-size: cover;\n  }\n\n  .background-image.contain {\n    background-size: contain;\n  }\n\n  .background-image.fill {\n    background-size: 100% 100%;\n  }\n\n  .background-image.scale-down {\n    background-size: contain;\n    background-position: center;\n  }\n\n  /* Loading States */\n  .background-image.loading {\n    opacity: 0;\n  }\n\n  .background-image.loaded {\n    opacity: 1;\n  }\n\n  /* Transition Effects */\n  .background-image.fade {\n    transition-duration: var(--crossfade-time, 3s);\n  }\n\n  .background-image.slide {\n    transition-property: opacity, transform;\n    transition-duration: var(--crossfade-time, 3s);\n  }\n\n  .background-image.slide.slide-left {\n    transform: translateX(-100%);\n  }\n\n  .background-image.slide.slide-right {\n    transform: translateX(100%);\n  }\n\n  /* Error States */\n  .error-message {\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    background-color: rgba(0, 0, 0, 0.8);\n    color: #ff4444;\n    padding: 1rem;\n    border-radius: 0.5rem;\n    font-size: 1rem;\n    text-align: center;\n    z-index: 2;\n    max-width: 80%;\n  }\n\n  /* Loading Indicator */\n  .loading-indicator {\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 50px;\n    height: 50px;\n    border: 3px solid rgba(255, 255, 255, 0.3);\n    border-radius: 50%;\n    border-top-color: #ffffff;\n    animation: spin 1s ease-in-out infinite;\n    z-index: 2;\n  }\n\n  @keyframes spin {\n    to {\n      transform: translate(-50%, -50%) rotate(360deg);\n    }\n  }\n\n  /* Overlay Gradients */\n  .background-overlay {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    z-index: 2;\n    pointer-events: none;\n  }\n\n  .gradient-top {\n    position: absolute;\n    top: 0;\n    left: 0;\n    right: 0;\n    height: 150px;\n    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);\n  }\n\n  .gradient-bottom {\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 150px;\n    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);\n  }\n\n  /* High DPI Screen Optimizations */\n  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {\n    .background-image {\n      transform: translateZ(0);\n      backface-visibility: hidden;\n    }\n  }\n\n  /* Reduced Motion Preferences */\n  @media (prefers-reduced-motion: reduce) {\n    .background-image {\n      transition-duration: 0.5s !important;\n    }\n  }\n\n  /* Dark Mode Adjustments */\n  @media (prefers-color-scheme: dark) {\n    .error-message {\n      background-color: rgba(255, 255, 255, 0.1);\n    }\n  }\n\n  /* Performance Optimizations */\n  .hardware-accelerated {\n    transform: translateZ(0);\n    will-change: transform;\n  }\n\n  /* Image Position Variants */\n  .background-image.top {\n    background-position: center top;\n  }\n\n  .background-image.bottom {\n    background-position: center bottom;\n  }\n\n  .background-image.left {\n    background-position: left center;\n  }\n\n  .background-image.right {\n    background-position: right center;\n  }\n\n  /* Filter Effects */\n  .background-image.blur {\n    filter: blur(5px);\n  }\n\n  .background-image.brightness {\n    filter: brightness(0.8);\n  }\n\n  .background-image.contrast {\n    filter: contrast(1.2);\n  }\n\n  /* Animation Classes */\n  .zoom-in {\n    animation: zoomIn 20s ease-in-out infinite;\n  }\n\n  .zoom-out {\n    animation: zoomOut 20s ease-in-out infinite;\n  }\n\n  .pan-left {\n    animation: panLeft 30s linear infinite;\n  }\n\n  .pan-right {\n    animation: panRight 30s linear infinite;\n  }\n\n  @keyframes zoomIn {\n    from {\n      transform: scale(1);\n    }\n    to {\n      transform: scale(1.1);\n    }\n  }\n\n  @keyframes zoomOut {\n    from {\n      transform: scale(1.1);\n    }\n    to {\n      transform: scale(1);\n    }\n  }\n\n  @keyframes panLeft {\n    from {\n      background-position: 100% center;\n    }\n    to {\n      background-position: 0% center;\n    }\n  }\n\n  @keyframes panRight {\n    from {\n      background-position: 0% center;\n    }\n    to {\n      background-position: 100% center;\n    }\n  }\n\n  /* Responsive Design */\n  @media screen and (max-width: 768px) {\n    .gradient-top,\n    .gradient-bottom {\n      height: 100px;\n    }\n  }\n\n  @media screen and (max-width: 480px) {\n    .gradient-top,\n    .gradient-bottom {\n      height: 75px;\n    }\n\n    .error-message {\n      font-size: 0.875rem;\n      padding: 0.75rem;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    .background-container {\n      display: none;\n    }\n  }\n\n  /* Accessibility */\n  @media (prefers-reduced-motion: reduce) {\n    .zoom-in,\n    .zoom-out,\n    .pan-left,\n    .pan-right {\n      animation: none;\n    }\n  }\n\n  /* Focus States */\n  :host(:focus-within) .background-container {\n    outline: 2px solid #ffffff;\n    outline-offset: -2px;\n  }\n\n  /* Error States */\n  :host([has-error]) .background-container {\n    background-color: #ff000020;\n  }\n' ]))), TIMING_OVERLAY_DISMISS_TIMEOUT = 1e4, TIMING_LONG_PRESS_TIMEOUT = 1e3, TIMING_NIGHT_MODE_TRANSITION_DELAY = 100, BRIGHTNESS_DEFAULT = 128, BRIGHTNESS_MAX = 255, BRIGHTNESS_MIN = 1, BRIGHTNESS_DOTS = 10, BRIGHTNESS_NIGHT_MODE = 1, VOLUME_DEFAULT = 50, VOLUME_MAX = 100, VOLUME_MIN = 0, VOLUME_DOTS = 10, UI_SWIPE_THRESHOLD = 50, AQI_COLORS_GOOD = {
   max: 50,
   color: '#68a03a'
 }, AQI_COLORS_MODERATE = {
@@ -140,203 +133,152 @@ css(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n  :hos
   hour12: !0
 };
 
-/**
- * Brightness Constants
- * Defines brightness-related values and limits
- */ customElements.define('background-rotator', class extends LitElement {
-  static get properties() {
-    return {
-      imageA: {
-        type: String
-      },
-      imageB: {
-        type: String
-      },
-      activeImage: {
-        type: String
-      },
-      preloadedImage: {
-        type: String
-      },
-      isTransitioning: {
-        type: Boolean
-      },
-      crossfadeTime: {
-        type: Number
-      },
-      screenWidth: {
-        type: Number
-      },
-      screenHeight: {
-        type: Number
-      },
-      config: {
-        type: Object
-      },
-      error: {
-        type: String
-      },
-      imageList: {
-        type: Array
-      },
-      currentImageIndex: {
-        type: Number
+if (!customElements.get('background-rotator')) {
+  class BackgroundRotator extends LitElement {
+    static get properties() {
+      return {
+        config: {
+          type: Object
+        },
+        hass: {
+          type: Object
+        },
+        imageA: {
+          type: String
+        },
+        imageB: {
+          type: String
+        },
+        activeImage: {
+          type: String
+        },
+        preloadedImage: {
+          type: String
+        },
+        isTransitioning: {
+          type: Boolean
+        },
+        imageList: {
+          type: Array
+        },
+        currentImageIndex: {
+          type: Number
+        },
+        error: {
+          type: String
+        }
+      };
+    }
+    constructor() {
+      super();
+      this.initializeProperties();
+    }
+    initializeProperties() {
+      this.imageA = '';
+      this.imageB = '';
+      this.activeImage = 'A';
+      this.preloadedImage = '';
+      this.isTransitioning = !1;
+      this.imageList = [];
+      this.currentImageIndex = -1;
+      this.error = null;
+      this.updateTimer = null;
+    }
+    connectedCallback() {
+      super.connectedCallback();
+      this.startImageRotation();
+    }
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      this.clearTimers();
+    }
+    updated(changedProperties) {
+      changedProperties.has('config') && this.config && this.startImageRotation();
+    }
+    clearTimers() {
+      if (this.updateTimer) {
+        clearInterval(this.updateTimer);
+        this.updateTimer = null;
       }
-    };
+    }
+    startImageRotation() {
+      var _this = this;
+      return _asyncToGenerator((function*() {
+        var _this$config;
+        _this.clearTimers();
+        yield _this.updateImage();
+        _this.updateTimer = setInterval((() => {
+          _this.updateImage();
+        }), 1e3 * ((null === (_this$config = _this.config) || void 0 === _this$config ? void 0 : _this$config.display_time) || DEFAULT_CONFIG.display_time));
+      }))();
+    }
+    updateImage() {
+      var _this2 = this;
+      return _asyncToGenerator((function*() {
+        if (!_this2.isTransitioning && _this2.config) try {
+          var newImage = yield _this2.getNextImage();
+          newImage && (yield _this2.transitionToNewImage(newImage));
+        } catch (error) {
+          console.error('Error updating image:', error);
+          _this2.error = 'Error updating image: '.concat(error.message);
+          _this2.requestUpdate();
+        }
+      }))();
+    }
+    getNextImage() {
+      var _this3 = this;
+      return _asyncToGenerator((function*() {
+        return _this3.config.image_url ? _this3.config.image_url.startsWith('http') ? _this3.config.image_url.replace('${width}', window.innerWidth).replace('${height}', window.innerHeight).replace('${timestamp}', Date.now()) : (
+        // Handle media-source URLs if needed
+        _this3.config.image_url.startsWith('media-source://'), _this3.config.image_url) : null;
+      }))();
+    }
+    transitionToNewImage(newImage) {
+      var _this4 = this;
+      return _asyncToGenerator((function*() {
+        _this4.isTransitioning = !0;
+        var src;
+        try {
+          yield (src = newImage, new Promise(((resolve, reject) => {
+            var img = new Image;
+            img.onload = () => resolve(src);
+            img.onerror = () => reject(new Error('Failed to load image: '.concat(src)));
+            img.src = src;
+          })));
+          if ('A' === _this4.activeImage) {
+            _this4.imageB = newImage;
+            yield new Promise((resolve => setTimeout(resolve, 50)));
+            _this4.activeImage = 'B';
+          } else {
+            _this4.imageA = newImage;
+            yield new Promise((resolve => setTimeout(resolve, 50)));
+            _this4.activeImage = 'A';
+          }
+          yield new Promise((resolve => {
+            var _this4$config;
+            return setTimeout(resolve, 1e3 * ((null === (_this4$config = _this4.config) || void 0 === _this4$config ? void 0 : _this4$config.crossfade_time) || DEFAULT_CONFIG.crossfade_time));
+          }));
+        } catch (error) {
+          console.error('Image transition failed:', error);
+          _this4.error = error.message;
+        } finally {
+          _this4.isTransitioning = !1;
+          _this4.requestUpdate();
+        }
+      }))();
+    }
+    static get styles() {
+      return [ backgroundStyles, css(_templateObject$7 || (_templateObject$7 = _taggedTemplateLiteral([ '\n          :host {\n            display: block;\n            position: relative;\n            width: 100%;\n            height: 100%;\n            overflow: hidden;\n          }\n\n          .background-container {\n            position: absolute;\n            top: 0;\n            left: 0;\n            width: 100%;\n            height: 100%;\n            background-color: black;\n          }\n\n          .background-image {\n            position: absolute;\n            top: 0;\n            left: 0;\n            width: 100%;\n            height: 100%;\n            background-size: cover;\n            background-position: center;\n            background-repeat: no-repeat;\n            transition: opacity ', 's ease-in-out;\n          }\n\n          .error-message {\n            position: absolute;\n            top: 50%;\n            left: 50%;\n            transform: translate(-50%, -50%);\n            background-color: rgba(0, 0, 0, 0.8);\n            color: red;\n            padding: 1rem;\n            border-radius: 4px;\n          }\n        ' ])), (props => {
+        var _props$config;
+        return (null === (_props$config = props.config) || void 0 === _props$config ? void 0 : _props$config.crossfade_time) || DEFAULT_CONFIG.crossfade_time;
+      })) ];
+    }
+    render() {
+      return html(_templateObject2$4 || (_templateObject2$4 = _taggedTemplateLiteral([ '\n        <div class="background-container">\n          ', '\n          <div\n            class="background-image"\n            style="\n              background-image: url(\'', '\');\n              opacity: ', ';\n            "\n          ></div>\n          <div\n            class="background-image"\n            style="\n              background-image: url(\'', '\');\n              opacity: ', ';\n            "\n          ></div>\n        </div>\n      ' ])), this.error ? html(_templateObject3$4 || (_templateObject3$4 = _taggedTemplateLiteral([ '<div class="error-message">', '</div>' ])), this.error) : '', this.imageA, 'A' === this.activeImage ? 1 : 0, this.imageB, 'B' === this.activeImage ? 1 : 0);
+    }
   }
-  constructor() {
-    super();
-    this.attachShadow({
-      mode: 'open'
-    });
-    this.initializeProperties();
-    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
-  }
-  initializeProperties() {
-    this.imageA = '';
-    this.imageB = '';
-    this.activeImage = 'A';
-    this.preloadedImage = '';
-    this.isTransitioning = !1;
-    this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
-    this.screenWidth = window.innerWidth;
-    this.screenHeight = window.innerHeight;
-    this.error = null;
-    this.imageList = [];
-    this.currentImageIndex = -1;
-    this.imageUpdateInterval = null;
-    this.imageListUpdateInterval = null;
-  }
-  connectedCallback() {
-    window.addEventListener('resize', this.boundUpdateScreenSize);
-    this.startImageRotation();
-    this.render();
-  }
-  disconnectedCallback() {
-    window.removeEventListener('resize', this.boundUpdateScreenSize);
-    this.clearTimers();
-  }
-  clearTimers() {
-    this.imageUpdateInterval && clearInterval(this.imageUpdateInterval);
-    this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval);
-  }
-  updateScreenSize() {
-    var pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    this.render();
-  }
-  startImageRotation() {
-    var _this = this;
-    return _asyncToGenerator((function*() {
-      var _this$config;
-      yield _this.updateImage();
-      _this.imageUpdateInterval = setInterval((() => {
-        _this.updateImage();
-      }), 1e3 * ((null === (_this$config = _this.config) || void 0 === _this$config ? void 0 : _this$config.display_time) || DEFAULT_CONFIG.display_time));
-    }))();
-  }
-  updateImage() {
-    var _this2 = this;
-    return _asyncToGenerator((function*() {
-      if (!_this2.isTransitioning) try {
-        var newImage = yield _this2.getNextImage();
-        yield _this2.transitionToNewImage(newImage);
-        _this2.preloadNextImage();
-      } catch (error) {
-        console.error('Error updating image:', error);
-        _this2.error = 'Error updating image: '.concat(error.message);
-        _this2.render();
-      }
-    }))();
-  }
-  getNextImage() {
-    var _this3 = this;
-    return _asyncToGenerator((function*() {
-      if (_this3.preloadedImage) {
-        var image = _this3.preloadedImage;
-        _this3.preloadedImage = '';
-        return image;
-      }
-      if (0 === _this3.imageList.length) throw new Error('No images available');
-      _this3.currentImageIndex = (_this3.currentImageIndex + 1) % _this3.imageList.length;
-      return _this3.imageList[_this3.currentImageIndex];
-    }))();
-  }
-  preloadImage(url) {
-    return _asyncToGenerator((function*() {
-      return new Promise(((resolve, reject) => {
-        var img = new Image;
-        img.onload = () => resolve(url);
-        img.onerror = () => reject(new Error('Failed to load image: '.concat(url)));
-        img.src = url;
-      }));
-    }))();
-  }
-  preloadNextImage() {
-    var _this4 = this;
-    return _asyncToGenerator((function*() {
-      try {
-        var nextIndex = (_this4.currentImageIndex + 1) % _this4.imageList.length, nextImageUrl = _this4.imageList[nextIndex];
-        _this4.preloadedImage = yield _this4.preloadImage(nextImageUrl);
-      } catch (error) {
-        console.error('Error preloading next image:', error);
-        _this4.preloadedImage = '';
-      }
-    }))();
-  }
-  transitionToNewImage(newImage) {
-    var _this5 = this;
-    return _asyncToGenerator((function*() {
-      _this5.isTransitioning = !0;
-      if ('A' === _this5.activeImage) {
-        _this5.imageB = newImage;
-        yield new Promise((resolve => setTimeout(resolve, TIMING_TRANSITION_BUFFER)));
-        _this5.activeImage = 'B';
-      } else {
-        _this5.imageA = newImage;
-        yield new Promise((resolve => setTimeout(resolve, TIMING_TRANSITION_BUFFER)));
-        _this5.activeImage = 'A';
-      }
-      yield new Promise((resolve => setTimeout(resolve, 1e3 * _this5.crossfadeTime + TIMING_TRANSITION_BUFFER)));
-      _this5.isTransitioning = !1;
-      _this5.render();
-    }))();
-  }
-  getBackgroundSize() {
-    var _this$config2;
-    return (null === (_this$config2 = this.config) || void 0 === _this$config2 ? void 0 : _this$config2.image_fit) || DEFAULT_CONFIG.image_fit;
-  }
-  setImageList(list) {
-    this.imageList = list;
-    this.currentImageIndex = -1;
-    this.render();
-  }
-  setCrossfadeTime(time) {
-    this.crossfadeTime = time;
-    this.render();
-  }
-  setConfig(config) {
-    this.config = config;
-    this.render();
-  }
-  forceImageUpdate() {
-    var _this6 = this;
-    return _asyncToGenerator((function*() {
-      yield _this6.updateImage();
-    }))();
-  }
-  pauseRotation() {
-    this.clearTimers();
-  }
-  resumeRotation() {
-    this.startImageRotation();
-  }
-  render() {
-    var styles = '\n      :host {\n        display: block;\n        position: relative;\n        width: 100%;\n        height: 100%;\n        overflow: hidden;\n        background-color: black;\n      }\n\n      .background-container {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-color: black;\n        z-index: 1;\n      }\n\n      .background-image {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        background-size: '.concat(this.getBackgroundSize(), ';\n        background-position: center;\n        background-repeat: no-repeat;\n        will-change: opacity;\n        transition: opacity ').concat(this.crossfadeTime, 's ease-in-out;\n      }\n\n      .error-message {\n        position: absolute;\n        top: 50%;\n        left: 50%;\n        transform: translate(-50%, -50%);\n        background-color: rgba(0, 0, 0, 0.8);\n        color: #ff4444;\n        padding: 1rem;\n        border-radius: 0.5rem;\n        font-size: 1rem;\n        text-align: center;\n        z-index: 2;\n        max-width: 80%;\n      }\n    '), imageAOpacity = 'A' === this.activeImage ? 1 : 0, imageBOpacity = 'B' === this.activeImage ? 1 : 0;
-    this.shadowRoot.innerHTML = '\n      <style>'.concat(styles, '</style>\n      <div class="background-container">\n        ').concat(this.error ? '<div class="error-message">'.concat(this.error, '</div>') : '', '\n        <div\n          class="background-image"\n          style="background-image: url(\'').concat(this.imageA, '\'); opacity: ').concat(imageAOpacity, ';"\n        ></div>\n        <div\n          class="background-image"\n          style="background-image: url(\'').concat(this.imageB, '\'); opacity: ').concat(imageBOpacity, ';"\n        ></div>\n      </div>\n    ');
-  }
-});
+  customElements.define('background-rotator', BackgroundRotator);
+}
 
 var _templateObject$5, _templateObject2$3, _templateObject3$3, _templateObject4$2, _templateObject5$1, _templateObject$4, weatherStyles = css(_templateObject$6 || (_templateObject$6 = _taggedTemplateLiteral([ '\n  :host {\n    display: block;\n    position: relative;\n    font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;\n    -webkit-font-smoothing: antialiased;\n    -moz-osx-font-smoothing: grayscale;\n  }\n\n  /* Main Container */\n  .weather-component {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    color: white;\n    width: 100%;\n    max-width: 400px;\n    padding: 10px;\n    box-sizing: border-box;\n    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* Left Column - Date & Time */\n  .left-column {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-start;\n    overflow: hidden;\n  }\n\n  .date {\n    font-size: 25px;\n    margin-bottom: 5px;\n    font-weight: 400;\n    margin-left: 10px;\n    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    transition: font-size 0.3s ease;\n  }\n\n  .time {\n    font-size: 90px;\n    line-height: 1;\n    font-weight: 500;\n    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);\n    margin-left: 8px;\n    transition: font-size 0.3s ease;\n  }\n\n  /* Right Column - Weather & AQI */\n  .right-column {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    min-width: 120px;\n  }\n\n  /* Weather Info Section */\n  .weather-info {\n    display: flex;\n    align-items: center;\n    margin-top: 10px;\n    font-weight: 500;\n    margin-right: -5px;\n    transition: all 0.3s ease;\n  }\n\n  .weather-icon {\n    width: 50px;\n    height: 50px;\n    margin-right: 8px;\n    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));\n    transition: all 0.3s ease;\n  }\n\n  .weather-icon.loading {\n    opacity: 0.5;\n    animation: pulse 1.5s infinite;\n  }\n\n  .temperature {\n    font-size: 35px;\n    font-weight: 500;\n    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);\n    transition: font-size 0.3s ease;\n  }\n\n  /* AQI Section */\n  .aqi {\n    font-size: 20px;\n    padding: 7px 10px 5px;\n    border-radius: 8px;\n    font-weight: 500;\n    margin-top: 2px;\n    margin-left: 25px;\n    align-self: flex-end;\n    min-width: 70px;\n    text-align: center;\n    transition: all 0.3s ease;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* AQI Color Classes */\n  .aqi.good {\n    background-color: #68a03a;\n  }\n\n  .aqi.moderate {\n    background-color: #f9bf33;\n  }\n\n  .aqi.unhealthy-sensitive {\n    background-color: #f47c06;\n  }\n\n  .aqi.unhealthy {\n    background-color: #c43828;\n  }\n\n  .aqi.very-unhealthy {\n    background-color: #ab1457;\n  }\n\n  .aqi.hazardous {\n    background-color: #83104c;\n  }\n\n  /* Loading States */\n  @keyframes pulse {\n    0% {\n      opacity: 0.5;\n    }\n    50% {\n      opacity: 0.8;\n    }\n    100% {\n      opacity: 0.5;\n    }\n  }\n\n  .loading {\n    opacity: 0.7;\n    animation: pulse 1.5s infinite;\n  }\n\n  /* Error States */\n  .error-message {\n    background-color: rgba(255, 59, 48, 0.9);\n    color: white;\n    padding: 8px 12px;\n    border-radius: 6px;\n    font-size: 14px;\n    margin-top: 8px;\n    text-align: center;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n  }\n\n  /* Weather Description */\n  .weather-description {\n    font-size: 16px;\n    margin-top: 4px;\n    opacity: 0.9;\n    text-align: right;\n  }\n\n  /* Hover Effects */\n  .weather-info:hover .weather-icon {\n    transform: scale(1.1);\n  }\n\n  .aqi:hover {\n    transform: translateY(-2px);\n    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);\n  }\n\n  /* Animations */\n  @keyframes fadeIn {\n    from {\n      opacity: 0;\n      transform: translateY(10px);\n    }\n    to {\n      opacity: 1;\n      transform: translateY(0);\n    }\n  }\n\n  .fade-in {\n    animation: fadeIn 0.3s ease forwards;\n  }\n\n  /* Responsive Design */\n  @media (max-width: 480px) {\n    .weather-component {\n      padding: 8px;\n      max-width: 100%;\n    }\n\n    .date {\n      font-size: 20px;\n      margin-left: 8px;\n    }\n\n    .time {\n      font-size: 70px;\n      margin-left: 6px;\n    }\n\n    .weather-icon {\n      width: 40px;\n      height: 40px;\n    }\n\n    .temperature {\n      font-size: 28px;\n    }\n\n    .aqi {\n      font-size: 16px;\n      padding: 5px 8px 4px;\n      margin-left: 15px;\n      min-width: 60px;\n    }\n  }\n\n  @media (max-width: 360px) {\n    .date {\n      font-size: 18px;\n    }\n\n    .time {\n      font-size: 60px;\n    }\n\n    .weather-icon {\n      width: 35px;\n      height: 35px;\n    }\n\n    .temperature {\n      font-size: 24px;\n    }\n\n    .aqi {\n      font-size: 14px;\n      min-width: 50px;\n    }\n  }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {\n    .weather-component {\n      text-shadow: none;\n    }\n\n    .aqi {\n      border: 2px solid rgba(255, 255, 255, 0.8);\n    }\n  }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {\n    .weather-info:hover .weather-icon {\n      transform: none;\n    }\n\n    .aqi:hover {\n      transform: none;\n    }\n\n    .loading {\n      animation: none;\n      opacity: 0.7;\n    }\n  }\n\n  /* Print Styles */\n  @media print {\n    .weather-component {\n      color: black;\n      text-shadow: none;\n    }\n\n    .aqi {\n      print-color-adjust: exact;\n      -webkit-print-color-adjust: exact;\n    }\n  }\n\n  /* Dark Mode Adjustments */\n  @media (prefers-color-scheme: dark) {\n    .error-message {\n      background-color: rgba(255, 59, 48, 0.7);\n    }\n  }\n\n  /* Focus States for Accessibility */\n  :host(:focus-within) {\n    outline: 2px solid white;\n    outline-offset: 2px;\n  }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {\n    .left-column {\n      align-items: flex-end;\n    }\n\n    .right-column {\n      align-items: flex-start;\n    }\n\n    .date,\n    .time {\n      margin-left: 0;\n      margin-right: 10px;\n    }\n\n    .aqi {\n      margin-left: 0;\n      margin-right: 25px;\n    }\n\n    .weather-info {\n      margin-right: 0;\n      margin-left: -5px;\n    }\n  }\n\n  /* Utility Classes */\n  .hidden {\n    display: none !important;\n  }\n\n  .invisible {\n    visibility: hidden !important;\n  }\n\n  .no-wrap {\n    white-space: nowrap;\n  }\n\n  .truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n' ])));
 
