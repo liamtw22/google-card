@@ -16,7 +16,7 @@ export class BackgroundRotator extends LitElement {
       config: { type: Object },
       error: { type: String },
       imageList: { type: Array },
-      currentImageIndex: { type: Number }
+      currentImageIndex: { type: Number },
     };
   }
 
