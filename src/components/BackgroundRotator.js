@@ -22,6 +22,7 @@ export class BackgroundRotator extends LitElement {
 
   constructor() {
     super();
+    this.attachShadow({ mode: 'open' });
     this.initializeProperties();
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
@@ -42,36 +43,27 @@ export class BackgroundRotator extends LitElement {
     this.imageListUpdateInterval = null;
   }
 
-  static get styles() {
-    return backgroundStyles;
-  }
-
   connectedCallback() {
-    super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
     this.startImageRotation();
+    this.render();
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
     this.clearTimers();
   }
 
   clearTimers() {
-    if (this.imageUpdateInterval) {
-      clearInterval(this.imageUpdateInterval);
-    }
-    if (this.imageListUpdateInterval) {
-      clearInterval(this.imageListUpdateInterval);
-    }
+    if (this.imageUpdateInterval) clearInterval(this.imageUpdateInterval);
+    if (this.imageListUpdateInterval) clearInterval(this.imageListUpdateInterval);
   }
 
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
     this.screenWidth = Math.round(window.innerWidth * pixelRatio);
     this.screenHeight = Math.round(window.innerHeight * pixelRatio);
-    this.requestUpdate();
+    this.render();
   }
 
   async startImageRotation() {
@@ -90,7 +82,7 @@ export class BackgroundRotator extends LitElement {
     } catch (error) {
       console.error('Error updating image:', error);
       this.error = `Error updating image: ${error.message}`;
-      this.requestUpdate();
+      this.render();
     }
   }
 
@@ -132,75 +124,40 @@ export class BackgroundRotator extends LitElement {
 
     if (this.activeImage === 'A') {
       this.imageB = newImage;
-      await this.updateComplete;
-      await new Promise((resolve) => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
+      await new Promise(resolve => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
       this.activeImage = 'B';
     } else {
       this.imageA = newImage;
-      await this.updateComplete;
-      await new Promise((resolve) => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
+      await new Promise(resolve => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
       this.activeImage = 'A';
     }
 
-    await new Promise((resolve) =>
+    await new Promise(resolve =>
       setTimeout(resolve, this.crossfadeTime * 1000 + TIMING.TRANSITION_BUFFER)
     );
 
     this.isTransitioning = false;
-    this.requestUpdate();
+    this.render();
   }
 
   getBackgroundSize() {
     return this.config?.image_fit || DEFAULT_CONFIG.image_fit;
   }
 
-  getImageStyle(image, opacity) {
-    return {
-      'background-image': `url('${image}')`,
-      opacity,
-      'background-size': this.getBackgroundSize(),
-      transition: `opacity ${this.crossfadeTime}s ease-in-out`,
-    };
-  }
-
-  styleMap(styles) {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('; ');
-  }
-
-  render() {
-    const imageAOpacity = this.activeImage === 'A' ? 1 : 0;
-    const imageBOpacity = this.activeImage === 'B' ? 1 : 0;
-    return html`
-      <div class="background-container">
-        ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
-        <div
-          class="background-image"
-          style="${this.styleMap(this.getImageStyle(this.imageA, imageAOpacity))}"
-        ></div>
-        <div
-          class="background-image"
-          style="${this.styleMap(this.getImageStyle(this.imageB, imageBOpacity))}"
-        ></div>
-      </div>
-    `;
-  }
-
   setImageList(list) {
     this.imageList = list;
     this.currentImageIndex = -1;
-    this.requestUpdate();
+    this.render();
   }
 
   setCrossfadeTime(time) {
     this.crossfadeTime = time;
-    this.requestUpdate();
+    this.render();
   }
 
   setConfig(config) {
     this.config = config;
-    this.requestUpdate();
+    this.render();
   }
 
   async forceImageUpdate() {
@@ -215,20 +172,73 @@ export class BackgroundRotator extends LitElement {
     this.startImageRotation();
   }
 
-  handleError(error) {
-    this.error = error.message;
-    this.requestUpdate();
-    const errorEvent = new CustomEvent('background-error', {
-      detail: { error },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(errorEvent);
-  }
+  render() {
+    const styles = `
+      :host {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: black;
+      }
 
-  clearError() {
-    this.error = null;
-    this.requestUpdate();
+      .background-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        z-index: 1;
+      }
+
+      .background-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: ${this.getBackgroundSize()};
+        background-position: center;
+        background-repeat: no-repeat;
+        will-change: opacity;
+        transition: opacity ${this.crossfadeTime}s ease-in-out;
+      }
+
+      .error-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #ff4444;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        text-align: center;
+        z-index: 2;
+        max-width: 80%;
+      }
+    `;
+
+    const imageAOpacity = this.activeImage === 'A' ? 1 : 0;
+    const imageBOpacity = this.activeImage === 'B' ? 1 : 0;
+
+    this.shadowRoot.innerHTML = `
+      <style>${styles}</style>
+      <div class="background-container">
+        ${this.error ? `<div class="error-message">${this.error}</div>` : ''}
+        <div
+          class="background-image"
+          style="background-image: url('${this.imageA}'); opacity: ${imageAOpacity};"
+        ></div>
+        <div
+          class="background-image"
+          style="background-image: url('${this.imageB}'); opacity: ${imageBOpacity};"
+        ></div>
+      </div>
+    `;
   }
 }
 
