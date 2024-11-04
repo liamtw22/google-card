@@ -1,9 +1,9 @@
 // Google Card for Home Assistant
 // MIT License
 
-import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { css, LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 
-import { css, LitElement as LitElement$1, html as html$1 } from 'lit-element';
+import { LitElement as LitElement$1, html as html$1 } from 'lit-element';
 
 function asyncGeneratorStep(n, t, e, r, o, a, c) {
   try {
