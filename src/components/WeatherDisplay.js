@@ -2,11 +2,13 @@
 import { LitElement, html } from 'lit-element';
 import { weatherStyles } from '../styles/weather.js';
 import {
-  ENTITIES,
-  WEATHER_ICONS,
+  UI,
   AQI_COLORS,
+  WEATHER_ICONS,
+  ENTITIES,
   DATE_FORMAT_OPTIONS,
   TIME_FORMAT_OPTIONS,
+  CSS_CLASSES,
 } from '../constants.js';
 
 export class WeatherDisplay extends LitElement {
