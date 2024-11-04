@@ -80,6 +80,8 @@ export class BackgroundRotator extends LitElement {
           will-change: opacity;
           transition-property: opacity;
           transition-timing-function: ease-in-out;
+          transform: translateZ(0);
+          backface-visibility: hidden;
         }
 
         .error-message {
@@ -104,7 +106,7 @@ export class BackgroundRotator extends LitElement {
     super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
     await this.initializeImageList();
-    this.startImageRotation();
+    await this.startImageRotation();
   }
 
   disconnectedCallback() {
@@ -150,19 +152,27 @@ export class BackgroundRotator extends LitElement {
   }
 
   async startImageRotation() {
-    await this.updateImage();
-    this.imageUpdateInterval = setInterval(() => {
-      this.updateImage();
-    }, (this.config?.display_time || DEFAULT_CONFIG.display_time) * 1000);
+    try {
+      await this.updateImage(); // Initial image load
+      this.imageUpdateInterval = setInterval(async () => {
+        await this.updateImage();
+      }, (this.config?.display_time || DEFAULT_CONFIG.display_time) * 1000);
+    } catch (error) {
+      console.error('Error starting image rotation:', error);
+      this.error = 'Error starting image rotation';
+      this.requestUpdate();
+    }
   }
 
   async updateImage() {
     if (this.isTransitioning) return;
+    
     try {
       const newImage = await this.getNextImage();
-      await this.transitionToNewImage(newImage);
-      this.preloadNextImage();
-      this.error = null;
+      if (newImage) {
+        await this.transitionToNewImage(newImage);
+        await this.preloadNextImage();
+      }
     } catch (error) {
       console.error('Error updating image:', error);
       this.error = `Error updating image: ${error.message}`;
@@ -171,27 +181,36 @@ export class BackgroundRotator extends LitElement {
   }
 
   async getNextImage() {
-    if (!this.imageList || this.imageList.length === 0) {
-      if (this.config?.image_url) {
-        const imageUrl = this.getImageUrl(this.config.image_url);
-        this.imageList = [imageUrl];
-      } else {
-        throw new Error('No image URL configured');
-      }
-    }
-
+    // First check preloaded image
     if (this.preloadedImage) {
       const image = this.preloadedImage;
       this.preloadedImage = '';
       return image;
     }
 
+    // If no image list, try to get image URL
+    if (!this.imageList || this.imageList.length === 0) {
+      if (!this.config?.image_url) {
+        throw new Error('No image URL configured');
+      }
+      const imageUrl = this.getImageUrl(this.config.image_url);
+      this.imageList = [imageUrl];
+      this.currentImageIndex = -1;
+    }
+
+    // Get next image and preload it
     this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-    const nextImage = this.imageList[this.currentImageIndex];
-    return this.preloadImage(nextImage);
+    const nextImageUrl = this.getImageUrl(this.config.image_url);
+    try {
+      await this.preloadImage(nextImageUrl);
+      return nextImageUrl;
+    } catch (error) {
+      throw new Error(`Failed to load image: ${nextImageUrl}`);
+    }
   }
 
   async preloadImage(url) {
+    if (!url) return null;
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(url);
@@ -200,36 +219,45 @@ export class BackgroundRotator extends LitElement {
     });
   }
 
-  async preloadNextImage() {
+  async transitionToNewImage(newImage) {
+    this.isTransitioning = true;
+
     try {
-      const nextIndex = (this.currentImageIndex + 1) % this.imageList.length;
-      const nextImageUrl = this.imageList[nextIndex];
+      // Set new image
+      if (this.activeImage === 'A') {
+        this.imageB = newImage;
+      } else {
+        this.imageA = newImage;
+      }
+
+      // Force a reflow before changing opacity
+      this.requestUpdate();
+      await this.updateComplete;
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Switch active image
+      this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
+      this.requestUpdate();
+
+      // Wait for transition to complete
+      await new Promise(resolve => 
+        setTimeout(resolve, (this.crossfadeTime * 1000) + 50)
+      );
+    } finally {
+      this.isTransitioning = false;
+    }
+  }
+
+  async preloadNextImage() {
+    if (!this.config?.image_url) return;
+    
+    try {
+      const nextImageUrl = this.getImageUrl(this.config.image_url);
       this.preloadedImage = await this.preloadImage(nextImageUrl);
     } catch (error) {
       console.error('Error preloading next image:', error);
       this.preloadedImage = '';
     }
-  }
-
-  async transitionToNewImage(newImage) {
-    this.isTransitioning = true;
-
-    if (this.activeImage === 'A') {
-      this.imageB = newImage;
-      await new Promise(resolve => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
-      this.activeImage = 'B';
-    } else {
-      this.imageA = newImage;
-      await new Promise(resolve => setTimeout(resolve, TIMING.TRANSITION_BUFFER));
-      this.activeImage = 'A';
-    }
-
-    await new Promise(resolve =>
-      setTimeout(resolve, this.crossfadeTime * 1000 + TIMING.TRANSITION_BUFFER)
-    );
-
-    this.isTransitioning = false;
-    this.requestUpdate();
   }
 
   setConfig(config) {
@@ -240,25 +268,27 @@ export class BackgroundRotator extends LitElement {
   }
 
   render() {
+    const imageFit = this.config?.image_fit || DEFAULT_CONFIG.image_fit;
+    
     return html`
       <div class="background-container">
         ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
         <div
           class="background-image"
           style="
-            background-image: url('${this.imageA}');
+            background-image: url('${this.imageA || ''}');
             opacity: ${this.activeImage === 'A' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
-            background-size: ${this.config?.image_fit || DEFAULT_CONFIG.image_fit};
+            background-size: ${imageFit};
           "
         ></div>
         <div
           class="background-image"
           style="
-            background-image: url('${this.imageB}');
+            background-image: url('${this.imageB || ''}');
             opacity: ${this.activeImage === 'B' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
-            background-size: ${this.config?.image_fit || DEFAULT_CONFIG.image_fit};
+            background-size: ${imageFit};
           "
         ></div>
       </div>
