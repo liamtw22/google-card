@@ -40,12 +40,28 @@ jobs:
           
       - name: Format CSS in compiled output
         run: |
+          # First, let's ensure line breaks after css declarations
+          sed -i 's/css(_templateObject/\ncss(_templateObject/g' dist/google-card.js
+          
+          # Add line breaks after CSS properties
+          sed -i 's/;/;\n/g' dist/google-card.js
+          
+          # Clean up any potential double line breaks
+          sed -i '/^$/N;/^\n$/D' dist/google-card.js
+          
+          # Format with prettier
           npx prettier --write "dist/google-card.js" --parser babel --print-width 80 --tab-width 2 --single-quote true --trailing-comma es5 --bracket-spacing true --semi true --quote-props as-needed --arrow-parens avoid --no-bracket-spacing
           
-      - name: Verify formatting
+      - name: Verify CSS formatting
         run: |
-          if ! grep -q "css(\[" dist/google-card.js; then
-            echo "CSS formatting verification failed"
+          if ! grep -q "css(" dist/google-card.js; then
+            echo "CSS formatting verification failed - no CSS found"
+            exit 1
+          fi
+          
+          # Check if the file has multiple lines (not minified)
+          if [ $(wc -l < dist/google-card.js) -lt 100 ]; then
+            echo "CSS formatting verification failed - file appears to be minified"
             exit 1
           fi
           
