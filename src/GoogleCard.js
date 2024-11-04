@@ -1,12 +1,12 @@
 // src/GoogleCard.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 import { sharedStyles } from './styles/shared.js';
 import './components/BackgroundRotator.js';
 import './components/WeatherDisplay.js';
 import './components/NightMode.js';
 import './components/Controls.js';
 import { DEFAULT_CONFIG } from './constants.js';
+import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
 export class GoogleCard extends LitElement {
   static get properties() {
@@ -26,20 +26,25 @@ export class GoogleCard extends LitElement {
       lastBrightnessUpdateTime: { type: Number },
       previousBrightness: { type: Number },
       touchStartY: { type: Number },
-      longPressTimer: { type: Number }
+      longPressTimer: { type: Number },
+      screenWidth: { type: Number },
+      screenHeight: { type: Number }
     };
   }
 
   constructor() {
     super();
     this.initializeProperties();
-    // Bind methods
-    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    this.bindMethods();
+  }
+
+  bindMethods() {
     this.handleTouchStart = this.handleTouchStart.bind(this);
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
     this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleScreenSizeUpdate = this.handleScreenSizeUpdate.bind(this);
   }
 
   initializeProperties() {
@@ -47,7 +52,7 @@ export class GoogleCard extends LitElement {
     this.debugInfo = {};
     this.showDebugInfo = false;
     this.isNightMode = false;
-    this.brightness = 128; // Default brightness
+    this.brightness = 128;
     this.visualBrightness = 128;
     this.showBrightnessCard = false;
     this.brightnessCardTransition = 'none';
@@ -61,223 +66,8 @@ export class GoogleCard extends LitElement {
     this.brightnessCardDismissTimer = null;
     this.brightnessUpdateTimer = null;
     this.brightnessStabilizeTimer = null;
-  }
-
-  static get styles() {
-    return [
-      sharedStyles,
-      css`
-        :host {
-          --crossfade-time: 3s;
-          --overlay-height: 120px;
-          display: block;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          z-index: 1;
-          font-family: "Product Sans Regular", sans-serif;
-          font-weight: 400;
-        }
-
-        weather-display {
-          position: fixed;
-          bottom: 30px;
-          left: 30px;
-          z-index: 2;
-        }
-
-        .overlay {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: var(--overlay-height);
-          background-color: rgba(255, 255, 255, 0.95);
-          color: #333;
-          box-sizing: border-box;
-          transition: transform 0.3s ease-in-out;
-          transform: translateY(100%);
-          z-index: 4;
-          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          border-top-left-radius: 20px;
-          border-top-right-radius: 20px;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-
-        .overlay.show {
-          transform: translateY(0);
-        }
-
-        .icon-container {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .icon-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          width: 85%;
-          max-width: 500px;
-        }
-
-        .icon-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #333;
-          padding: 10px;
-          border-radius: 50%;
-          transition: background-color 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .icon-button:hover {
-          background-color: rgba(0, 0, 0, 0.1);
-        }
-
-        iconify-icon {
-          font-size: 50px;
-          display: block;
-          width: 50px;
-          height: 50px;
-        }
-
-        .brightness-card {
-          position: fixed;
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
-          background-color: rgba(255, 255, 255, 0.95);
-          border-radius: 20px;
-          padding: 40px 20px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          z-index: 3;
-          transform: translateY(calc(100% + 20px));
-          transition: transform 0.3s ease-in-out;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          max-width: 600px;
-          margin: 0 auto;
-        }
-
-        .brightness-card.show {
-          transform: translateY(0);
-        }
-
-        .brightness-control {
-          display: flex;
-          align-items: center;
-          width: 100%;
-        }
-
-        .brightness-dots-container {
-          flex-grow: 1;
-          margin-right: 10px;
-          padding: 0 10px;
-        }
-
-        .brightness-dots {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 30px;
-        }
-
-        .brightness-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background-color: #d1d1d1;
-          transition: background-color 0.2s ease;
-          cursor: pointer;
-        }
-
-        .brightness-dot.active {
-          background-color: #333;
-          transform: scale(1.1);
-        }
-
-        .brightness-value {
-          min-width: 60px;
-          text-align: right;
-          font-size: 40px;
-          color: black;
-          font-weight: 300;
-          margin-right: 20px;
-        }
-
-        .debug-info {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.7);
-          color: white;
-          padding: 16px;
-          font-size: 14px;
-          z-index: 10;
-          max-width: 80%;
-          max-height: 80%;
-          overflow: auto;
-          border-radius: 8px;
-        }
-
-        @media (max-width: 768px) {
-          .icon-row {
-            width: 95%;
-          }
-
-          .brightness-card {
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            padding: 30px 15px;
-          }
-
-          .brightness-value {
-            font-size: 32px;
-            min-width: 50px;
-            margin-right: 15px;
-          }
-        }
-
-        @media (prefers-color-scheme: dark) {
-          .overlay,
-          .brightness-card {
-            background-color: rgba(30, 30, 30, 0.95);
-          }
-
-          .icon-button {
-            color: white;
-          }
-
-          .brightness-dot {
-            background-color: #666;
-          }
-
-          .brightness-dot.active {
-            background-color: white;
-          }
-
-          .brightness-value {
-            color: white;
-          }
-        }
-      `
-    ];
+    this.screenWidth = window.innerWidth;
+    this.screenHeight = window.innerHeight;
   }
 
   setConfig(config) {
@@ -286,7 +76,12 @@ export class GoogleCard extends LitElement {
     }
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.showDebugInfo = this.config.show_debug;
-    this.debugInfo.config = this.config;
+    this.debugInfo = {
+      config: this.config,
+      screenWidth: this.screenWidth,
+      screenHeight: this.screenHeight,
+      devicePixelRatio: window.devicePixelRatio || 1
+    };
   }
 
   connectedCallback() {
@@ -295,6 +90,7 @@ export class GoogleCard extends LitElement {
     this.addEventListener('touchstart', this.handleTouchStart);
     this.addEventListener('touchmove', this.handleTouchMove);
     this.addEventListener('touchend', this.handleTouchEnd);
+    this.addEventListener('screen-size-update', this.handleScreenSizeUpdate);
   }
 
   disconnectedCallback() {
@@ -303,7 +99,19 @@ export class GoogleCard extends LitElement {
     this.removeEventListener('touchstart', this.handleTouchStart);
     this.removeEventListener('touchmove', this.handleTouchMove);
     this.removeEventListener('touchend', this.handleTouchEnd);
+    this.removeEventListener('screen-size-update', this.handleScreenSizeUpdate);
     this.clearAllTimers();
+  }
+
+  handleScreenSizeUpdate(e) {
+    this.screenWidth = e.detail.width;
+    this.screenHeight = e.detail.height;
+    this.debugInfo = {
+      ...this.debugInfo,
+      screenWidth: this.screenWidth,
+      screenHeight: this.screenHeight
+    };
+    this.requestUpdate();
   }
 
   clearAllTimers() {
@@ -317,17 +125,11 @@ export class GoogleCard extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
-      if (timeSinceLastUpdate > 2000) { // 2 seconds stabilization delay
+      if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
         this.updateBrightness();
       }
     }
-  }
-
-  updateScreenSize() {
-    const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
   }
 
   async updateBrightnessValue(value) {
@@ -432,23 +234,6 @@ export class GoogleCard extends LitElement {
     this.touchStartY = null;
   }
 
-  handleBrightnessChange(e) {
-    const clickedDot = e.target.closest('.brightness-dot');
-    if (!clickedDot) return;
-
-    const newBrightness = parseInt(clickedDot.dataset.value);
-    this.updateBrightnessValue(newBrightness * 25.5);
-  }
-
-  async handleBrightnessDrag(e) {
-    const container = this.shadowRoot.querySelector('.brightness-dots');
-    const rect = container.getBoundingClientRect();
-    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
-    const newValue = Math.round((relativeX / rect.width) * 10);
-    await this.updateBrightnessValue(newValue * 25.5);
-  }
-
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
@@ -529,6 +314,28 @@ export class GoogleCard extends LitElement {
     return Math.round(this.visualBrightness / 25.5);
   }
 
+  renderDebugInfo() {
+    if (!this.showDebugInfo) return null;
+    
+    return html`
+      <div class="debug-info">
+        <h2>Background Card Debug Info</h2>
+        <h3>Background Card Version: 23</h3>
+        <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
+        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
+        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
+        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
+        <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness}</p>
+        <p><strong>Current Brightness:</strong> ${this.brightness}</p>
+        <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
+        <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
+        <p><strong>Error:</strong> ${this.error}</p>
+        <h3>Config:</h3>
+        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+      </div>
+    `;
+  }
+
   renderOverlay() {
     return html`
       <div class="overlay ${this.showOverlay ? 'show' : ''}">
@@ -560,6 +367,7 @@ export class GoogleCard extends LitElement {
 
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
+    
     return html`
       <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" 
            style="transition: ${this.brightnessCardTransition}">
@@ -584,26 +392,214 @@ export class GoogleCard extends LitElement {
     `;
   }
 
-  renderDebugInfo() {
-    if (!this.showDebugInfo) return null;
-    
-    return html`
-      <div class="debug-info">
-        <h2>Background Card Debug Info</h2>
-        <h3>Background Card Version: 23</h3>
-        <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
-        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
-        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
-        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
-        <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness}</p>
-        <p><strong>Current Brightness:</strong> ${this.brightness}</p>
-        <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
-        <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
-        <p><strong>Error:</strong> ${this.error}</p>
-        <h3>Config:</h3>
-        <pre>${JSON.stringify(this.config, null, 2)}</pre>
-      </div>
-    `;
+  static get styles() {
+    return [
+      sharedStyles,
+      css`
+        :host {
+          --crossfade-time: 3s;
+          --overlay-height: 120px;
+          display: block;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 1;
+          font-family: var(--font-family-primary);
+          font-weight: var(--font-weight-regular);
+        }
+
+        .debug-info {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: var(--spacing-4);
+          border-radius: var(--border-radius-lg);
+          font-size: var(--font-size-sm);
+          z-index: var(--z-index-overlay);
+          max-width: 80%;
+          max-height: 80%;
+          overflow: auto;
+        }
+
+        .debug-info h2,
+        .debug-info h3 {
+          margin-bottom: var(--spacing-2);
+        }
+
+        .debug-info p {
+          margin-bottom: var(--spacing-1);
+        }
+
+        .debug-info pre {
+          margin-top: var(--spacing-2);
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+
+        .overlay {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: var(--overlay-height);
+          background-color: var(--color-background-translucent);
+          color: var(--color-text);
+          box-sizing: border-box;
+          transition: transform var(--transition-duration-normal) var(--transition-timing-default);
+          transform: translateY(100%);
+          z-index: var(--z-index-floating);
+          box-shadow: var(--shadow-lg);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          border-top-left-radius: var(--border-radius-lg);
+          border-top-right-radius: var(--border-radius-lg);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .overlay.show {
+          transform: translateY(0);
+        }
+
+        .icon-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .icon-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 85%;
+          max-width: 500px;
+        }
+
+        .icon-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--color-text);
+          padding: var(--spacing-2);
+          border-radius: 50%;
+          transition: background-color var(--transition-duration-fast) var(--transition-timing-default);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .icon-button:hover {
+          background-color: var(--color-overlay);
+        }
+
+        iconify-icon {
+          font-size: 50px;
+          display: block;
+          width: 50px;
+          height: 50px;
+        }
+
+        .brightness-card {
+          position: fixed;
+          bottom: var(--spacing-5);
+          left: var(--spacing-5);
+          right: var(--spacing-5);
+          background-color: var(--color-background-translucent);
+          border-radius: var(--border-radius-lg);
+          padding: var(--spacing-10) var(--spacing-5);
+          box-shadow: var(--shadow-lg);
+          z-index: var(--z-index-floating);
+          transform: translateY(calc(100% + var(--spacing-5)));
+          transition: transform var(--transition-duration-normal) var(--transition-timing-default);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          max-width: 600px;
+          margin: 0 auto;
+        }
+
+        .brightness-card.show {
+          transform: translateY(0);
+        }
+
+        .brightness-control {
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+
+        .brightness-dots-container {
+          flex-grow: 1;
+          margin-right: var(--spacing-2);
+          padding: 0 var(--spacing-2);
+        }
+
+        .brightness-dots {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 30px;
+        }
+
+        .brightness-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background-color: var(--color-border);
+          transition: all var(--transition-duration-fast) var(--transition-timing-default);
+          cursor: pointer;
+        }
+
+        .brightness-dot.active {
+          background-color: var(--color-text);
+          transform: scale(1.1);
+        }
+
+        .brightness-value {
+          min-width: 60px;
+          text-align: right;
+          font-size: var(--font-size-3xl);
+          color: var(--color-text);
+          font-weight: var(--font-weight-light);
+          margin-right: var(--spacing-5);
+        }
+
+        @media (max-width: 768px) {
+          .icon-row {
+            width: 95%;
+          }
+
+          .brightness-card {
+            bottom: var(--spacing-2);
+            left: var(--spacing-2);
+            right: var(--spacing-2);
+            padding: var(--spacing-8) var(--spacing-4);
+          }
+
+          .brightness-value {
+            font-size: var(--font-size-2xl);
+            min-width: 50px;
+            margin-right: var(--spacing-4);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .overlay,
+          .brightness-card,
+          .brightness-dot {
+            transition: none;
+          }
+        }
+      `
+    ];
   }
 
   render() {
@@ -617,7 +613,11 @@ export class GoogleCard extends LitElement {
 
     return html`
       <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
-      <background-rotator .config="${this.config}"></background-rotator>
+      <background-rotator 
+        .config="${this.config}"
+        .hass="${this.hass}"
+        @screen-size-update="${this.handleScreenSizeUpdate}"
+      ></background-rotator>
       <weather-display .hass="${this.hass}"></weather-display>
       ${this.showDebugInfo ? this.renderDebugInfo() : ''}
       ${!this.showBrightnessCard ? this.renderOverlay() : ''}
@@ -628,7 +628,6 @@ export class GoogleCard extends LitElement {
 
 customElements.define('google-card', GoogleCard);
 
-// Register the custom card with Home Assistant
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'google-card',
