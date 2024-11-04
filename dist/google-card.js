@@ -82,339 +82,341 @@ function _taggedTemplateLiteral(e, t) {
   }));
 }
 
-css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n  /* CSS Custom Properties (Variables) */\n  :host {;
-        \n    /* Colors */\n    --color-primary: #333333;
-        \n    --color-primary-light: #666666;
-        \n    --color-primary-dark: #000000;
-        \n    --color-background: #ffffff;
-        \n    --color-background-translucent: rgba(255, 255, 255, 0.95);
-        \n    --color-error: #ff3b30;
-        \n    --color-success: #34c759;
-        \n    --color-warning: #ffcc00;
-        \n    --color-info: #007aff;
-        \n    --color-text: #333333;
-        \n    --color-text-secondary: #666666;
-        \n    --color-border: #e0e0e0;
-        \n    --color-shadow: rgba(0, 0, 0, 0.1);
-        \n    --color-overlay: rgba(0, 0, 0, 0.5);
-        \n\n    /* Typography */\n    --font-family-primary: \'Product Sans Regular\', \'Rubik\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        \n    --font-weight-light: 300;
-        \n    --font-weight-regular: 400;
-        \n    --font-weight-medium: 500;
-        \n    --font-weight-bold: 600;
-        \n    --font-size-xs: 12px;
-        \n    --font-size-sm: 14px;
-        \n    --font-size-base: 16px;
-        \n    --font-size-lg: 18px;
-        \n    --font-size-xl: 24px;
-        \n    --font-size-2xl: 32px;
-        \n    --font-size-3xl: 40px;
-        \n    --font-size-4xl: 48px;
-        \n    --line-height-tight: 1.2;
-        \n    --line-height-normal: 1.5;
-        \n    --line-height-relaxed: 1.8;
-        \n\n    /* Spacing */\n    --spacing-0: 0;
-        \n    --spacing-1: 4px;
-        \n    --spacing-2: 8px;
-        \n    --spacing-3: 12px;
-        \n    --spacing-4: 16px;
-        \n    --spacing-5: 20px;
-        \n    --spacing-6: 24px;
-        \n    --spacing-8: 32px;
-        \n    --spacing-10: 40px;
-        \n    --spacing-12: 48px;
-        \n    --spacing-16: 64px;
-        \n\n    /* Borders */\n    --border-radius-sm: 4px;
-        \n    --border-radius-md: 8px;
-        \n    --border-radius-lg: 16px;
-        \n    --border-radius-xl: 24px;
-        \n    --border-radius-full: 9999px;
-        \n    --border-width-thin: 1px;
-        \n    --border-width-normal: 2px;
-        \n    --border-width-thick: 4px;
-        \n\n    /* Shadows */\n    --shadow-sm: 0 1px 2px var(--color-shadow);
-        \n    --shadow-md: 0 2px 4px var(--color-shadow);
-        \n    --shadow-lg: 0 4px 8px var(--color-shadow);
-        \n    --shadow-xl: 0 8px 16px var(--color-shadow);
-        \n    --shadow-inner: inset 0 2px 4px var(--color-shadow);
-        \n\n    /* Transitions */\n    --transition-duration-fast: 150ms;
-        \n    --transition-duration-normal: 300ms;
-        \n    --transition-duration-slow: 500ms;
-        \n    --transition-timing-default: cubic-bezier(0.4, 0, 0.2, 1);
-        \n    --transition-timing-in: cubic-bezier(0.4, 0, 1, 1);
-        \n    --transition-timing-out: cubic-bezier(0, 0, 0.2, 1);
-        \n\n    /* Z-index Scale */\n    --z-index-below: -1;
-        \n    --z-index-base: 1;
-        \n    --z-index-above: 10;
-        \n    --z-index-floating: 100;
-        \n    --z-index-overlay: 1000;
-        \n    --z-index-modal: 2000;
-        \n    --z-index-popover: 3000;
-        \n    --z-index-tooltip: 4000;
-        \n    --z-index-max: 9999;
-        \n\n    /* Component Specific */\n    --header-height: 60px;
-        \n    --footer-height: 80px;
-        \n    --sidebar-width: 280px;
-        \n    --modal-width: 500px;
-        \n    --container-max-width: 1200px;
-        \n    --card-padding: 20px;
-        \n\n    /* Display Properties */\n    --backdrop-blur: 10px;
-        \n    --image-rendering: -webkit-optimize-contrast;
-        \n  
-      }\n\n  /* Base Resets */\n  *,\n  *::before,\n  *::after {;
-        \n    box-sizing: border-box;
-        \n    margin: 0;
-        \n    padding: 0;
-        \n  
-      }\n\n  /* Typography */\n  h1, h2, h3, h4, h5, h6, p {;
-        \n    margin: 0;
-        \n    font-weight: var(--font-weight-regular);
-        \n    line-height: var(--line-height-tight);
-        \n  
-      }\n\n  /* Accessibility */\n  .sr-only {;
-        \n    position: absolute;
-        \n    width: 1px;
-        \n    height: 1px;
-        \n    padding: 0;
-        \n    margin: -1px;
-        \n    overflow: hidden;
-        \n    clip: rect(0, 0, 0, 0);
-        \n    white-space: nowrap;
-        \n    border: 0;
-        \n  
-      }\n\n  .focusable:focus-visible {;
-        \n    outline: var(--border-width-normal) solid var(--color-primary);
-        \n    outline-offset: var(--border-width-thin);
-        \n  
-      }\n\n  /* Layout Utilities */\n  .container {;
-        \n    width: 100%;
-        \n    max-width: var(--container-max-width);
-        \n    margin: 0 auto;
-        \n    padding: 0 var(--spacing-4);
-        \n  
-      }\n\n  .flex {;
-        \n    display: flex;
-        \n  
-      }\n\n  .flex-col {;
-        \n    display: flex;
-        \n    flex-direction: column;
-        \n  
-      }\n\n  .items-center {;
-        \n    align-items: center;
-        \n  
-      }\n\n  .justify-center {;
-        \n    justify-content: center;
-        \n  
-      }\n\n  .justify-between {;
-        \n    justify-content: space-between;
-        \n  
-      }\n\n  .gap-1 {;
-         gap: var(--spacing-1);
-      }\n  .gap-2 {;
-         gap: var(--spacing-2);
-      }\n  .gap-4 {;
-         gap: var(--spacing-4);
-      }\n\n  /* Spacing Utilities */\n  .m-0 {;
-         margin: var(--spacing-0);
-      }\n  .m-1 {;
-         margin: var(--spacing-1);
-      }\n  .m-2 {;
-         margin: var(--spacing-2);
-      }\n  .m-4 {;
-         margin: var(--spacing-4);
-      }\n  .m-8 {;
-         margin: var(--spacing-8);
-      }\n\n  .p-0 {;
-         padding: var(--spacing-0);
-      }\n  .p-1 {;
-         padding: var(--spacing-1);
-      }\n  .p-2 {;
-         padding: var(--spacing-2);
-      }\n  .p-4 {;
-         padding: var(--spacing-4);
-      }\n  .p-8 {;
-         padding: var(--spacing-8);
-      }\n\n  /* Text Utilities */\n  .text-xs {;
-         font-size: var(--font-size-xs);
-      }\n  .text-sm {;
-         font-size: var(--font-size-sm);
-      }\n  .text-base {;
-         font-size: var(--font-size-base);
-      }\n  .text-lg {;
-         font-size: var(--font-size-lg);
-      }\n  .text-xl {;
-         font-size: var(--font-size-xl);
-      }\n  .text-2xl {;
-         font-size: var(--font-size-2xl);
-      }\n  .text-3xl {;
-         font-size: var(--font-size-3xl);
-      }\n  .text-4xl {;
-         font-size: var(--font-size-4xl);
-      }\n\n  .font-light {;
-         font-weight: var(--font-weight-light);
-      }\n  .font-normal {;
-         font-weight: var(--font-weight-regular);
-      }\n  .font-medium {;
-         font-weight: var(--font-weight-medium);
-      }\n  .font-bold {;
-         font-weight: var(--font-weight-bold);
-      }\n\n  .text-center {;
-         text-align: center;
-      }\n  .text-left {;
-         text-align: left;
-      }\n  .text-right {;
-         text-align: right;
-      }\n\n  .truncate {;
-        \n    overflow: hidden;
-        \n    text-overflow: ellipsis;
-        \n    white-space: nowrap;
-        \n  
-      }\n\n  /* Visual Effects */\n  .backdrop-blur {;
-        \n    backdrop-filter: blur(var(--backdrop-blur));
-        \n    -webkit-backdrop-filter: blur(var(--backdrop-blur));
-        \n  
-      }\n\n  .optimize-contrast {;
-        \n    image-rendering: var(--image-rendering);
-        \n  
-      }\n\n  .hardware-accelerated {;
-        \n    transform: translateZ(0);
-        \n    backface-visibility: hidden;
-        \n    perspective: 1000px;
-        \n  
-      }\n\n  /* Animation Classes */\n  .animate-fade {;
-        \n    animation: fade var(--transition-duration-normal) var(--transition-timing-default);
-        \n  
-      }\n\n  .animate-slide-up {;
-        \n    animation: slideUp var(--transition-duration-normal) var(--transition-timing-default);
-        \n  
-      }\n\n  @keyframes fade {;
-        \n    from {;
-         opacity: 0;
-      }\n    to {;
-         opacity: 1;
-      }\n  
-      }\n\n  @keyframes slideUp {;
-        \n    from {;
-        \n      transform: translateY(20px);
-        \n      opacity: 0;
-        \n    
-      }\n    to {;
-        \n      transform: translateY(0);
-        \n      opacity: 1;
-        \n    
-      }\n  
-      }\n\n  /* Dark Mode */\n  @media (prefers-color-scheme: dark) {;
-        \n    :host {;
-        \n      --color-primary: #ffffff;
-        \n      --color-primary-light: #cccccc;
-        \n      --color-primary-dark: #999999;
-        \n      --color-background: #000000;
-        \n      --color-background-translucent: rgba(0, 0, 0, 0.95);
-        \n      --color-text: #ffffff;
-        \n      --color-text-secondary: #cccccc;
-        \n      --color-border: #333333;
-        \n      --color-shadow: rgba(0, 0, 0, 0.3);
-        \n      --color-overlay: rgba(0, 0, 0, 0.7);
-        \n    
-      }\n  
-      }\n\n  /* High Contrast Mode */\n  @media (prefers-contrast: more) {;
-        \n    :host {;
-        \n      --color-primary: #000000;
-        \n      --color-background: #ffffff;
-        \n      --color-text: #000000;
-        \n      --color-shadow: #000000;
-        \n      --shadow-sm: none;
-        \n      --shadow-md: none;
-        \n      --shadow-lg: none;
-        \n      --shadow-xl: none;
-        \n      --backdrop-blur: 0;
-        \n    
-      }\n\n    .focusable:focus-visible {;
-        \n      outline-width: var(--border-width-thick);
-        \n    
-      }\n  
-      }\n\n  /* Reduced Motion */\n  @media (prefers-reduced-motion: reduce) {;
-        \n    :host {;
-        \n      --transition-duration-fast: 0ms;
-        \n      --transition-duration-normal: 0ms;
-        \n      --transition-duration-slow: 0ms;
-        \n    
-      }\n\n    *,\n    *::before,\n    *::after {;
-        \n      animation-duration: 0.01ms !important;
-        \n      animation-iteration-count: 1 !important;
-        \n      transition-duration: 0.01ms !important;
-        \n      scroll-behavior: auto !important;
-        \n    
-      }\n\n    .animate-fade,\n    .animate-slide-up {;
-        \n      animation: none !important;
-        \n    
-      }\n  
-      }\n\n  /* Print Styles */\n  @media print {;
-        \n    :host {;
-        \n      --color-primary: #000000;
-        \n      --color-background: #ffffff;
-        \n      --color-text: #000000;
-        \n      --color-shadow: none;
-        \n      --backdrop-blur: 0;
-        \n    
-      }\n\n    * {;
-        \n      print-color-adjust: exact;
-        \n      -webkit-print-color-adjust: exact;
-        \n    
-      }\n\n    .no-print {;
-        \n      display: none !important;
-        \n    
-      }\n  
-      }\n\n  /* Touch Device Optimizations */\n  @media (hover: none) {;
-        \n    :host {;
-        \n      --spacing-4: 20px;
-        \n      --spacing-6: 28px;
-        \n    
-      }\n\n    .focusable:focus {;
-        \n      outline: none;
-        \n    
-      }\n  
-      }\n\n  /* RTL Support */\n  :host([dir=\'rtl\']) {;
-        \n    direction: rtl;
-        \n  
-      }\n\n  /* Responsive Breakpoints */\n  @media (max-width: 1280px) {;
-        \n    :host {;
-        \n      --container-max-width: 1024px;
-        \n    
-      }\n  
-      }\n\n  @media (max-width: 1024px) {;
-        \n    :host {;
-        \n      --container-max-width: 768px;
-        \n      --sidebar-width: 240px;
-        \n    
-      }\n  
-      }\n\n  @media (max-width: 768px) {;
-        \n    :host {;
-        \n      --container-max-width: 100%;
-        \n      --header-height: 50px;
-        \n      --footer-height: 60px;
-        \n      --card-padding: 16px;
-        \n      --font-size-4xl: 40px;
-        \n      --font-size-3xl: 32px;
-        \n      --font-size-2xl: 28px;
-        \n      --font-size-xl: 20px;
-        \n    
-      }\n  
-      }\n\n  @media (max-width: 640px) {;
-        \n    :host {;
-        \n      --spacing-8: 24px;
-        \n      --spacing-10: 32px;
-        \n      --spacing-12: 40px;
-        \n      --spacing-16: 48px;
-        \n    
-      }\n  
-      }\n\n  /* Battery Optimization */\n  @media (prefers-reduced-data: reduce) {;
-        \n    :host {;
-        \n      --backdrop-blur: 0;
-        \n      --image-rendering: auto;
-        \n    
-      }\n  
-      }\n' ])))  GOOD: {
+css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '
+          /* CSS Custom Properties (Variables) */
+          :host {
+            /* Colors */
+            --color-primary: #333333;
+            --color-primary-light: #666666;
+            --color-primary-dark: #000000;
+            --color-background: #ffffff;
+            --color-background-translucent: rgba(255, 255, 255, 0.95);
+            --color-error: #ff3b30;
+            --color-success: #34c759;
+            --color-warning: #ffcc00;
+            --color-info: #007aff;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-border: #e0e0e0;
+            --color-shadow: rgba(0, 0, 0, 0.1);
+            --color-overlay: rgba(0, 0, 0, 0.5);
+            /* Typography */
+            --font-family-primary: \'Product Sans Regular\', \'Rubik\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            --font-weight-light: 300;
+            --font-weight-regular: 400;
+            --font-weight-medium: 500;
+            --font-weight-bold: 600;
+            --font-size-xs: 12px;
+            --font-size-sm: 14px;
+            --font-size-base: 16px;
+            --font-size-lg: 18px;
+            --font-size-xl: 24px;
+            --font-size-2xl: 32px;
+            --font-size-3xl: 40px;
+            --font-size-4xl: 48px;
+            --line-height-tight: 1.2;
+            --line-height-normal: 1.5;
+            --line-height-relaxed: 1.8;
+            /* Spacing */
+            --spacing-0: 0;
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 12px;
+            --spacing-4: 16px;
+            --spacing-5: 20px;
+            --spacing-6: 24px;
+            --spacing-8: 32px;
+            --spacing-10: 40px;
+            --spacing-12: 48px;
+            --spacing-16: 64px;
+            /* Borders */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 16px;
+            --border-radius-xl: 24px;
+            --border-radius-full: 9999px;
+            --border-width-thin: 1px;
+            --border-width-normal: 2px;
+            --border-width-thick: 4px;
+            /* Shadows */
+            --shadow-sm: 0 1px 2px var(--color-shadow);
+            --shadow-md: 0 2px 4px var(--color-shadow);
+            --shadow-lg: 0 4px 8px var(--color-shadow);
+            --shadow-xl: 0 8px 16px var(--color-shadow);
+            --shadow-inner: inset 0 2px 4px var(--color-shadow);
+            /* Transitions */
+            --transition-duration-fast: 150ms;
+            --transition-duration-normal: 300ms;
+            --transition-duration-slow: 500ms;
+            --transition-timing-default: cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-timing-in: cubic-bezier(0.4, 0, 1, 1);
+            --transition-timing-out: cubic-bezier(0, 0, 0.2, 1);
+            /* Z-index Scale */
+            --z-index-below: -1;
+            --z-index-base: 1;
+            --z-index-above: 10;
+            --z-index-floating: 100;
+            --z-index-overlay: 1000;
+            --z-index-modal: 2000;
+            --z-index-popover: 3000;
+            --z-index-tooltip: 4000;
+            --z-index-max: 9999;
+            /* Component Specific */
+            --header-height: 60px;
+            --footer-height: 80px;
+            --sidebar-width: 280px;
+            --modal-width: 500px;
+            --container-max-width: 1200px;
+            --card-padding: 20px;
+            /* Display Properties */
+            --backdrop-blur: 10px;
+            --image-rendering: -webkit-optimize-contrast;
+          }
+          /* Base Resets */
+          *,
+          *::before,
+          *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          /* Typography */
+          h1, h2, h3, h4, h5, h6, p {
+            margin: 0;
+            font-weight: var(--font-weight-regular);
+            line-height: var(--line-height-tight);
+          }
+          /* Accessibility */
+          .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+          }
+          .focusable:focus-visible {
+            outline: var(--border-width-normal) solid var(--color-primary);
+            outline-offset: var(--border-width-thin);
+          }
+          /* Layout Utilities */
+          .container {
+            width: 100%;
+            max-width: var(--container-max-width);
+            margin: 0 auto;
+            padding: 0 var(--spacing-4);
+          }
+          .flex {
+            display: flex;
+          }
+          .flex-col {
+            display: flex;
+            flex-direction: column;
+          }
+          .items-center {
+            align-items: center;
+          }
+          .justify-center {
+            justify-content: center;
+          }
+          .justify-between {
+            justify-content: space-between;
+          }
+          .gap-1 { gap: var(--spacing-1); }
+          .gap-2 { gap: var(--spacing-2); }
+          .gap-4 { gap: var(--spacing-4); }
+          /* Spacing Utilities */
+          .m-0 { margin: var(--spacing-0); }
+          .m-1 { margin: var(--spacing-1); }
+          .m-2 { margin: var(--spacing-2); }
+          .m-4 { margin: var(--spacing-4); }
+          .m-8 { margin: var(--spacing-8); }
+          .p-0 { padding: var(--spacing-0); }
+          .p-1 { padding: var(--spacing-1); }
+          .p-2 { padding: var(--spacing-2); }
+          .p-4 { padding: var(--spacing-4); }
+          .p-8 { padding: var(--spacing-8); }
+          /* Text Utilities */
+          .text-xs { font-size: var(--font-size-xs); }
+          .text-sm { font-size: var(--font-size-sm); }
+          .text-base { font-size: var(--font-size-base); }
+          .text-lg { font-size: var(--font-size-lg); }
+          .text-xl { font-size: var(--font-size-xl); }
+          .text-2xl { font-size: var(--font-size-2xl); }
+          .text-3xl { font-size: var(--font-size-3xl); }
+          .text-4xl { font-size: var(--font-size-4xl); }
+          .font-light { font-weight: var(--font-weight-light); }
+          .font-normal { font-weight: var(--font-weight-regular); }
+          .font-medium { font-weight: var(--font-weight-medium); }
+          .font-bold { font-weight: var(--font-weight-bold); }
+          .text-center { text-align: center; }
+          .text-left { text-align: left; }
+          .text-right { text-align: right; }
+          .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          /* Visual Effects */
+          .backdrop-blur {
+            backdrop-filter: blur(var(--backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--backdrop-blur));
+          }
+          .optimize-contrast {
+            image-rendering: var(--image-rendering);
+          }
+          .hardware-accelerated {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+          }
+          /* Animation Classes */
+          .animate-fade {
+            animation: fade var(--transition-duration-normal) var(--transition-timing-default);
+          }
+          .animate-slide-up {
+            animation: slideUp var(--transition-duration-normal) var(--transition-timing-default);
+          }
+          @keyframes fade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              transform: translateY(20px);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          /* Dark Mode */
+          @media (prefers-color-scheme: dark) {
+            :host {
+              --color-primary: #ffffff;
+              --color-primary-light: #cccccc;
+              --color-primary-dark: #999999;
+              --color-background: #000000;
+              --color-background-translucent: rgba(0, 0, 0, 0.95);
+              --color-text: #ffffff;
+              --color-text-secondary: #cccccc;
+              --color-border: #333333;
+              --color-shadow: rgba(0, 0, 0, 0.3);
+              --color-overlay: rgba(0, 0, 0, 0.7);
+            }
+          }
+          /* High Contrast Mode */
+          @media (prefers-contrast: more) {
+            :host {
+              --color-primary: #000000;
+              --color-background: #ffffff;
+              --color-text: #000000;
+              --color-shadow: #000000;
+              --shadow-sm: none;
+              --shadow-md: none;
+              --shadow-lg: none;
+              --shadow-xl: none;
+              --backdrop-blur: 0;
+            }
+            .focusable:focus-visible {
+              outline-width: var(--border-width-thick);
+            }
+          }
+          /* Reduced Motion */
+          @media (prefers-reduced-motion: reduce) {
+            :host {
+              --transition-duration-fast: 0ms;
+              --transition-duration-normal: 0ms;
+              --transition-duration-slow: 0ms;
+            }
+            *,
+            *::before,
+            *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+              scroll-behavior: auto !important;
+            }
+            .animate-fade,
+            .animate-slide-up {
+              animation: none !important;
+            }
+          }
+          /* Print Styles */
+          @media print {
+            :host {
+              --color-primary: #000000;
+              --color-background: #ffffff;
+              --color-text: #000000;
+              --color-shadow: none;
+              --backdrop-blur: 0;
+            }
+            * {
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+            }
+            .no-print {
+              display: none !important;
+            }
+          }
+          /* Touch Device Optimizations */
+          @media (hover: none) {
+            :host {
+              --spacing-4: 20px;
+              --spacing-6: 28px;
+            }
+            .focusable:focus {
+              outline: none;
+            }
+          }
+          /* RTL Support */
+          :host([dir=\'rtl\']) {
+            direction: rtl;
+          }
+          /* Responsive Breakpoints */
+          @media (max-width: 1280px) {
+            :host {
+              --container-max-width: 1024px;
+            }
+          }
+          @media (max-width: 1024px) {
+            :host {
+              --container-max-width: 768px;
+              --sidebar-width: 240px;
+            }
+          }
+          @media (max-width: 768px) {
+            :host {
+              --container-max-width: 100%;
+              --header-height: 50px;
+              --footer-height: 60px;
+              --card-padding: 16px;
+              --font-size-4xl: 40px;
+              --font-size-3xl: 32px;
+              --font-size-2xl: 28px;
+              --font-size-xl: 20px;
+            }
+          }
+          @media (max-width: 640px) {
+            :host {
+              --spacing-8: 24px;
+              --spacing-10: 32px;
+              --spacing-12: 40px;
+              --spacing-16: 48px;
+            }
+          }
+          /* Battery Optimization */
+          @media (prefers-reduced-data: reduce) {
+            :host {
+              --backdrop-blur: 0;
+              --image-rendering: auto;
+            }
+          }
+' ])))  GOOD: {
     max: 50,
     color: '#68a03a'
   },
@@ -545,56 +547,57 @@ customElements.define('background-rotator', class extends LitElement {
     this.imageListUpdateInterval = null;
   }
   static get styles() {
-css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n        :host {;
-        \n          display: block;
-        \n          position: relative;
-        \n          width: 100%;
-        \n          height: 100%;
-        \n          overflow: hidden;
-        \n          background-color: black;
-        \n        
-      }\n\n        .background-container {;
-        \n          position: absolute;
-        \n          top: 0;
-        \n          left: 0;
-        \n          width: 100%;
-        \n          height: 100%;
-        \n          background-color: black;
-        \n          z-index: 1;
-        \n        
-      }\n\n        .background-image {;
-        \n          position: absolute;
-        \n          top: 0;
-        \n          left: 0;
-        \n          width: 100%;
-        \n          height: 100%;
-        \n          background-size: cover;
-        \n          background-position: center;
-        \n          background-repeat: no-repeat;
-        \n          will-change: opacity, transform;
-        \n          transition-property: opacity;
-        \n          transition-timing-function: ease-in-out;
-        \n          transform: translateZ(0);
-        \n          backface-visibility: hidden;
-        \n          -webkit-backface-visibility: hidden;
-        \n          image-rendering: -webkit-optimize-contrast;
-        \n          image-rendering: crisp-edges;
-        \n        
-      }\n\n        .error-message {;
-        \n          position: absolute;
-        \n          top: 50%;
-        \n          left: 50%;
-        \n          transform: translate(-50%, -50%);
-        \n          background-color: var(--color-error);
-        \n          color: white;
-        \n          padding: var(--spacing-4);
-        \n          border-radius: var(--border-radius-md);
-        \n          font-size: var(--font-size-base);
-        \n          text-align: center;
-        \n          z-index: 2;
-        \n          max-width: 80%;
-        \n        
-      }\n      ' ])))  }
+css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '
+                :host {
+                  display: block;
+                  position: relative;
+                  width: 100%;
+                  height: 100%;
+                  overflow: hidden;
+                  background-color: black;
+                }
+                .background-container {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background-color: black;
+                  z-index: 1;
+                }
+                .background-image {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background-size: cover;
+                  background-position: center;
+                  background-repeat: no-repeat;
+                  will-change: opacity, transform;
+                  transition-property: opacity;
+                  transition-timing-function: ease-in-out;
+                  transform: translateZ(0);
+                  backface-visibility: hidden;
+                  -webkit-backface-visibility: hidden;
+                  image-rendering: -webkit-optimize-contrast;
+                  image-rendering: crisp-edges;
+                }
+                .error-message {
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  background-color: var(--color-error);
+                  color: white;
+                  padding: var(--spacing-4);
+                  border-radius: var(--border-radius-md);
+                  font-size: var(--font-size-base);
+                  text-align: center;
+                  z-index: 2;
+                  max-width: 80%;
+                }
+' ])))  }
   connectedCallback() {
     var _superprop_getConnectedCallback = () => super.connectedCallback, _this = this;
     return _asyncToGenerator((function*() {
@@ -828,169 +831,175 @@ customElements.define('weather-display', class extends LitElement {
     this.updateTimer = null;
   }
   static get styles() {
-css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n      :host {;
-        \n        display: block;
-        \n        position: relative;
-        \n        font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
-        \n        -webkit-font-smoothing: antialiased;
-        \n        -moz-osx-font-smoothing: grayscale;
-        \n      
-      }\n\n      .weather-component {;
-        \n        display: flex;
-        \n        justify-content: space-between;
-        \n        align-items: center;
-        \n        color: white;
-        \n        width: 100%;
-        \n        max-width: 400px;
-        \n        padding: 10px;
-        \n        box-sizing: border-box;
-        \n        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        \n      
-      }\n\n      .left-column {;
-        \n        display: flex;
-        \n        flex-direction: column;
-        \n        align-items: flex-start;
-        \n        overflow: hidden;
-        \n      
-      }\n\n      .date {;
-        \n        font-size: 25px;
-        \n        margin-bottom: 5px;
-        \n        font-weight: 400;
-        \n        margin-left: 10px;
-        \n        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-        \n        white-space: nowrap;
-        \n        text-overflow: ellipsis;
-        \n        transition: font-size 0.3s ease;
-        \n      
-      }\n\n      .time {;
-        \n        font-size: 90px;
-        \n        line-height: 1;
-        \n        font-weight: 500;
-        \n        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        \n        margin-left: 8px;
-        \n        transition: font-size 0.3s ease;
-        \n      
-      }\n\n      .right-column {;
-        \n        display: flex;
-        \n        flex-direction: column;
-        \n        align-items: flex-end;
-        \n        min-width: 120px;
-        \n      
-      }\n\n      .weather-info {;
-        \n        display: flex;
-        \n        align-items: center;
-        \n        margin-top: 10px;
-        \n        font-weight: 500;
-        \n        margin-right: -5px;
-        \n        transition: all 0.3s ease;
-        \n      
-      }\n\n      .weather-icon {;
-        \n        width: 50px;
-        \n        height: 50px;
-        \n        margin-right: 8px;
-        \n        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
-        \n        transition: all 0.3s ease;
-        \n      
-      }\n\n      .temperature {;
-        \n        font-size: 35px;
-        \n        font-weight: 500;
-        \n        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-        \n        transition: font-size 0.3s ease;
-        \n      
-      }\n\n      .aqi {;
-        \n        font-size: 20px;
-        \n        padding: 7px 10px 5px;
-        \n        border-radius: 8px;
-        \n        font-weight: 500;
-        \n        margin-top: 2px;
-        \n        margin-left: 25px;
-        \n        align-self: flex-end;
-        \n        min-width: 70px;
-        \n        text-align: center;
-        \n        transition: all 0.3s ease;
-        \n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        \n      
-      }\n\n      .error-message {;
-        \n        background-color: rgba(255, 59, 48, 0.9);
-        \n        color: white;
-        \n        padding: 8px 12px;
-        \n        border-radius: 6px;
-        \n        font-size: 14px;
-        \n        margin-top: 8px;
-        \n        text-align: center;
-        \n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        \n      
-      }\n\n      @media (max-width: 480px) {;
-        \n        .date {;
-        \n          font-size: 20px;
-        \n          margin-left: 8px;
-        \n        
-      }\n\n        .time {;
-        \n          font-size: 70px;
-        \n          margin-left: 6px;
-        \n        
-      }\n\n        .weather-icon {;
-        \n          width: 40px;
-        \n          height: 40px;
-        \n        
-      }\n\n        .temperature {;
-        \n          font-size: 28px;
-        \n        
-      }\n\n        .aqi {;
-        \n          font-size: 16px;
-        \n          padding: 5px 8px 4px;
-        \n          margin-left: 15px;
-        \n          min-width: 60px;
-        \n        
-      }\n      
-      }\n\n      @media (max-width: 360px) {;
-        \n        .date {;
-        \n          font-size: 18px;
-        \n        
-      }\n\n        .time {;
-        \n          font-size: 60px;
-        \n        
-      }\n\n        .weather-icon {;
-        \n          width: 35px;
-        \n          height: 35px;
-        \n        
-      }\n\n        .temperature {;
-        \n          font-size: 24px;
-        \n        
-      }\n\n        .aqi {;
-        \n          font-size: 14px;
-        \n          min-width: 50px;
-        \n        
-      }\n      
-      }\n\n      @media (prefers-contrast: more) {;
-        \n        .weather-component {;
-        \n          text-shadow: none;
-        \n        
-      }\n\n        .aqi {;
-        \n          border: 2px solid rgba(255, 255, 255, 0.8);
-        \n        
-      }\n      
-      }\n\n      @media (prefers-reduced-motion: reduce) {;
-        \n        .date,\n        .time,\n        .weather-info,\n        .weather-icon,\n        .temperature,\n        .aqi {;
-        \n          transition: none;
-        \n        
-      }\n      
-      }\n\n      @media print {;
-        \n        .weather-component {;
-        \n          color: black;
-        \n          text-shadow: none;
-        \n        
-      }\n\n        .aqi {;
-        \n          print-color-adjust: exact;
-        \n          -webkit-print-color-adjust: exact;
-        \n        
-      }\n      
-      }\n\n      @media (prefers-color-scheme: dark) {;
-        \n        .error-message {;
-        \n          background-color: rgba(255, 59, 48, 0.7);
-        \n        
-      }\n      
-      }\n    ' ])))  }
+css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '
+              :host {
+                display: block;
+                position: relative;
+                font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+              }
+              .weather-component {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: white;
+                width: 100%;
+                max-width: 400px;
+                padding: 10px;
+                box-sizing: border-box;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              }
+              .left-column {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                overflow: hidden;
+              }
+              .date {
+                font-size: 25px;
+                margin-bottom: 5px;
+                font-weight: 400;
+                margin-left: 10px;
+                text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                transition: font-size 0.3s ease;
+              }
+              .time {
+                font-size: 90px;
+                line-height: 1;
+                font-weight: 500;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                margin-left: 8px;
+                transition: font-size 0.3s ease;
+              }
+              .right-column {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                min-width: 120px;
+              }
+              .weather-info {
+                display: flex;
+                align-items: center;
+                margin-top: 10px;
+                font-weight: 500;
+                margin-right: -5px;
+                transition: all 0.3s ease;
+              }
+              .weather-icon {
+                width: 50px;
+                height: 50px;
+                margin-right: 8px;
+                filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+                transition: all 0.3s ease;
+              }
+              .temperature {
+                font-size: 35px;
+                font-weight: 500;
+                text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+                transition: font-size 0.3s ease;
+              }
+              .aqi {
+                font-size: 20px;
+                padding: 7px 10px 5px;
+                border-radius: 8px;
+                font-weight: 500;
+                margin-top: 2px;
+                margin-left: 25px;
+                align-self: flex-end;
+                min-width: 70px;
+                text-align: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              }
+              .error-message {
+                background-color: rgba(255, 59, 48, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 14px;
+                margin-top: 8px;
+                text-align: center;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              }
+              @media (max-width: 480px) {
+                .date {
+                  font-size: 20px;
+                  margin-left: 8px;
+                }
+                .time {
+                  font-size: 70px;
+                  margin-left: 6px;
+                }
+                .weather-icon {
+                  width: 40px;
+                  height: 40px;
+                }
+                .temperature {
+                  font-size: 28px;
+                }
+                .aqi {
+                  font-size: 16px;
+                  padding: 5px 8px 4px;
+                  margin-left: 15px;
+                  min-width: 60px;
+                }
+              }
+              @media (max-width: 360px) {
+                .date {
+                  font-size: 18px;
+                }
+                .time {
+                  font-size: 60px;
+                }
+                .weather-icon {
+                  width: 35px;
+                  height: 35px;
+                }
+                .temperature {
+                  font-size: 24px;
+                }
+                .aqi {
+                  font-size: 14px;
+                  min-width: 50px;
+                }
+              }
+              @media (prefers-contrast: more) {
+                .weather-component {
+                  text-shadow: none;
+                }
+                .aqi {
+                  border: 2px solid rgba(255, 255, 255, 0.8);
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .date,
+                .time,
+                .weather-info,
+                .weather-icon,
+                .temperature,
+                .aqi {
+                  transition: none;
+                }
+              }
+              @media print {
+                .weather-component {
+                  color: black;
+                  text-shadow: none;
+                }
+                .aqi {
+                  print-color-adjust: exact;
+                  -webkit-print-color-adjust: exact;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                .error-message {
+                  background-color: rgba(255, 59, 48, 0.7);
+                }
+              }
+' ])))  }
   connectedCallback() {
     super.connectedCallback();
     this.startUpdates();
@@ -1146,158 +1155,165 @@ customElements.define('night-mode', class extends LitElement {
     this.updateTime = this.updateTime.bind(this);
   }
   static get styles() {
-css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n      :host {;
-        \n        display: block;
-        \n        position: fixed;
-        \n        top: 0;
-        \n        left: 0;
-        \n        width: 100vw;
-        \n        height: 100vh;
-        \n        background-color: black;
-        \n        z-index: 1000;
-        \n        font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
-        \n        -webkit-font-smoothing: antialiased;
-        \n        -moz-osx-font-smoothing: grayscale;
-        \n      
-      }\n\n      .night-mode {;
-        \n        position: absolute;
-        \n        top: 0;
-        \n        left: 0;
-        \n        width: 100%;
-        \n        height: 100%;
-        \n        display: flex;
-        \n        justify-content: center;
-        \n        align-items: center;
-        \n        flex-direction: column;
-        \n        background-color: black;
-        \n        transition: background-color 0.5s ease-in-out;
-        \n        user-select: none;
-        \n        -webkit-user-select: none;
-        \n        -moz-user-select: none;
-        \n        -ms-user-select: none;
-        \n      
-      }\n\n      .night-time {;
-        \n        color: white;
-        \n        font-size: 35vw;
-        \n        font-weight: 400;
-        \n        line-height: 1;
-        \n        text-align: center;
-        \n        opacity: 0.7;
-        \n        transition: opacity 2s ease-in-out, font-size 0.3s ease-in-out;
-        \n        margin: 0;
-        \n        padding: 0;
-        \n        letter-spacing: -0.02em;
-        \n        text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
-        \n      
-      }\n\n      .night-time.fade-dim {;
-        \n        opacity: 0.4;
-        \n      
-      }\n\n      .error-message {;
-        \n        position: absolute;
-        \n        bottom: 20px;
-        \n        left: 50%;
-        \n        transform: translateX(-50%);
-        \n        background-color: rgba(255, 59, 48, 0.8);
-        \n        color: white;
-        \n        padding: 8px 16px;
-        \n        border-radius: 8px;
-        \n        font-size: 14px;
-        \n        opacity: 0;
-        \n        transition: opacity 0.3s ease-in-out;
-        \n        text-align: center;
-        \n        max-width: 80%;
-        \n      
-      }\n\n      .error-message.visible {;
-        \n        opacity: 1;
-        \n      
-      }\n\n      .touch-indicator {;
-        \n        position: absolute;
-        \n        width: 100%;
-        \n        height: 100%;
-        \n        pointer-events: none;
-        \n        opacity: 0;
-        \n        transition: opacity 0.3s ease-in-out;
-        \n        background: radial-gradient(\n          circle at var(--touch-x, 50%) var(--touch-y, 50%),\n          rgba(255, 255, 255, 0.1) 0%,\n          transparent 60%\n        );
-        \n      
-      }\n\n      .touch-indicator.active {;
-        \n        opacity: 1;
-        \n      
-      }\n\n      .swipe-hint {;
-        \n        position: absolute;
-        \n        bottom: 40px;
-        \n        left: 50%;
-        \n        transform: translateX(-50%);
-        \n        color: rgba(255, 255, 255, 0.3);
-        \n        font-size: 16px;
-        \n        opacity: 0;
-        \n        transition: opacity 0.3s ease-in-out;
-        \n      
-      }\n\n      .swipe-hint.visible {;
-        \n        opacity: 1;
-        \n        animation: fadeInOut 3s infinite;
-        \n      
-      }\n\n      @keyframes fadeInOut {;
-        \n        0%, 100% {;
-         opacity: 0;
-      }\n        50% {;
-         opacity: 1;
-      }\n      
-      }\n\n      @media (max-width: 768px) {;
-        \n        .night-time {;
-        \n          font-size: 45vw;
-        \n        
-      }\n      
-      }\n\n      @media (max-width: 480px) {;
-        \n        .night-time {;
-        \n          font-size: 55vw;
-        \n        
-      }\n        \n        .swipe-hint {;
-        \n          bottom: 30px;
-        \n          font-size: 14px;
-        \n        
-      }\n      
-      }\n\n      @media (max-height: 480px) {;
-        \n        .night-time {;
-        \n          font-size: 25vh;
-        \n        
-      }\n      
-      }\n\n      @media (prefers-contrast: more) {;
-        \n        .night-time {;
-        \n          opacity: 1;
-        \n          text-shadow: none;
-        \n        
-      }\n\n        .night-time.fade-dim {;
-        \n          opacity: 0.8;
-        \n        
-      }\n      
-      }\n\n      @media (prefers-reduced-motion: reduce) {;
-        \n        .night-time,\n        .night-time.fade-dim,\n        .swipe-hint {;
-        \n          transition: none;
-        \n          animation: none;
-        \n        
-      }\n      
-      }\n\n      @media (orientation: landscape) and (max-height: 500px) {;
-        \n        .night-time {;
-        \n          font-size: 25vh;
-        \n        
-      }\n\n        .swipe-hint {;
-        \n          bottom: 20px;
-        \n        
-      }\n      
-      }\n\n      @media print {;
-        \n        .night-mode {;
-        \n          background-color: white !important;
-        \n        
-      }\n\n        .night-time {;
-        \n          color: black !important;
-        \n          opacity: 1 !important;
-        \n          text-shadow: none !important;
-        \n        
-      }\n\n        .swipe-hint,\n        .error-message,\n        .touch-indicator {;
-        \n          display: none !important;
-        \n        
-      }\n      
-      }\n    ' ])))  }
+css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '
+              :host {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: black;
+                z-index: 1000;
+                font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+              }
+              .night-mode {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                background-color: black;
+                transition: background-color 0.5s ease-in-out;
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+              }
+              .night-time {
+                color: white;
+                font-size: 35vw;
+                font-weight: 400;
+                line-height: 1;
+                text-align: center;
+                opacity: 0.7;
+                transition: opacity 2s ease-in-out, font-size 0.3s ease-in-out;
+                margin: 0;
+                padding: 0;
+                letter-spacing: -0.02em;
+                text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+              }
+              .night-time.fade-dim {
+                opacity: 0.4;
+              }
+              .error-message {
+                position: absolute;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: rgba(255, 59, 48, 0.8);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+                text-align: center;
+                max-width: 80%;
+              }
+              .error-message.visible {
+                opacity: 1;
+              }
+              .touch-indicator {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+                background: radial-gradient(
+                  circle at var(--touch-x, 50%) var(--touch-y, 50%),
+                  rgba(255, 255, 255, 0.1) 0%,
+                  transparent 60%
+                );
+              }
+              .touch-indicator.active {
+                opacity: 1;
+              }
+              .swipe-hint {
+                position: absolute;
+                bottom: 40px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: rgba(255, 255, 255, 0.3);
+                font-size: 16px;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+              }
+              .swipe-hint.visible {
+                opacity: 1;
+                animation: fadeInOut 3s infinite;
+              }
+              @keyframes fadeInOut {
+                0%, 100% { opacity: 0; }
+                50% { opacity: 1; }
+              }
+              @media (max-width: 768px) {
+                .night-time {
+                  font-size: 45vw;
+                }
+              }
+              @media (max-width: 480px) {
+                .night-time {
+                  font-size: 55vw;
+                }
+                .swipe-hint {
+                  bottom: 30px;
+                  font-size: 14px;
+                }
+              }
+              @media (max-height: 480px) {
+                .night-time {
+                  font-size: 25vh;
+                }
+              }
+              @media (prefers-contrast: more) {
+                .night-time {
+                  opacity: 1;
+                  text-shadow: none;
+                }
+                .night-time.fade-dim {
+                  opacity: 0.8;
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .night-time,
+                .night-time.fade-dim,
+                .swipe-hint {
+                  transition: none;
+                  animation: none;
+                }
+              }
+              @media (orientation: landscape) and (max-height: 500px) {
+                .night-time {
+                  font-size: 25vh;
+                }
+                .swipe-hint {
+                  bottom: 20px;
+                }
+              }
+              @media print {
+                .night-mode {
+                  background-color: white !important;
+                }
+                .night-time {
+                  color: black !important;
+                  opacity: 1 !important;
+                  text-shadow: none !important;
+                }
+                .swipe-hint,
+                .error-message,
+                .touch-indicator {
+                  display: none !important;
+                }
+              }
+' ])))  }
   connectedCallback() {
     super.connectedCallback();
     this.setupEventListeners();
@@ -1510,188 +1526,192 @@ customElements.define('google-controls', class extends LitElement {
         this.error = null;
   }
   static get styles() {
-css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '\n      :host {;
-        \n        --overlay-height: 120px;
-        \n        --icon-size: 50px;
-        \n        --border-radius: 20px;
-        \n        --transition-timing: 0.3s ease-in-out;
-        \n        font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
-        \n      
-      }\n\n      .controls-container {;
-        \n        position: fixed;
-        \n        bottom: 0;
-        \n        left: 0;
-        \n        width: 100%;
-        \n        z-index: 1000;
-        \n        touch-action: none;
-        \n      
-      }\n\n      .overlay {;
-        \n        position: fixed;
-        \n        bottom: 0;
-        \n        left: 0;
-        \n        width: 100%;
-        \n        height: var(--overlay-height);
-        \n        background-color: rgba(255, 255, 255, 0.95);
-        \n        color: #333;
-        \n        box-sizing: border-box;
-        \n        transition: transform var(--transition-timing);
-        \n        transform: translateY(100%);
-        \n        z-index: 1000;
-        \n        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        \n        display: flex;
-        \n        flex-direction: column;
-        \n        justify-content: center;
-        \n        align-items: center;
-        \n        border-top-left-radius: var(--border-radius);
-        \n        border-top-right-radius: var(--border-radius);
-        \n        backdrop-filter: blur(10px);
-        \n        -webkit-backdrop-filter: blur(10px);
-        \n      
-      }\n\n      .overlay.show {;
-        \n        transform: translateY(0);
-        \n      
-      }\n\n      .icon-container {;
-        \n        width: 100%;
-        \n        height: 100%;
-        \n        display: flex;
-        \n        justify-content: center;
-        \n        align-items: center;
-        \n      
-      }\n\n      .icon-row {;
-        \n        display: flex;
-        \n        justify-content: space-between;
-        \n        align-items: center;
-        \n        width: 85%;
-        \n      
-      }\n\n      .icon-button {;
-        \n        background: none;
-        \n        border: none;
-        \n        cursor: pointer;
-        \n        color: #333;
-        \n        padding: 10px;
-        \n        border-radius: 50%;
-        \n        transition: background-color 0.3s ease;
-        \n        display: flex;
-        \n        align-items: center;
-        \n        justify-content: center;
-        \n      
-      }\n\n      .icon-button:hover {;
-        \n        background-color: rgba(0, 0, 0, 0.1);
-        \n      
-      }\n\n      iconify-icon {;
-        \n        font-size: var(--icon-size);
-        \n        display: block;
-        \n        width: var(--icon-size);
-        \n        height: var(--icon-size);
-        \n      
-      }\n\n      .control-card {;
-        \n        position: fixed;
-        \n        bottom: 20px;
-        \n        left: 20px;
-        \n        right: 20px;
-        \n        background-color: rgba(255, 255, 255, 0.95);
-        \n        border-radius: var(--border-radius);
-        \n        padding: 40px 20px;
-        \n        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        \n        z-index: 1001;
-        \n        transform: translateY(calc(100% + 20px));
-        \n        transition: transform var(--transition-timing);
-        \n        backdrop-filter: blur(10px);
-        \n        -webkit-backdrop-filter: blur(10px);
-        \n        max-width: 600px;
-        \n        margin: 0 auto;
-        \n      
-      }\n\n      .control-card.show {;
-        \n        transform: translateY(0);
-        \n      
-      }\n\n      .control-container {;
-        \n        display: flex;
-        \n        align-items: center;
-        \n        width: 100%;
-        \n      
-      }\n\n      .dots-container {;
-        \n        flex-grow: 1;
-        \n        margin-right: 10px;
-        \n        padding: 0 10px;
-        \n      
-      }\n\n      .dots {;
-        \n        display: flex;
-        \n        justify-content: space-between;
-        \n        align-items: center;
-        \n        height: 30px;
-        \n      
-      }\n\n      .dot {;
-        \n        width: 12px;
-        \n        height: 12px;
-        \n        border-radius: 50%;
-        \n        background-color: #d1d1d1;
-        \n        transition: background-color 0.2s ease, transform 0.2s ease;
-        \n        cursor: pointer;
-        \n      
-      }\n\n      .dot.active {;
-        \n        background-color: #333;
-        \n        transform: scale(1.1);
-        \n      
-      }\n\n      .value-display {;
-        \n        min-width: 60px;
-        \n        text-align: right;
-        \n        font-size: 40px;
-        \n        color: black;
-        \n        font-weight: 300;
-        \n        margin-right: 20px;
-        \n      
-      }\n\n      .error-message {;
-        \n        position: fixed;
-        \n        bottom: 100px;
-        \n        left: 50%;
-        \n        transform: translateX(-50%);
-        \n        background-color: rgba(255, 59, 48, 0.9);
-        \n        color: white;
-        \n        padding: 8px 16px;
-        \n        border-radius: 8px;
-        \n        font-size: 14px;
-        \n        z-index: 1002;
-        \n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        \n      
-      }\n\n      @media (prefers-color-scheme: dark) {;
-        \n        .overlay,\n        .control-card {;
-        \n          background-color: rgba(30, 30, 30, 0.95);
-        \n        
-      }\n\n        .icon-button {;
-        \n          color: white;
-        \n        
-      }\n\n        .dot {;
-        \n          background-color: #666;
-        \n        
-      }\n\n        .dot.active {;
-        \n          background-color: white;
-        \n        
-      }\n\n        .value-display {;
-        \n          color: white;
-        \n        
-      }\n      
-      }\n\n      @media (max-width: 768px) {;
-        \n        .icon-row {;
-        \n          width: 95%;
-        \n        
-      }\n\n        .control-card {;
-        \n          bottom: 10px;
-        \n          left: 10px;
-        \n          right: 10px;
-        \n          padding: 30px 15px;
-        \n        
-      }\n\n        .value-display {;
-        \n          font-size: 32px;
-        \n          min-width: 50px;
-        \n          margin-right: 15px;
-        \n        
-      }\n      
-      }\n\n      @media (prefers-reduced-motion: reduce) {;
-        \n        .overlay,\n        .control-card,\n        .dot {;
-        \n          transition: none;
-        \n        
-      }\n      
-      }\n    ' ])))  }
+css(_templateObject$4 || (_templateObject$4 = _taggedTemplateLiteral([ '
+              :host {
+                --overlay-height: 120px;
+                --icon-size: 50px;
+                --border-radius: 20px;
+                --transition-timing: 0.3s ease-in-out;
+                font-family: \'Product Sans Regular\', \'Rubik\', sans-serif;
+              }
+              .controls-container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                z-index: 1000;
+                touch-action: none;
+              }
+              .overlay {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: var(--overlay-height);
+                background-color: rgba(255, 255, 255, 0.95);
+                color: #333;
+                box-sizing: border-box;
+                transition: transform var(--transition-timing);
+                transform: translateY(100%);
+                z-index: 1000;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border-top-left-radius: var(--border-radius);
+                border-top-right-radius: var(--border-radius);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+              }
+              .overlay.show {
+                transform: translateY(0);
+              }
+              .icon-container {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+              }
+              .icon-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 85%;
+              }
+              .icon-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #333;
+                padding: 10px;
+                border-radius: 50%;
+                transition: background-color 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .icon-button:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+              }
+              iconify-icon {
+                font-size: var(--icon-size);
+                display: block;
+                width: var(--icon-size);
+                height: var(--icon-size);
+              }
+              .control-card {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                background-color: rgba(255, 255, 255, 0.95);
+                border-radius: var(--border-radius);
+                padding: 40px 20px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                z-index: 1001;
+                transform: translateY(calc(100% + 20px));
+                transition: transform var(--transition-timing);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                max-width: 600px;
+                margin: 0 auto;
+              }
+              .control-card.show {
+                transform: translateY(0);
+              }
+              .control-container {
+                display: flex;
+                align-items: center;
+                width: 100%;
+              }
+              .dots-container {
+                flex-grow: 1;
+                margin-right: 10px;
+                padding: 0 10px;
+              }
+              .dots {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                height: 30px;
+              }
+              .dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background-color: #d1d1d1;
+                transition: background-color 0.2s ease, transform 0.2s ease;
+                cursor: pointer;
+              }
+              .dot.active {
+                background-color: #333;
+                transform: scale(1.1);
+              }
+              .value-display {
+                min-width: 60px;
+                text-align: right;
+                font-size: 40px;
+                color: black;
+                font-weight: 300;
+                margin-right: 20px;
+              }
+              .error-message {
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: rgba(255, 59, 48, 0.9);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                z-index: 1002;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+              }
+              @media (prefers-color-scheme: dark) {
+                .overlay,
+                .control-card {
+                  background-color: rgba(30, 30, 30, 0.95);
+                }
+                .icon-button {
+                  color: white;
+                }
+                .dot {
+                  background-color: #666;
+                }
+                .dot.active {
+                  background-color: white;
+                }
+                .value-display {
+                  color: white;
+                }
+              }
+              @media (max-width: 768px) {
+                .icon-row {
+                  width: 95%;
+                }
+                .control-card {
+                  bottom: 10px;
+                  left: 10px;
+                  right: 10px;
+                  padding: 30px 15px;
+                }
+                .value-display {
+                  font-size: 32px;
+                  min-width: 50px;
+                  margin-right: 15px;
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .overlay,
+                .control-card,
+                .dot {
+                  transition: none;
+                }
+              }
+' ])))  }
   connectedCallback() {
     super.connectedCallback();
     this.setupEventListeners();
