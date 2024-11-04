@@ -76,14 +76,17 @@ export class BackgroundRotator extends LitElement {
           left: 0;
           width: 100%;
           height: 100%;
-          background-size: contain;
+          background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          will-change: opacity;
+          will-change: opacity, transform;
           transition-property: opacity;
           transition-timing-function: ease-in-out;
           transform: translateZ(0);
           backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
         }
 
         .error-message {
@@ -108,7 +111,7 @@ export class BackgroundRotator extends LitElement {
     super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
     await this.initializeImageList();
-    this.startImageRotation();
+    await this.startImageRotation();
   }
 
   disconnectedCallback() {
@@ -124,10 +127,12 @@ export class BackgroundRotator extends LitElement {
 
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
+    this.screenWidth = Math.ceil(window.innerWidth * pixelRatio);
+    this.screenHeight = Math.ceil(window.innerHeight * pixelRatio);
 
-    // Notify parent component of screen size update
+    // Force image update when screen size changes
+    this.updateImage();
+
     this.dispatchEvent(new CustomEvent('screen-size-update', {
       bubbles: true,
       composed: true,
@@ -138,6 +143,22 @@ export class BackgroundRotator extends LitElement {
     }));
 
     this.requestUpdate();
+  }
+
+  getImageUrl(template) {
+    const pixelRatio = window.devicePixelRatio || 1;
+    // Multiply dimensions by pixel ratio and round up to nearest 100 for better caching
+    const width = Math.ceil(this.screenWidth * pixelRatio / 100) * 100;
+    const height = Math.ceil(this.screenHeight * pixelRatio / 100) * 100;
+    
+    const timestamp_ms = Date.now();
+    const timestamp = Math.floor(timestamp_ms / 1000);
+    
+    return template
+      .replace(/\${width}/g, width)
+      .replace(/\${height}/g, height)
+      .replace(/\${timestamp_ms}/g, timestamp_ms)
+      .replace(/\${timestamp}/g, timestamp);
   }
 
   async initializeImageList() {
@@ -158,16 +179,6 @@ export class BackgroundRotator extends LitElement {
       console.error('Error initializing image list:', error);
       this.error = 'Error initializing images';
     }
-  }
-
-  getImageUrl(template) {
-    const timestamp_ms = Date.now();
-    const timestamp = Math.floor(timestamp_ms / 1000);
-    return template
-      .replace(/\${width}/g, this.screenWidth)
-      .replace(/\${height}/g, this.screenHeight)
-      .replace(/\${timestamp_ms}/g, timestamp_ms)
-      .replace(/\${timestamp}/g, timestamp);
   }
 
   async startImageRotation() {
@@ -296,6 +307,8 @@ export class BackgroundRotator extends LitElement {
             opacity: ${this.activeImage === 'A' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
             background-size: ${imageFit};
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
           "
         ></div>
         <div
@@ -305,6 +318,8 @@ export class BackgroundRotator extends LitElement {
             opacity: ${this.activeImage === 'B' ? 1 : 0};
             transition-duration: ${this.crossfadeTime}s;
             background-size: ${imageFit};
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
           "
         ></div>
       </div>
