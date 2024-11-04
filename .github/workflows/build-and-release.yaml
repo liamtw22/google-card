@@ -1,4 +1,5 @@
 name: Build and Release
+
 on:
   push:
     branches:
@@ -21,7 +22,9 @@ jobs:
           node-version: '16'
           
       - name: Install dependencies
-        run: npm install --no-package-lock
+        run: |
+          npm install --no-package-lock
+          npm install --no-save prettier
         
       - name: Create dist directory
         run: mkdir -p dist
@@ -34,6 +37,17 @@ jobs:
       - name: Remove export line
         run: |
           sed -i 's/export { GoogleCard };//' dist/google-card.js
+          
+      - name: Format CSS in compiled output
+        run: |
+          npx prettier --write "dist/google-card.js" --parser babel --print-width 80 --tab-width 2 --single-quote true --trailing-comma es5 --bracket-spacing true --semi true --quote-props as-needed --arrow-parens avoid --no-bracket-spacing
+          
+      - name: Verify formatting
+        run: |
+          if ! grep -q "css(\[" dist/google-card.js; then
+            echo "CSS formatting verification failed"
+            exit 1
+          fi
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
