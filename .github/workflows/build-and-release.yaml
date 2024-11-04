@@ -34,22 +34,41 @@ jobs:
         run: |
           sed -i 's/export { GoogleCard };//' dist/google-card.js
           
-      - name: Format CSS in template literals
+      - name: Format CSS
         run: |
-          # Create a temporary formatting script
-          cat > format_css.sed << 'EOF'
-          # Find the CSS template literal and format it
-          s/\\n        :host {/\n        :host {/g
-          s/}/}\n        /g
-          s/\\n        /\n        /g
-          s/;/;\n        /g
-          # Clean up any extra newlines
-          s/\n        }/}/g
-          s/\n        \n        /\n        /g
+          # Create a perl script for formatting
+          cat > format_css.pl << 'EOF'
+          use strict;
+          use warnings;
+          
+          my $file = 'dist/google-card.js';
+          local @ARGV = ($file);
+          local $^I = '';  # Create backup with empty extension
+          
+          while (<>) {
+              # Look for css template literal
+              if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[ '(.*?)' \]\)\)\)/) {
+                  my $css = $1;
+                  # Add newlines after each property
+                  $css =~ s/;/;\n        /g;
+                  # Add newlines after opening braces
+                  $css =~ s/{/{;\n        /g;
+                  # Add newlines before closing braces
+                  $css =~ s/}/\n      }/g;
+                  # Remove any double newlines
+                  $css =~ s/\n\s*\n/\n/g;
+                  # Replace the original CSS with formatted version
+                  $_ = "css(_templateObject\$4 || (_templateObject\$4 = _taggedTemplateLiteral([ '$css' ])))";
+              }
+              print;
+          }
           EOF
           
-          # Apply the formatting
-          sed -i -f format_css.sed dist/google-card.js
+          # Make the script executable
+          chmod +x format_css.pl
+          
+          # Run the perl script
+          perl format_css.pl
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
