@@ -49,14 +49,16 @@ jobs:
               # Look for css template literal
               if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[ '(.*?)' \]\)\)\)/) {
                   my $css = $1;
-                  # Add newlines after each property
-                  $css =~ s/;/;\n        /g;
-                  # Add newlines after opening braces
-                  $css =~ s/{/{;\n        /g;
-                  # Add newlines before closing braces
-                  $css =~ s/}/\n      }/g;
-                  # Remove any double newlines
+                  
+                  # Replace \\n with actual newlines and indent
+                  $css =~ s/\\n/\n        /g;
+                  
+                  # Clean up any extra spaces at the end of lines
+                  $css =~ s/\s+$/\n/gm;
+                  
+                  # Remove any multiple newlines
                   $css =~ s/\n\s*\n/\n/g;
+                  
                   # Replace the original CSS with formatted version
                   $_ = "css(_templateObject\$4 || (_templateObject\$4 = _taggedTemplateLiteral([ '$css' ])))";
               }
