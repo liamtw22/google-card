@@ -1,7 +1,7 @@
 // src/components/Controls.js
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { controlsStyles } from '../styles/controls.js';
-import { TIMING, BRIGHTNESS, VOLUME, UI, ENTITIES, CSS_CLASSES } from '../constants.js';
+import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { TIMING, BRIGHTNESS, VOLUME, UI, ENTITIES } from '../constants.js';
+import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
 export class Controls extends LitElement {
   static get properties() {
@@ -20,13 +20,24 @@ export class Controls extends LitElement {
       isAdjustingVolume: { type: Boolean },
       error: { type: String },
       touchStartY: { type: Number },
-      longPressTimer: { type: Number },
+      longPressTimer: { type: Number }
     };
   }
 
   constructor() {
     super();
     this.initializeProperties();
+    this.bindMethods();
+  }
+
+  bindMethods() {
+    this.handleTouchStart = this.handleTouchStart.bind(this);
+    this.handleTouchMove = this.handleTouchMove.bind(this);
+    this.handleTouchEnd = this.handleTouchEnd.bind(this);
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleVolumeChange = this.handleVolumeChange.bind(this);
+    this.handleVolumeDrag = this.handleVolumeDrag.bind(this);
   }
 
   initializeProperties() {
@@ -61,7 +72,252 @@ export class Controls extends LitElement {
   }
 
   static get styles() {
-    return controlsStyles;
+    return css`
+      :host {
+        --overlay-height: 120px;
+        --icon-size: 50px;
+        --border-radius: 20px;
+        --transition-timing: 0.3s ease-in-out;
+        font-family: 'Product Sans Regular', 'Rubik', sans-serif;
+      }
+
+      .controls-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        touch-action: none;
+      }
+
+      .overlay {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--overlay-height);
+        background-color: rgba(255, 255, 255, 0.95);
+        color: #333;
+        box-sizing: border-box;
+        transition: transform var(--transition-timing);
+        transform: translateY(100%);
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .overlay.show {
+        transform: translateY(0);
+      }
+
+      .icon-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .icon-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 85%;
+        max-width: 500px;
+      }
+
+      .icon-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #333;
+        padding: 10px;
+        border-radius: 50%;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-button:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
+      iconify-icon {
+        font-size: var(--icon-size);
+        display: block;
+        width: var(--icon-size);
+        height: var(--icon-size);
+      }
+
+      .control-card {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: var(--border-radius);
+        padding: 40px 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1001;
+        transform: translateY(calc(100% + 20px));
+        transition: transform var(--transition-timing);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .control-card.show {
+        transform: translateY(0);
+      }
+
+      .control-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+
+      .dots-container {
+        flex-grow: 1;
+        margin-right: 10px;
+        padding: 0 10px;
+      }
+
+      .dots {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 30px;
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #d1d1d1;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        cursor: pointer;
+      }
+
+      .dot.active {
+        background-color: #333;
+        transform: scale(1.1);
+      }
+
+      .value-display {
+        min-width: 60px;
+        text-align: right;
+        font-size: 40px;
+        color: black;
+        font-weight: 300;
+        margin-right: 20px;
+      }
+
+      .error-message {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(255, 59, 48, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1002;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .overlay,
+        .control-card {
+          background-color: rgba(30, 30, 30, 0.95);
+        }
+
+        .icon-button {
+          color: white;
+        }
+
+        .dot {
+          background-color: #666;
+        }
+
+        .dot.active {
+          background-color: white;
+        }
+
+        .value-display {
+          color: white;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .icon-row {
+          width: 95%;
+        }
+
+        .control-card {
+          bottom: 10px;
+          left: 10px;
+          right: 10px;
+          padding: 30px 15px;
+        }
+
+        .value-display {
+          font-size: 32px;
+          min-width: 50px;
+          margin-right: 15px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .overlay,
+        .control-card,
+        .dot {
+          transition: none;
+        }
+      }
+    `;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.setupEventListeners();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.cleanupEventListeners();
+    this.clearAllTimers();
+  }
+
+  setupEventListeners() {
+    this.addEventListener('touchstart', this.handleTouchStart);
+    this.addEventListener('touchmove', this.handleTouchMove);
+    this.addEventListener('touchend', this.handleTouchEnd);
+  }
+
+  cleanupEventListeners() {
+    this.removeEventListener('touchstart', this.handleTouchStart);
+    this.removeEventListener('touchmove', this.handleTouchMove);
+    this.removeEventListener('touchend', this.handleTouchEnd);
+  }
+
+  clearAllTimers() {
+    this.clearOverlayDismissTimer();
+    this.clearBrightnessCardDismissTimer();
+    this.clearVolumeCardDismissTimer();
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
 
   startOverlayDismissTimer() {
@@ -121,6 +377,21 @@ export class Controls extends LitElement {
     this.requestUpdate();
   }
 
+  async updateVolumeValue(value) {
+    this.isAdjustingVolume = true;
+    this.visualVolume = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
+
+    try {
+      await this.setVolume(value);
+      this.startVolumeCardDismissTimer();
+    } catch (error) {
+      this.handleError('Failed to update volume', error);
+      this.visualVolume = this.volume;
+    }
+
+    this.requestUpdate();
+  }
+
   async setBrightness(value) {
     if (!this.hass) {
       throw new Error('Home Assistant not available');
@@ -139,21 +410,6 @@ export class Controls extends LitElement {
 
     this.brightness = brightnessValue;
     this.emitBrightnessChange(brightnessValue);
-  }
-
-  async updateVolumeValue(value) {
-    this.isAdjustingVolume = true;
-    this.visualVolume = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
-
-    try {
-      await this.setVolume(value);
-      this.startVolumeCardDismissTimer();
-    } catch (error) {
-      this.handleError('Failed to update volume', error);
-      this.visualVolume = this.volume;
-    }
-
-    this.requestUpdate();
   }
 
   async setVolume(value) {
@@ -183,7 +439,7 @@ export class Controls extends LitElement {
   }
 
   handleBrightnessChange(e) {
-    const clickedDot = e.target.closest('.brightness-dot');
+    const clickedDot = e.target.closest('.dot');
     if (!clickedDot) return;
 
     const newBrightness = parseInt(clickedDot.dataset.value);
@@ -191,29 +447,29 @@ export class Controls extends LitElement {
   }
 
   handleVolumeChange(e) {
-    const clickedDot = e.target.closest('.volume-dot');
+    const clickedDot = e.target.closest('.dot');
     if (!clickedDot) return;
 
     const newVolume = parseInt(clickedDot.dataset.value);
     this.updateVolumeValue(newVolume * (VOLUME.MAX / VOLUME.DOTS));
   }
 
-  async handleBrightnessDrag(e) {
-    const container = this.shadowRoot.querySelector('.brightness-dots');
+  handleBrightnessDrag(e) {
+    const container = this.shadowRoot.querySelector('.dots');
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
     const newValue = Math.round((relativeX / rect.width) * BRIGHTNESS.DOTS);
-    await this.updateBrightnessValue(newValue * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
+    this.updateBrightnessValue(newValue * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
   }
 
-  async handleVolumeDrag(e) {
-    const container = this.shadowRoot.querySelector('.volume-dots');
+  handleVolumeDrag(e) {
+    const container = this.shadowRoot.querySelector('.dots');
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
     const newValue = Math.round((relativeX / rect.width) * VOLUME.DOTS);
-    await this.updateVolumeValue(newValue * (VOLUME.MAX / VOLUME.DOTS));
+    this.updateVolumeValue(newValue * (VOLUME.MAX / VOLUME.DOTS));
   }
 
   handleTouchStart(e) {
@@ -356,19 +612,15 @@ export class Controls extends LitElement {
               <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-              ></iconify-icon>
+              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
             </button>
-            <button
-              class="icon-button"
+            <button class="icon-button"
               @touchstart="${this.handleSettingsIconTouchStart}"
               @touchend="${this.handleSettingsIconTouchEnd}"
-              @touchcancel="${this.handleSettingsIconTouchEnd}"
-            >
+              @touchcancel="${this.handleSettingsIconTouchEnd}">
               <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
           </div>
@@ -377,96 +629,57 @@ export class Controls extends LitElement {
     `;
   }
 
-  renderBrightnessCard() {
-    const brightnessDisplayValue = Math.round(
-      this.visualBrightness / (BRIGHTNESS.MAX / BRIGHTNESS.DOTS)
-    );
+  renderControlCard(type) {
+    const isVolume = type === 'volume';
+    const value = isVolume ? this.visualVolume : this.visualBrightness;
+    const max = isVolume ? VOLUME.MAX : BRIGHTNESS.MAX;
+    const dots = isVolume ? VOLUME.DOTS : BRIGHTNESS.DOTS;
+    const displayValue = Math.round(value / (max / dots));
+    const show = isVolume ? this.showVolumeCard : this.showBrightnessCard;
+    const transition = isVolume ? this.volumeCardTransition : this.brightnessCardTransition;
+    const handler = isVolume ? this.handleVolumeChange : this.handleBrightnessChange;
+    const dragHandler = isVolume ? this.handleVolumeDrag : this.handleBrightnessDrag;
 
     return html`
-      <div
-        class="brightness-card ${this.showBrightnessCard ? 'show' : ''}"
-        style="transition: ${this.brightnessCardTransition}"
-      >
-        <div class="brightness-control">
-          <div class="brightness-dots-container">
-            <div
-              class="brightness-dots"
-              @click="${this.handleBrightnessChange}"
-              @mousedown="${this.handleBrightnessDrag}"
-              @mousemove="${(e) => e.buttons === 1 && this.handleBrightnessDrag(e)}"
-              @touchstart="${this.handleBrightnessDrag}"
-              @touchmove="${this.handleBrightnessDrag}"
-            >
-              ${[...Array(BRIGHTNESS.DOTS)].map(
-                (_, i) => html`
-                  <div
-                    class="brightness-dot ${i < brightnessDisplayValue ? 'active' : ''}"
-                    data-value="${i + 1}"
-                  ></div>
-                `
-              )}
+      <div class="control-card ${show ? 'show' : ''}" 
+           style="transition: ${transition}">
+        <div class="control-container">
+          <div class="dots-container">
+            <div class="dots" 
+                 @click="${handler}"
+                 @mousedown="${dragHandler}"
+                 @mousemove="${(e) => e.buttons === 1 && dragHandler(e)}"
+                 @touchstart="${dragHandler}"
+                 @touchmove="${dragHandler}">
+              ${[...Array(dots)].map((_, i) => html`
+                <div class="dot ${i < displayValue ? 'active' : ''}" 
+                     data-value="${i + 1}">
+                </div>
+              `)}
             </div>
           </div>
-          <span class="brightness-value">${brightnessDisplayValue}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  renderVolumeCard() {
-    const volumeDisplayValue = Math.round(this.visualVolume / (VOLUME.MAX / VOLUME.DOTS));
-
-    return html`
-      <div
-        class="volume-card ${this.showVolumeCard ? 'show' : ''}"
-        style="transition: ${this.volumeCardTransition}"
-      >
-        <div class="volume-control">
-          <div class="volume-dots-container">
-            <div
-              class="volume-dots"
-              @click="${this.handleVolumeChange}"
-              @mousedown="${this.handleVolumeDrag}"
-              @mousemove="${(e) => e.buttons === 1 && this.handleVolumeDrag(e)}"
-              @touchstart="${this.handleVolumeDrag}"
-              @touchmove="${this.handleVolumeDrag}"
-            >
-              ${[...Array(VOLUME.DOTS)].map(
-                (_, i) => html`
-                  <div
-                    class="volume-dot ${i < volumeDisplayValue ? 'active' : ''}"
-                    data-value="${i + 1}"
-                  ></div>
-                `
-              )}
-            </div>
-          </div>
-          <span class="volume-value">${volumeDisplayValue}</span>
+          <span class="value-display">${displayValue}</span>
         </div>
       </div>
     `;
   }
 
   renderError() {
-    if (!this.error) return null;
-    return html`<div class="error-message">${this.error}</div>`;
+    return this.error ? html`<div class="error-message">${this.error}</div>` : null;
   }
 
   render() {
     return html`
-      <div
-        class="controls-container"
-        @touchstart="${this.handleTouchStart}"
-        @touchmove="${this.handleTouchMove}"
-        @touchend="${this.handleTouchEnd}"
-      >
+      <div class="controls-container">
         ${this.renderError()}
         ${!this.showBrightnessCard && !this.showVolumeCard ? this.renderOverlay() : ''}
-        ${this.renderBrightnessCard()} ${this.renderVolumeCard()}
+        ${this.showBrightnessCard ? this.renderControlCard('brightness') : ''}
+        ${this.showVolumeCard ? this.renderControlCard('volume') : ''}
       </div>
     `;
   }
 
+  // Public methods for external control
   setBrightnessValue(value) {
     this.brightness = value;
     this.visualBrightness = value;
@@ -489,22 +702,6 @@ export class Controls extends LitElement {
 
   hideAllControls() {
     this.dismissAllCards();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.clearAllTimers();
-  }
-
-  clearAllTimers() {
-    this.clearOverlayDismissTimer();
-    this.clearBrightnessCardDismissTimer();
-    this.clearVolumeCardDismissTimer();
-
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-      this.longPressTimer = null;
-    }
   }
 }
 
