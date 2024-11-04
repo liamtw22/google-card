@@ -1,5 +1,5 @@
 // src/GoogleCard.js
-import { LitElement, html } from 'lit-element';
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from './styles/shared.js';
 import './components/BackgroundRotator.js';
 import './components/WeatherDisplay.js';
