@@ -1,7 +1,6 @@
-// src/styles/WeatherClockStyles.js
-import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-export const weatherClockStyles = css`
+const weatherClockStyles = css`
   .weather-component {
     display: flex;
     justify-content: space-between;
@@ -70,3 +69,6 @@ export const weatherClockStyles = css`
     text-align: center;
   }
 `;
+
+export { weatherClockStyles };
+//# sourceMappingURL=WeatherClockStyles.js.map

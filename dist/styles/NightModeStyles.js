@@ -1,7 +1,6 @@
-// src/styles/NightModeStyles.js
-import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-export const nightModeStyles = css`
+const nightModeStyles = css`
   .night-mode {
     position: absolute;
     top: 0;
@@ -22,3 +21,6 @@ export const nightModeStyles = css`
     font-family: 'Product Sans Regular', sans-serif;
   }
 `;
+
+export { nightModeStyles };
+//# sourceMappingURL=NightModeStyles.js.map

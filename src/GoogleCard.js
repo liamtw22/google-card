@@ -1,4 +1,4 @@
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 import { DEFAULT_CONFIG } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
 import './components/BackgroundRotator';
@@ -23,7 +23,7 @@ export class GoogleCard extends LitElement {
       currentTime: { type: String },
       isInNightMode: { type: Boolean },
       isAdjustingBrightness: { type: Boolean },
-      lastBrightnessUpdateTime: { type: Number }
+      lastBrightnessUpdateTime: { type: Number },
     };
   }
 
@@ -50,7 +50,7 @@ export class GoogleCard extends LitElement {
 
   setConfig(config) {
     if (!config.image_url) {
-      throw new Error("You need to define an image_url");
+      throw new Error('You need to define an image_url');
     }
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.showDebugInfo = this.config.show_debug;
@@ -98,16 +98,15 @@ export class GoogleCard extends LitElement {
 
   render() {
     if (this.isNightMode) {
-      return html`
-        <night-mode
-          .currentTime=${this.currentTime}
-        ></night-mode>
-      `;
+      return html` <night-mode .currentTime=${this.currentTime}></night-mode> `;
     }
 
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
-      
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
+        rel="stylesheet"
+      />
+
       <background-rotator
         .hass=${this.hass}
         .config=${this.config}
@@ -116,9 +115,7 @@ export class GoogleCard extends LitElement {
         .showDebugInfo=${this.showDebugInfo}
       ></background-rotator>
 
-      <weather-clock
-        .hass=${this.hass}
-      ></weather-clock>
+      <weather-clock .hass=${this.hass}></weather-clock>
 
       <controls
         .hass=${this.hass}
@@ -136,7 +133,7 @@ export class GoogleCard extends LitElement {
   }
 }
 
-customElements.define("google-card", GoogleCard);
+customElements.define('google-card', GoogleCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -144,5 +141,5 @@ window.customCards.push({
   name: 'Google Card',
   description: 'A Google Nest Hub-inspired card for Home Assistant',
   preview: true,
-  documentationURL: 'https://github.com/liamtw22/google-card'
+  documentationURL: 'https://github.com/liamtw22/google-card',
 });

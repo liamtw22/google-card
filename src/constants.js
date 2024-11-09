@@ -11,20 +11,20 @@ export const BRIGHTNESS_DEBOUNCE_DELAY = 250;
 export const BRIGHTNESS_STABILIZE_DELAY = 2000;
 
 export const DEFAULT_CONFIG = {
-  image_url: "",
+  image_url: '',
   display_time: 15,
   crossfade_time: 3,
-  image_fit: "contain",
+  image_fit: 'contain',
   image_list_update_interval: 3600,
-  image_order: "sorted",
+  image_order: 'sorted',
   show_debug: false,
-  sensor_update_delay: DEFAULT_SENSOR_UPDATE_DELAY
+  sensor_update_delay: DEFAULT_SENSOR_UPDATE_DELAY,
 };
 
 export const IMAGE_SOURCE_TYPES = {
-  MEDIA_SOURCE: "media-source",
-  UNSPLASH_API: "unsplash-api",
-  IMMICH_API: "immich-api",
-  PICSUM: "picsum",
-  URL: "url"
+  MEDIA_SOURCE: 'media-source',
+  UNSPLASH_API: 'unsplash-api',
+  IMMICH_API: 'immich-api',
+  PICSUM: 'picsum',
+  URL: 'url',
 };

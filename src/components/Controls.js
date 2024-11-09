@@ -1,5 +1,5 @@
 // src/components/Controls.js
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 import { controlsStyles } from '../styles/ControlsStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
@@ -10,7 +10,7 @@ import {
   MIN_BRIGHTNESS,
   MAX_BRIGHTNESS,
   SWIPE_THRESHOLD,
-  DEFAULT_SENSOR_UPDATE_DELAY
+  DEFAULT_SENSOR_UPDATE_DELAY,
 } from '../constants';
 
 export class Controls extends LitElement {
@@ -24,7 +24,7 @@ export class Controls extends LitElement {
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
       touchStartY: { type: Number },
-      lastBrightnessUpdateTime: { type: Number }
+      lastBrightnessUpdateTime: { type: Number },
     };
   }
 
@@ -184,30 +184,29 @@ export class Controls extends LitElement {
     this.brightnessUpdateTimer = setTimeout(async () => {
       await this.setBrightness(value);
       this.lastBrightnessUpdateTime = Date.now();
-      
+
       this.brightnessStabilizeTimer = setTimeout(() => {
         this.isAdjustingBrightness = false;
       }, BRIGHTNESS_STABILIZE_DELAY);
-      
     }, BRIGHTNESS_DEBOUNCE_DELAY);
   }
 
   async setBrightness(value) {
     const internalValue = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
-    
+
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_screen_brightness_level',
         data: {
-          command: internalValue
-        }
+          command: internalValue,
+        },
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors'
+        message: 'command_update_sensors',
       });
 
-      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
 
       this.brightness = internalValue;
     } catch (error) {
@@ -248,15 +247,19 @@ export class Controls extends LitElement {
               <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:do-not-disturb-on-outline-rounded"></iconify-icon>
+              <iconify-icon
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+              ></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
             </button>
-            <button class="icon-button"
+            <button
+              class="icon-button"
               @touchstart="${this.handleSettingsIconTouchStart}"
               @touchend="${this.handleSettingsIconTouchEnd}"
-              @touchcancel="${this.handleSettingsIconTouchEnd}">
+              @touchcancel="${this.handleSettingsIconTouchEnd}"
+            >
               <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
           </div>
@@ -268,21 +271,28 @@ export class Controls extends LitElement {
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
-      <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" 
-           style="transition: ${this.brightnessCardTransition};">
+      <div
+        class="brightness-card ${this.showBrightnessCard ? 'show' : ''}"
+        style="transition: ${this.brightnessCardTransition};"
+      >
         <div class="brightness-control">
           <div class="brightness-dots-container">
-            <div class="brightness-dots" 
-                 @click="${this.handleBrightnessChange}"
-                 @mousedown="${this.handleBrightnessDrag}"
-                 @mousemove="${e => e.buttons === 1 && this.handleBrightnessDrag(e)}"
-                 @touchstart="${this.handleBrightnessDrag}"
-                 @touchmove="${this.handleBrightnessDrag}">
-              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => html`
-                <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" 
-                     data-value="${value}">
-                </div>
-              `)}
+            <div
+              class="brightness-dots"
+              @click="${this.handleBrightnessChange}"
+              @mousedown="${this.handleBrightnessDrag}"
+              @mousemove="${(e) => e.buttons === 1 && this.handleBrightnessDrag(e)}"
+              @touchstart="${this.handleBrightnessDrag}"
+              @touchmove="${this.handleBrightnessDrag}"
+            >
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
+                (value) => html`
+                  <div
+                    class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}"
+                    data-value="${value}"
+                  ></div>
+                `
+              )}
             </div>
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
@@ -293,9 +303,11 @@ export class Controls extends LitElement {
 
   render() {
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
-      ${!this.showBrightnessCard ? this.renderOverlay() : ''}
-      ${this.renderBrightnessCard()}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
+        rel="stylesheet"
+      />
+      ${!this.showBrightnessCard ? this.renderOverlay() : ''} ${this.renderBrightnessCard()}
     `;
   }
 }

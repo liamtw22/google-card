@@ -1,7 +1,6 @@
-// src/styles/BackgroundRotatorStyles.js
-import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-export const backgroundRotatorStyles = css`
+const backgroundRotatorStyles = css`
   .background-container {
     position: absolute;
     top: 0;
@@ -44,3 +43,6 @@ export const backgroundRotatorStyles = css`
     border-radius: 8px;
   }
 `;
+
+export { backgroundRotatorStyles };
+//# sourceMappingURL=BackgroundRotatorStyles.js.map

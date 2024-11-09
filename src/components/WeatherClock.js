@@ -1,5 +1,5 @@
 // src/components/WeatherClock.js
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 import { weatherClockStyles } from '../styles/WeatherClockStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 
@@ -11,7 +11,7 @@ export class WeatherClock extends LitElement {
       time: { type: String },
       temperature: { type: String },
       weatherIcon: { type: String },
-      aqi: { type: String }
+      aqi: { type: String },
     };
   }
 
@@ -63,17 +63,19 @@ export class WeatherClock extends LitElement {
   }
 
   updateDateTime(now) {
-    this.date = now.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
+    this.date = now.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
     });
-    
-    this.time = now.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit', 
-      hour12: true 
-    }).replace(/\s?[AP]M/, '');
+
+    this.time = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(/\s?[AP]M/, '');
   }
 
   updateWeatherData() {
@@ -95,20 +97,20 @@ export class WeatherClock extends LitElement {
   getWeatherIcon(state) {
     const iconMapping = {
       'clear-night': 'clear-night',
-      'cloudy': 'cloudy-fill',
-      'fog': 'fog',
-      'hail': 'hail',
-      'lightning': 'thunderstorms',
+      cloudy: 'cloudy-fill',
+      fog: 'fog',
+      hail: 'hail',
+      lightning: 'thunderstorms',
       'lightning-rainy': 'thunderstorms-rain',
-      'partlycloudy': 'partly-cloudy-day',
-      'pouring': 'rain',
-      'rainy': 'drizzle',
-      'snowy': 'snow',
+      partlycloudy: 'partly-cloudy-day',
+      pouring: 'rain',
+      rainy: 'drizzle',
+      snowy: 'snow',
       'snowy-rainy': 'sleet',
-      'sunny': 'clear-day',
-      'windy': 'wind',
+      sunny: 'clear-day',
+      windy: 'wind',
       'windy-variant': 'wind',
-      'exceptional': 'not-available'
+      exceptional: 'not-available',
     };
     return iconMapping[state] || 'not-available-fill';
   }
@@ -124,7 +126,10 @@ export class WeatherClock extends LitElement {
 
   render() {
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
       <div class="weather-component">
         <div class="left-column">
           <div class="date">${this.date}</div>
@@ -132,9 +137,12 @@ export class WeatherClock extends LitElement {
         </div>
         <div class="right-column">
           <div class="weather-info">
-            <img src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg" 
-                 class="weather-icon" 
-                 alt="Weather icon">
+            <img
+              src="https://basmilius.github.io/weather-icons/production/fill/all/${this
+                .weatherIcon}.svg"
+              class="weather-icon"
+              alt="Weather icon"
+            />
             <span class="temperature">${this.temperature}</span>
           </div>
           <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
@@ -146,4 +154,4 @@ export class WeatherClock extends LitElement {
   }
 }
 
-customElements.define("weather-clock", WeatherClock);
+customElements.define('weather-clock', WeatherClock);

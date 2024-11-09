@@ -1,7 +1,6 @@
-// src/styles/ControlsStyles.js
-import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-export const controlsStyles = css`
+const controlsStyles = css`
   .overlay {
     position: fixed;
     bottom: 0;
@@ -125,3 +124,6 @@ export const controlsStyles = css`
     height: 50px;
   }
 `;
+
+export { controlsStyles };
+//# sourceMappingURL=ControlsStyles.js.map

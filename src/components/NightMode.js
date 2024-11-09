@@ -1,11 +1,11 @@
 // src/components/NightMode.js
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 import { nightModeStyles } from '../styles/NightModeStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
   NIGHT_MODE_TRANSITION_DELAY,
   MIN_BRIGHTNESS,
-  DEFAULT_SENSOR_UPDATE_DELAY
+  DEFAULT_SENSOR_UPDATE_DELAY,
 } from '../constants';
 
 export class NightMode extends LitElement {
@@ -15,7 +15,7 @@ export class NightMode extends LitElement {
       currentTime: { type: String },
       brightness: { type: Number },
       isInNightMode: { type: Boolean },
-      previousBrightness: { type: Number }
+      previousBrightness: { type: Number },
     };
   }
 
@@ -58,23 +58,25 @@ export class NightMode extends LitElement {
 
   updateTime() {
     const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit', 
-      hour12: true 
-    }).replace(/\s?[AP]M/, '');
+    this.currentTime = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(/\s?[AP]M/, '');
   }
 
   async enterNightMode() {
     if (this.isInNightMode) return;
-    
+
     try {
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
       await this.setBrightness(MIN_BRIGHTNESS);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
       await this.toggleAutoBrightness(true);
-      
+
       this.isInNightMode = true;
       this.requestUpdate();
     } catch (error) {
@@ -84,12 +86,12 @@ export class NightMode extends LitElement {
 
   async exitNightMode() {
     if (!this.isInNightMode) return;
-    
+
     try {
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
       await this.setBrightness(this.previousBrightness);
-      
+
       this.isInNightMode = false;
       this.requestUpdate();
 
@@ -105,22 +107,22 @@ export class NightMode extends LitElement {
 
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: "command_screen_brightness_level",
+        message: 'command_screen_brightness_level',
         data: {
-          command: value
-        }
+          command: value,
+        },
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: "command_update_sensors"
+        message: 'command_update_sensors',
       });
 
-      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
-      
+      await new Promise((resolve) => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
+
       this.brightness = value;
       this.requestUpdate();
     } catch (error) {
-      console.error("Error setting brightness:", error);
+      console.error('Error setting brightness:', error);
     }
   }
 
@@ -129,13 +131,13 @@ export class NightMode extends LitElement {
 
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: "command_auto_screen_brightness",
+        message: 'command_auto_screen_brightness',
         data: {
-          command: enabled ? "turn_on" : "turn_off"
-        }
+          command: enabled ? 'turn_on' : 'turn_off',
+        },
       });
     } catch (error) {
-      console.error("Error toggling auto brightness:", error);
+      console.error('Error toggling auto brightness:', error);
     }
   }
 
@@ -161,7 +163,10 @@ export class NightMode extends LitElement {
 
   render() {
     return html`
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
+        rel="stylesheet"
+      />
       <div class="night-mode">
         <div class="night-time">${this.currentTime}</div>
       </div>
@@ -169,4 +174,4 @@ export class NightMode extends LitElement {
   }
 }
 
-customElements.define("night-mode", NightMode);
+customElements.define('night-mode', NightMode);
