@@ -10,26 +10,50 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
+          cache: 'npm'
           
       - name: Install dependencies
-        run: npm install --no-package-lock
-        
+        run: |
+          npm ci
+        env:
+          NODE_ENV: development
+          
       - name: Create dist directory
         run: mkdir -p dist
+        
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
         
       - name: Build
         run: |
           npm run clean
           npm run build
+        env:
+          NODE_ENV: production
+          
+      - name: Verify build
+        run: |
+          if [ ! -f "dist/google-card.js" ]; then
+            echo "Error: dist/google-card.js not found"
+            exit 1
+          fi
+          if [ ! -f "dist/google-card.js.map" ]; then
+            echo "Warning: Source map not found"
+          fi
           
       - name: Remove export line
         run: |
@@ -42,10 +66,10 @@ jobs:
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add -f dist/google-card.js
-            git commit -m "chore: update dist files" || echo "No changes to commit"
-            git push
+            git diff-index --quiet HEAD || git commit -m "chore: update dist files [skip ci]"
+            git push || (git pull --rebase && git push)
           else
-            echo "dist/google-card.js not found - build may have failed"
+            echo "Error: dist/google-card.js not found - build failed"
             exit 1
           fi
           
@@ -55,11 +79,37 @@ jobs:
         with:
           files: |
             dist/google-card.js
+            dist/google-card.js.map
           draft: false
           prerelease: false
           generate_release_notes: true
+          body: |
+            ## Changes
+            ${{ github.event.head_commit.message }}
+            
+            ## Installation
+            Add this to your HACS custom repositories:
+            ```
+            https://github.com/${{ github.repository }}
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-permissions:
-  contents: write
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: |
+            dist/google-card.js
+            dist/google-card.js.map
+          
+      - name: Report Status
+        if: always()
+        run: |
+          if [ -f "dist/google-card.js" ]; then
+            echo "✅ Build successful"
+            ls -lh dist/
+          else
+            echo "❌ Build failed"
+            exit 1
+          fi
