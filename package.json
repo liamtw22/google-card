@@ -34,6 +34,8 @@
   },
   "homepage": "https://github.com/liamtw22/google-card#readme",
   "dependencies": {
+    "@babel/runtime": "^7.23.2",
+    "@babel/runtime-corejs3": "^7.23.2",
     "lit-element": "^2.5.1",
     "lit-html": "^1.4.1"
   },
@@ -45,7 +47,6 @@
     "@babel/plugin-transform-classes": "^7.23.2",
     "@babel/plugin-transform-runtime": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
-    "@babel/runtime-corejs3": "^7.23.2",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
