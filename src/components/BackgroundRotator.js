@@ -38,8 +38,8 @@ export class BackgroundRotator extends LitElement {
     this.isTransitioning = false;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
     this.displayTime = DEFAULT_CONFIG.display_time;
-    this.screenWidth = window.innerWidth;
-    this.screenHeight = window.innerHeight;
+    this.screenWidth = window.outerWidth;
+    this.screenHeight = window.outerHeight;
     this.error = null;
     this.imageList = [];
     this.currentImageIndex = -1;
@@ -127,8 +127,8 @@ export class BackgroundRotator extends LitElement {
 
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.ceil(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.ceil(window.innerHeight * pixelRatio);
+    this.screenWidth = Math.ceil(window.outerWidth * pixelRatio);
+    this.screenHeight = Math.ceil(window.outerHeight * pixelRatio);
 
     // Force image update when screen size changes
     this.updateImage();
