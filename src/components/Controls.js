@@ -197,21 +197,21 @@ export class Controls extends LitElement {
     
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: "command_screen_brightness_level",
+        message: 'command_screen_brightness_level',
         data: {
           command: internalValue
         }
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: "command_update_sensors"
+        message: 'command_update_sensors'
       });
 
       await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
 
       this.brightness = internalValue;
     } catch (error) {
-      console.error("Error setting brightness:", error);
+      console.error('Error setting brightness:', error);
       this.visualBrightness = this.brightness;
     }
 
@@ -219,13 +219,13 @@ export class Controls extends LitElement {
   }
 
   // Debug Toggle
-  handleSettingsIconTouchStart(e) {
+  handleSettingsIconTouchStart() {
     this.longPressTimer = setTimeout(() => {
       this.dispatchEvent(new CustomEvent('debugToggle'));
     }, LONG_PRESS_TIMEOUT);
   }
 
-  handleSettingsIconTouchEnd(e) {
+  handleSettingsIconTouchEnd() {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
     }
@@ -300,4 +300,4 @@ export class Controls extends LitElement {
   }
 }
 
-customElements.define("google-controls", Controls);
+customElements.define('google-controls', Controls);
