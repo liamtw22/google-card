@@ -1,7 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import babel from 'rollup-plugin-babel';
-import { terser } from 'rollup-plugin-terser';
+import babel from '@rollup/plugin-babel';
+import terser from '@rollup/plugin-terser';
 
 export default {
   input: 'src/GoogleCard.js',
@@ -12,9 +12,15 @@ export default {
     indent: '  ',
   },
   plugins: [
-    resolve(),
-    commonjs(),
+    resolve({
+      browser: true,
+      preferBuiltins: false
+    }),
+    commonjs({
+      include: 'node_modules/**'
+    }),
     babel({
+      babelHelpers: 'bundled',
       exclude: 'node_modules/**',
       presets: [
         [
@@ -23,8 +29,14 @@ export default {
             targets: {
               esmodules: true,
             },
+            modules: false,
+            bugfixes: true,
           },
         ],
+      ],
+      plugins: [
+        ['@babel/plugin-proposal-decorators', { decoratorsBeforeExport: true }],
+        ['@babel/plugin-proposal-class-properties']
       ],
     }),
     terser({
@@ -42,10 +54,20 @@ export default {
         sequences: false,    // Don't combine consecutive statements with comma
         directives: false,   // Don't remove directives
       },
+      keep_classnames: true,
+      keep_fnames: true
     })
   ],
   external: [
     'lit-element',
     'lit-html'
-  ]
+  ],
+  onwarn(warning, warn) {
+    // Skip certain warnings
+    if (warning.code === 'THIS_IS_UNDEFINED') return;
+    if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+    
+    // Console everything else
+    warn(warning);
+  }
 };
