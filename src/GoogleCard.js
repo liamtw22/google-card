@@ -1,3 +1,9 @@
+import { LitElement, html, css } from 'lit-element';
+import { sharedStyles } from './styles/shared.js';
+import './components/BackgroundRotator.js';
+import './components/WeatherDisplay.js';
+import './components/NightMode.js';
+
 async setBrightness(value) {
     const brightnessValue = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
     
