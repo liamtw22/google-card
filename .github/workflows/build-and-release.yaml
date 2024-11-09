@@ -1,14 +1,13 @@
 name: Build and Release
+
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,97 +17,73 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          
+          cache: 'npm'
+
       - name: Install dependencies
+        run: npm ci
+
+      - name: Validate code
         run: |
-          npm install
-        env:
-          NODE_ENV: development
-          
-      - name: Create dist directory
-        run: mkdir -p dist
-        
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
-        
+          npm run lint
+          echo "Code validation completed successfully"
+
+      - name: Format code
+        run: |
+          npm run format
+          echo "Code formatting completed successfully"
+
       - name: Build
         run: |
-          npm run clean
           npm run build
-        env:
-          NODE_ENV: production
-          
+          echo "Build completed successfully"
+
       - name: Verify build
         run: |
           if [ ! -f "dist/google-card.js" ]; then
-            echo "Error: dist/google-card.js not found"
+            echo "Build verification failed - dist/google-card.js not found"
             exit 1
           fi
-          if [ ! -f "dist/google-card.js.map" ]; then
-            echo "Warning: Source map not found"
-          fi
-          
-      - name: Remove export line
+          echo "Build verification completed successfully"
+
+      - name: Configure Git
         run: |
-          sed -i 's/export { GoogleCard };//' dist/google-card.js
-          
-      - name: Commit dist
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit build to dist
         run: |
-          if [ -f "dist/google-card.js" ]; then
-            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add -f dist/google-card.js
-            git diff-index --quiet HEAD || git commit -m "chore: update dist files [skip ci]"
-            git push || (git pull --rebase && git push)
-          else
-            echo "Error: dist/google-card.js not found - build failed"
-            exit 1
-          fi
-          
+          git add dist/
+          git commit -m "chore: update dist files" || echo "No changes to commit"
+          git push origin main || echo "No changes to push"
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/google-card.js
-            dist/google-card.js.map
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          body: |
-            ## Changes
-            ${{ github.event.head_commit.message }}
-            
-            ## Installation
-            Add this to your HACS custom repositories:
-            ```
-            https://github.com/${{ github.repository }}
-            ```
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
         with:
-          name: dist
-          path: |
-            dist/google-card.js
-            dist/google-card.js.map
-          
-      - name: Report Status
-        if: always()
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Release of version ${{ steps.get_version.outputs.version }}
+            
+            Changes in this release:
+            - Updated dist files
+          draft: false
+          prerelease: false
+
+      - name: Verify workflow completion
         run: |
-          if [ -f "dist/google-card.js" ]; then
-            echo "✅ Build successful"
-            ls -lh dist/
-          else
-            echo "❌ Build failed"
-            exit 1
-          fi
+          echo "All jobs completed successfully"
+          echo "Version released: v${{ steps.get_version.outputs.version }}"
