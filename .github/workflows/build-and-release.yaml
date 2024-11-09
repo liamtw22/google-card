@@ -35,29 +35,36 @@ jobs:
           npm run lint:fix
           echo "Linting and formatting completed successfully"
 
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
       - name: Build
         run: |
           npm run build
           echo "Build completed successfully"
 
-      - name: Verify build
+      - name: Stage changes
+        run: |
+          git add .
+          git status
+
+      - name: Commit changes
+        run: |
+          git commit -m "chore: update dist files and format source" || echo "No changes to commit"
+
+      - name: Push changes
+        run: |
+          git push origin main || echo "No changes to push"
+
+      - name: Verify build exists
         run: |
           if [ ! -f "dist/google-card.js" ]; then
             echo "Build verification failed - dist/google-card.js not found"
             exit 1
           fi
           echo "Build verification completed successfully"
-
-      - name: Configure Git
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-
-      - name: Commit build to dist
-        run: |
-          git add dist/ || true
-          git commit -m "chore: update dist files" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
 
       - name: Get version
         id: get_version
@@ -77,6 +84,7 @@ jobs:
             
             Changes in this release:
             - Updated dist files
+            - Formatted source files
           draft: false
           prerelease: false
 
