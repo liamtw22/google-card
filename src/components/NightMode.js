@@ -1,5 +1,5 @@
 // src/components/NightMode.js
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { nightModeStyles } from '../styles/NightModeStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
