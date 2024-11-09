@@ -1,17 +1,14 @@
 import resolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
-import copy from 'rollup-plugin-copy';
 
 export default {
   input: 'src/GoogleCard.js',
   output: {
-    dir: 'dist',
+    file: 'dist/google-card.js',
     format: 'es',
     sourcemap: true,
-    indent: '  ',
-    preserveModules: true,
-    preserveModulesRoot: 'src'
+    indent: '  '
   },
   plugins: [
     resolve({
@@ -29,19 +26,6 @@ export default {
       keep_classnames: true,
       keep_fnames: true,
       mangle: false
-    }),
-    copy({
-      targets: [
-        { 
-          src: 'package.json', 
-          dest: 'dist',
-          transform: (contents) => {
-            const pkg = JSON.parse(contents.toString());
-            pkg.private = false;
-            return JSON.stringify(pkg, null, 2);
-          }
-        }
-      ]
     })
   ]
 };
