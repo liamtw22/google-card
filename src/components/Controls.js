@@ -1,330 +1,105 @@
 // src/components/Controls.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { sharedStyles } from '../styles/shared.js';
-import { TIMING, BRIGHTNESS, VOLUME, UI, ENTITIES } from '../constants.js';
-import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
+import { controlsStyles } from '../styles/ControlsStyles';
+import {
+  OVERLAY_DISMISS_TIMEOUT,
+  LONG_PRESS_TIMEOUT,
+  BRIGHTNESS_DEBOUNCE_DELAY,
+  BRIGHTNESS_STABILIZE_DELAY,
+  MIN_BRIGHTNESS,
+  MAX_BRIGHTNESS,
+  SWIPE_THRESHOLD,
+  DEFAULT_SENSOR_UPDATE_DELAY
+} from '../constants';
 
 export class Controls extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      brightness: { type: Number },
-      visualBrightness: { type: Number },
+      showOverlay: { type: Boolean },
       showBrightnessCard: { type: Boolean },
       brightnessCardTransition: { type: String },
-      volume: { type: Number },
-      visualVolume: { type: Number },
-      showVolumeCard: { type: Boolean },
-      volumeCardTransition: { type: String },
-      showOverlay: { type: Boolean },
+      brightness: { type: Number },
+      visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
-      isAdjustingVolume: { type: Boolean },
-      error: { type: String },
       touchStartY: { type: Number },
-      longPressTimer: { type: Number }
+      lastBrightnessUpdateTime: { type: Number }
     };
+  }
+
+  static get styles() {
+    return [controlsStyles];
   }
 
   constructor() {
     super();
     this.initializeProperties();
-    this.bindMethods();
-  }
-
-  bindMethods() {
-    this.handleTouchStart = this.handleTouchStart.bind(this);
-    this.handleTouchMove = this.handleTouchMove.bind(this);
-    this.handleTouchEnd = this.handleTouchEnd.bind(this);
-    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
-    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
-    this.handleVolumeChange = this.handleVolumeChange.bind(this);
-    this.handleVolumeDrag = this.handleVolumeDrag.bind(this);
+    this.setupEventListeners();
   }
 
   initializeProperties() {
-    // Control values
-    this.brightness = BRIGHTNESS.DEFAULT;
-    this.visualBrightness = BRIGHTNESS.DEFAULT;
-    this.volume = VOLUME.DEFAULT;
-    this.visualVolume = VOLUME.DEFAULT;
-
-    // UI states
     this.showOverlay = false;
     this.showBrightnessCard = false;
-    this.showVolumeCard = false;
     this.brightnessCardTransition = 'none';
-    this.volumeCardTransition = 'none';
-
-    // State flags
+    this.brightness = 128;
+    this.visualBrightness = 128;
     this.isAdjustingBrightness = false;
-    this.isAdjustingVolume = false;
-
-    // Touch handling
-    this.touchStartY = null;
-    this.longPressTimer = null;
-
-    // Timers
-    this.overlayDismissTimer = null;
-    this.brightnessCardDismissTimer = null;
-    this.volumeCardDismissTimer = null;
-
-    // Error handling
-    this.error = null;
+    this.lastBrightnessUpdateTime = 0;
   }
 
-  static get styles() {
-    return css`
-      :host {
-        --overlay-height: 120px;
-        --icon-size: 50px;
-        --border-radius: 20px;
-        --transition-timing: 0.3s ease-in-out;
-        font-family: 'Product Sans Regular', 'Rubik', sans-serif;
-      }
-
-      .controls-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1000;
-        touch-action: none;
-      }
-
-      .overlay {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: var(--overlay-height);
-        background-color: rgba(255, 255, 255, 0.95);
-        color: #333;
-        box-sizing: border-box;
-        transition: transform var(--transition-timing);
-        transform: translateY(100%);
-        z-index: 1000;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        border-top-left-radius: var(--border-radius);
-        border-top-right-radius: var(--border-radius);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-      }
-
-      .overlay.show {
-        transform: translateY(0);
-      }
-
-      .icon-container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .icon-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 85%;
-      }
-
-      .icon-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #333;
-        padding: 10px;
-        border-radius: 50%;
-        transition: background-color 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .icon-button:hover {
-        background-color: rgba(0, 0, 0, 0.1);
-      }
-
-      iconify-icon {
-        font-size: var(--icon-size);
-        display: block;
-        width: var(--icon-size);
-        height: var(--icon-size);
-      }
-
-      .control-card {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        right: 20px;
-        background-color: rgba(255, 255, 255, 0.95);
-        border-radius: var(--border-radius);
-        padding: 40px 20px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        z-index: 1001;
-        transform: translateY(calc(100% + 20px));
-        transition: transform var(--transition-timing);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        max-width: 600px;
-        margin: 0 auto;
-      }
-
-      .control-card.show {
-        transform: translateY(0);
-      }
-
-      .control-container {
-        display: flex;
-        align-items: center;
-        width: 100%;
-      }
-
-      .dots-container {
-        flex-grow: 1;
-        margin-right: 10px;
-        padding: 0 10px;
-      }
-
-      .dots {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 30px;
-      }
-
-      .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: #d1d1d1;
-        transition: background-color 0.2s ease, transform 0.2s ease;
-        cursor: pointer;
-      }
-
-      .dot.active {
-        background-color: #333;
-        transform: scale(1.1);
-      }
-
-      .value-display {
-        min-width: 60px;
-        text-align: right;
-        font-size: 40px;
-        color: black;
-        font-weight: 300;
-        margin-right: 20px;
-      }
-
-      .error-message {
-        position: fixed;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(255, 59, 48, 0.9);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 1002;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .overlay,
-        .control-card {
-          background-color: rgba(30, 30, 30, 0.95);
-        }
-
-        .icon-button {
-          color: white;
-        }
-
-        .dot {
-          background-color: #666;
-        }
-
-        .dot.active {
-          background-color: white;
-        }
-
-        .value-display {
-          color: white;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .icon-row {
-          width: 95%;
-        }
-
-        .control-card {
-          bottom: 10px;
-          left: 10px;
-          right: 10px;
-          padding: 30px 15px;
-        }
-
-        .value-display {
-          font-size: 32px;
-          min-width: 50px;
-          margin-right: 15px;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .overlay,
-        .control-card,
-        .dot {
-          transition: none;
-        }
-      }
-    `;
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.setupEventListeners();
+  setupEventListeners() {
+    this.addEventListener('touchstart', this.handleTouchStart.bind(this));
+    this.addEventListener('touchmove', this.handleTouchMove.bind(this));
+    this.addEventListener('touchend', this.handleTouchEnd.bind(this));
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.cleanupEventListeners();
     this.clearAllTimers();
-  }
-
-  setupEventListeners() {
-    this.addEventListener('touchstart', this.handleTouchStart);
-    this.addEventListener('touchmove', this.handleTouchMove);
-    this.addEventListener('touchend', this.handleTouchEnd);
-  }
-
-  cleanupEventListeners() {
-    this.removeEventListener('touchstart', this.handleTouchStart);
-    this.removeEventListener('touchmove', this.handleTouchMove);
-    this.removeEventListener('touchend', this.handleTouchEnd);
   }
 
   clearAllTimers() {
     this.clearOverlayDismissTimer();
     this.clearBrightnessCardDismissTimer();
-    this.clearVolumeCardDismissTimer();
+    if (this.brightnessUpdateTimer) {
+      clearTimeout(this.brightnessUpdateTimer);
+    }
+    if (this.brightnessStabilizeTimer) {
+      clearTimeout(this.brightnessStabilizeTimer);
+    }
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
-      this.longPressTimer = null;
     }
   }
 
+  // Touch Event Handlers
+  handleTouchStart(event) {
+    event.preventDefault();
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  handleTouchMove(event) {
+    event.preventDefault();
+  }
+
+  handleTouchEnd(event) {
+    const deltaY = this.touchStartY - event.changedTouches[0].clientY;
+
+    if (deltaY > SWIPE_THRESHOLD && !this.showBrightnessCard) {
+      this.showOverlay = true;
+      this.dispatchEvent(new CustomEvent('overlayToggle', { detail: true }));
+      this.startOverlayDismissTimer();
+    } else if (deltaY < -SWIPE_THRESHOLD) {
+      this.showBrightnessCard ? this.dismissBrightnessCard() : this.dismissOverlay();
+    }
+  }
+
+  // Timer Management
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
       this.dismissOverlay();
-    }, TIMING.OVERLAY_DISMISS_TIMEOUT);
+    }, OVERLAY_DISMISS_TIMEOUT);
   }
 
   clearOverlayDismissTimer() {
@@ -338,7 +113,7 @@ export class Controls extends LitElement {
     this.clearBrightnessCardDismissTimer();
     this.brightnessCardDismissTimer = setTimeout(() => {
       this.dismissBrightnessCard();
-    }, TIMING.OVERLAY_DISMISS_TIMEOUT);
+    }, OVERLAY_DISMISS_TIMEOUT);
   }
 
   clearBrightnessCardDismissTimer() {
@@ -348,258 +123,118 @@ export class Controls extends LitElement {
     }
   }
 
-  startVolumeCardDismissTimer() {
-    this.clearVolumeCardDismissTimer();
-    this.volumeCardDismissTimer = setTimeout(() => {
-      this.dismissVolumeCard();
-    }, TIMING.OVERLAY_DISMISS_TIMEOUT);
-  }
-
-  clearVolumeCardDismissTimer() {
-    if (this.volumeCardDismissTimer) {
-      clearTimeout(this.volumeCardDismissTimer);
-      this.volumeCardDismissTimer = null;
-    }
-  }
-
-  async updateBrightnessValue(value) {
-    this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
-
-    try {
-      await this.setBrightness(value);
-      this.startBrightnessCardDismissTimer();
-    } catch (error) {
-      this.handleError('Failed to update brightness', error);
-      this.visualBrightness = this.brightness;
-    }
-
-    this.requestUpdate();
-  }
-
-  async updateVolumeValue(value) {
-    this.isAdjustingVolume = true;
-    this.visualVolume = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
-
-    try {
-      await this.setVolume(value);
-      this.startVolumeCardDismissTimer();
-    } catch (error) {
-      this.handleError('Failed to update volume', error);
-      this.visualVolume = this.volume;
-    }
-
-    this.requestUpdate();
-  }
-
-  async setBrightness(value) {
-    if (!this.hass) {
-      throw new Error('Home Assistant not available');
-    }
-
-    const brightnessValue = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
-
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_screen_brightness_level',
-      data: { command: brightnessValue },
-    });
-
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_update_sensors',
-    });
-
-    this.brightness = brightnessValue;
-    this.emitBrightnessChange(brightnessValue);
-  }
-
-  async setVolume(value) {
-    if (!this.hass) {
-      throw new Error('Home Assistant not available');
-    }
-
-    const volumeValue = Math.max(VOLUME.MIN, Math.min(VOLUME.MAX, Math.round(value)));
-
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_volume_level',
-      data: {
-        media_stream: 'system_stream',
-        command: volumeValue,
-      },
-    });
-
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_play_sound',
-      data: {
-        sound: 'volume_change',
-      },
-    });
-
-    this.volume = volumeValue;
-    this.emitVolumeChange(volumeValue);
-  }
-
-  handleBrightnessChange(e) {
-    const clickedDot = e.target.closest('.dot');
-    if (!clickedDot) return;
-
-    const newBrightness = parseInt(clickedDot.dataset.value);
-    this.updateBrightnessValue(newBrightness * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
-  }
-
-  handleVolumeChange(e) {
-    const clickedDot = e.target.closest('.dot');
-    if (!clickedDot) return;
-
-    const newVolume = parseInt(clickedDot.dataset.value);
-    this.updateVolumeValue(newVolume * (VOLUME.MAX / VOLUME.DOTS));
-  }
-
-  handleBrightnessDrag(e) {
-    const container = this.shadowRoot.querySelector('.dots');
-    const rect = container.getBoundingClientRect();
-    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
-    const newValue = Math.round((relativeX / rect.width) * BRIGHTNESS.DOTS);
-    this.updateBrightnessValue(newValue * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
-  }
-
-  handleVolumeDrag(e) {
-    const container = this.shadowRoot.querySelector('.dots');
-    const rect = container.getBoundingClientRect();
-    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
-    const newValue = Math.round((relativeX / rect.width) * VOLUME.DOTS);
-    this.updateVolumeValue(newValue * (VOLUME.MAX / VOLUME.DOTS));
-  }
-
-  handleTouchStart(e) {
-    this.touchStartY = e.touches[0].clientY;
-  }
-
-  handleTouchMove(e) {
-    if (!this.touchStartY) return;
-    e.preventDefault();
-
-    const deltaY = this.touchStartY - e.touches[0].clientY;
-    if (Math.abs(deltaY) > UI.SWIPE_THRESHOLD) {
-      if (deltaY > 0) {
-        this.showOverlay = true;
-        this.startOverlayDismissTimer();
-      } else {
-        this.dismissAllCards();
-      }
-      this.touchStartY = null;
-    }
-  }
-
-  handleTouchEnd() {
-    this.touchStartY = null;
-  }
-
-  handleSettingsIconTouchStart() {
-    this.longPressTimer = setTimeout(() => {
-      this.emitDebugToggle();
-    }, TIMING.LONG_PRESS_TIMEOUT);
-  }
-
-  handleSettingsIconTouchEnd() {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-      this.longPressTimer = null;
-    }
-  }
-
+  // UI State Management
   dismissOverlay() {
     this.showOverlay = false;
     this.clearOverlayDismissTimer();
-    this.requestUpdate();
+    this.dispatchEvent(new CustomEvent('overlayToggle', { detail: false }));
+  }
+
+  toggleBrightnessCard() {
+    if (!this.showBrightnessCard) {
+      this.showOverlay = false;
+      this.brightnessCardTransition = 'none';
+      this.showBrightnessCard = true;
+      this.dispatchEvent(new CustomEvent('overlayToggle', { detail: false }));
+      this.dispatchEvent(new CustomEvent('brightnessCardToggle', { detail: true }));
+      this.startBrightnessCardDismissTimer();
+    } else {
+      this.dismissBrightnessCard();
+    }
   }
 
   dismissBrightnessCard() {
     this.brightnessCardTransition = 'transform 0.3s ease-in-out';
     this.showBrightnessCard = false;
     this.clearBrightnessCardDismissTimer();
-    this.requestUpdate();
+    this.dispatchEvent(new CustomEvent('brightnessCardToggle', { detail: false }));
   }
 
-  dismissVolumeCard() {
-    this.volumeCardTransition = 'transform 0.3s ease-in-out';
-    this.showVolumeCard = false;
-    this.clearVolumeCardDismissTimer();
-    this.requestUpdate();
+  // Brightness Control
+  async handleBrightnessChange(e) {
+    const clickedDot = e.target.closest('.brightness-dot');
+    if (!clickedDot) return;
+
+    const newBrightness = parseInt(clickedDot.dataset.value);
+    await this.updateBrightnessValue(newBrightness * 25.5);
   }
 
-  dismissAllCards() {
-    this.dismissOverlay();
-    this.dismissBrightnessCard();
-    this.dismissVolumeCard();
+  async handleBrightnessDrag(e) {
+    const container = this.shadowRoot.querySelector('.brightness-dots');
+    const rect = container.getBoundingClientRect();
+    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
+    const newValue = Math.round((relativeX / rect.width) * 10);
+    await this.updateBrightnessValue(newValue * 25.5);
   }
 
-  toggleBrightnessCard() {
-    if (!this.showBrightnessCard) {
-      this.showOverlay = false;
-      this.showVolumeCard = false;
-      this.brightnessCardTransition = 'none';
-      this.showBrightnessCard = true;
-      this.startBrightnessCardDismissTimer();
-    } else {
-      this.dismissBrightnessCard();
+  async updateBrightnessValue(value) {
+    this.isAdjustingBrightness = true;
+    this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    this.dispatchEvent(new CustomEvent('brightnessChange', { detail: this.visualBrightness }));
+
+    if (this.brightnessUpdateTimer) {
+      clearTimeout(this.brightnessUpdateTimer);
     }
-    this.requestUpdate();
-  }
-
-  toggleVolumeCard() {
-    if (!this.showVolumeCard) {
-      this.showOverlay = false;
-      this.showBrightnessCard = false;
-      this.volumeCardTransition = 'none';
-      this.showVolumeCard = true;
-      this.startVolumeCardDismissTimer();
-    } else {
-      this.dismissVolumeCard();
+    if (this.brightnessStabilizeTimer) {
+      clearTimeout(this.brightnessStabilizeTimer);
     }
-    this.requestUpdate();
+
+    this.brightnessUpdateTimer = setTimeout(async () => {
+      await this.setBrightness(value);
+      this.lastBrightnessUpdateTime = Date.now();
+      
+      this.brightnessStabilizeTimer = setTimeout(() => {
+        this.isAdjustingBrightness = false;
+      }, BRIGHTNESS_STABILIZE_DELAY);
+      
+    }, BRIGHTNESS_DEBOUNCE_DELAY);
   }
 
-  emitBrightnessChange(value) {
-    const event = new CustomEvent('brightness-change', {
-      detail: { brightness: value },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+  async setBrightness(value) {
+    const internalValue = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    
+    try {
+      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+        message: "command_screen_brightness_level",
+        data: {
+          command: internalValue
+        }
+      });
+
+      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+        message: "command_update_sensors"
+      });
+
+      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
+
+      this.brightness = internalValue;
+    } catch (error) {
+      console.error("Error setting brightness:", error);
+      this.visualBrightness = this.brightness;
+    }
+
+    this.startBrightnessCardDismissTimer();
   }
 
-  emitVolumeChange(value) {
-    const event = new CustomEvent('volume-change', {
-      detail: { volume: value },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+  // Debug Toggle
+  handleSettingsIconTouchStart(e) {
+    this.longPressTimer = setTimeout(() => {
+      this.dispatchEvent(new CustomEvent('debugToggle'));
+    }, LONG_PRESS_TIMEOUT);
   }
 
-  emitDebugToggle() {
-    const event = new CustomEvent('debug-toggle', {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+  handleSettingsIconTouchEnd(e) {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+    }
   }
 
-  handleError(message, error) {
-    console.error(message, error);
-    this.error = message;
-    this.requestUpdate();
-
-    const errorEvent = new CustomEvent('control-error', {
-      detail: { error: message },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(errorEvent);
+  getBrightnessDisplayValue() {
+    return Math.round(this.visualBrightness / 25.5);
   }
 
+  // Render Methods
   renderOverlay() {
     return html`
       <div class="overlay ${this.showOverlay ? 'show' : ''}">
@@ -608,7 +243,7 @@ export class Controls extends LitElement {
             <button class="icon-button" @click="${this.toggleBrightnessCard}">
               <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
             </button>
-            <button class="icon-button" @click="${this.toggleVolumeCard}">
+            <button class="icon-button">
               <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
@@ -629,80 +264,39 @@ export class Controls extends LitElement {
     `;
   }
 
-  renderControlCard(type) {
-    const isVolume = type === 'volume';
-    const value = isVolume ? this.visualVolume : this.visualBrightness;
-    const max = isVolume ? VOLUME.MAX : BRIGHTNESS.MAX;
-    const dots = isVolume ? VOLUME.DOTS : BRIGHTNESS.DOTS;
-    const displayValue = Math.round(value / (max / dots));
-    const show = isVolume ? this.showVolumeCard : this.showBrightnessCard;
-    const transition = isVolume ? this.volumeCardTransition : this.brightnessCardTransition;
-    const handler = isVolume ? this.handleVolumeChange : this.handleBrightnessChange;
-    const dragHandler = isVolume ? this.handleVolumeDrag : this.handleBrightnessDrag;
-
+  renderBrightnessCard() {
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
-      <div class="control-card ${show ? 'show' : ''}" 
-           style="transition: ${transition}">
-        <div class="control-container">
-          <div class="dots-container">
-            <div class="dots" 
-                 @click="${handler}"
-                 @mousedown="${dragHandler}"
-                 @mousemove="${(e) => e.buttons === 1 && dragHandler(e)}"
-                 @touchstart="${dragHandler}"
-                 @touchmove="${dragHandler}">
-              ${[...Array(dots)].map((_, i) => html`
-                <div class="dot ${i < displayValue ? 'active' : ''}" 
-                     data-value="${i + 1}">
+      <div class="brightness-card ${this.showBrightnessCard ? 'show' : ''}" 
+           style="transition: ${this.brightnessCardTransition};">
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div class="brightness-dots" 
+                 @click="${this.handleBrightnessChange}"
+                 @mousedown="${this.handleBrightnessDrag}"
+                 @mousemove="${e => e.buttons === 1 && this.handleBrightnessDrag(e)}"
+                 @touchstart="${this.handleBrightnessDrag}"
+                 @touchmove="${this.handleBrightnessDrag}">
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => html`
+                <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" 
+                     data-value="${value}">
                 </div>
               `)}
             </div>
           </div>
-          <span class="value-display">${displayValue}</span>
+          <span class="brightness-value">${brightnessDisplayValue}</span>
         </div>
       </div>
     `;
   }
 
-  renderError() {
-    return this.error ? html`<div class="error-message">${this.error}</div>` : null;
-  }
-
   render() {
     return html`
-      <div class="controls-container">
-        ${this.renderError()}
-        ${!this.showBrightnessCard && !this.showVolumeCard ? this.renderOverlay() : ''}
-        ${this.showBrightnessCard ? this.renderControlCard('brightness') : ''}
-        ${this.showVolumeCard ? this.renderControlCard('volume') : ''}
-      </div>
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
+      ${!this.showBrightnessCard ? this.renderOverlay() : ''}
+      ${this.renderBrightnessCard()}
     `;
-  }
-
-  // Public methods for external control
-  setBrightnessValue(value) {
-    this.brightness = value;
-    this.visualBrightness = value;
-    this.requestUpdate();
-  }
-
-  setVolumeValue(value) {
-    this.volume = value;
-    this.visualVolume = value;
-    this.requestUpdate();
-  }
-
-  showBrightnessAdjustment() {
-    this.toggleBrightnessCard();
-  }
-
-  showVolumeAdjustment() {
-    this.toggleVolumeCard();
-  }
-
-  hideAllControls() {
-    this.dismissAllCards();
   }
 }
 
-customElements.define('google-controls', Controls);
+customElements.define("google-controls", Controls);
