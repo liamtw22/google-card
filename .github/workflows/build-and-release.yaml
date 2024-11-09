@@ -40,33 +40,27 @@ jobs:
           use strict;
           use warnings;
           
-          local $/;  # Enable slurp mode
+          local $/;
           my $content = <>;
           
-          # Process each CSS template literal
-          $content =~ s{
-              (css\(_templateObject\$\d+\s*\|\|\s*\(_templateObject\$\d+\s*=\s*_taggedTemplateLiteral\(\[\s*)(['"])
-              (.*?)
-              \2\s*\]\)\)\)
-          }{
+          # First pass: Identify and format CSS template literals
+          while ($content =~ m/(css\(_template[^`]*?`)(.*?)`\s*\]\)\)\)/gs) {
               my $prefix = $1;
-              my $quote = $2;
-              my $css = $3;
+              my $css = $2;
               
-              # Format the CSS
-              $css =~ s/\\n/\n          /g;        # Replace \n with newlines
-              $css =~ s/\Q$quote\E/\\$quote/g;     # Escape quotes
-              $css =~ s/\s+$//mg;                  # Remove trailing spaces
+              # Format the CSS content
+              $css =~ s/\n\s*/\n          /g;
+              $css =~ s/^\s+//;
+              $css =~ s/\s+$//;
               
-              # Remove any unneeded escapes
-              $css =~ s/\\([^$quote])/$1/g;
+              # Build the replacement
+              my $replacement = "$prefix\n          $css\n        `])))";
               
-              # Reconstruct with proper formatting
-              qq{$prefix$quote\n          $css\n        $quote])))};
-          }gsex;
-          
-          # Clean up any double escapes
-          $content =~ s/\\\\/\\/g;
+              # Escape special regex characters in the prefix
+              $prefix = quotemeta($prefix);
+              # Replace in the content
+              $content =~ s/$prefix.*?`\s*\]\)\)\)/$replacement/s;
+          }
           
           print $content;
           EOF
@@ -75,12 +69,16 @@ jobs:
           perl format_css.pl < dist/google-card.js > dist/google-card.formatted.js &&
           mv dist/google-card.formatted.js dist/google-card.js
           
-      - name: Clean up template literals
+      - name: Clean up syntax
         run: |
-          # Fix any remaining syntax issues with template literals
-          sed -i -E ':a;N;$!ba;s/\n[[:space:]]*\+[[:space:]]*\n[[:space:]]*\]/\n        ]/g' dist/google-card.js
-          sed -i -E 's/([^\\])\s+\+\s*$/\1/g' dist/google-card.js
-          sed -i -E 's/\\\n/\\n/g' dist/google-card.js
+          # Convert template literals to regular strings if needed
+          sed -i 's/`/"/g' dist/google-card.js
+          # Fix escaped quotes
+          sed -i 's/\\"/\\\\"/g' dist/google-card.js
+          # Fix newlines
+          sed -i ':a;N;$!ba;s/\n/\\n/g' dist/google-card.js
+          # Add proper line breaks back
+          sed -i 's/\\n/\n/g' dist/google-card.js
           
       - name: Verify JavaScript Syntax
         run: |
