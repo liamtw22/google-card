@@ -43,26 +43,39 @@ jobs:
           
           my $file = 'dist/google-card.js';
           local @ARGV = ($file);
-          local $^I = '';  # Create backup with empty extension
+          local $^I = '';
           
           while (<>) {
-              # Look for css template literal
-              if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[ '(.*?)' \]\)\)\)/) {
-                  my $css = $1;
+              if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[/) {
+                  my $line = $_;
+                  my $css = '';
+                  my $depth = 1;
                   
-                  # Replace \\n with actual newlines and indent
-                  $css =~ s/\\n/\n        /g;
+                  # Capture the opening of the template literal
+                  $line =~ s/(css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[) '/'$1\n          '/;
+                  print $line;
                   
-                  # Clean up any extra spaces at the end of lines
-                  $css =~ s/\s+$/\n/gm;
-                  
-                  # Remove any multiple newlines
-                  $css =~ s/\n\s*\n/\n/g;
-                  
-                  # Replace the original CSS with formatted version
-                  $_ = "css(_templateObject\$4 || (_templateObject\$4 = _taggedTemplateLiteral([ '$css' ])))";
+                  # Read until we find the matching closing bracket
+                  while (<>) {
+                      if (/\]\)\)\)/) {
+                          # Format the closing line
+                          s/^(\s*)'(\s*)\]\)\)\)/'          ' . "\n        ])))"/e;
+                          print;
+                          last;
+                      } else {
+                          # Format CSS content
+                          s/\\n/\n          /g;  # Replace literal \n with newlines and indent
+                          s/\\/\\\\/g;      # Escape backslashes
+                          s/'/\\'/g;        # Escape single quotes
+                          s/\s+$//;         # Remove trailing whitespace
+                          
+                          # Add proper line continuation
+                          print "          '$_' +\n";
+                      }
+                  }
+              } else {
+                  print;
               }
-              print;
           }
           EOF
           
@@ -72,17 +85,25 @@ jobs:
           # Run the perl script
           perl format_css.pl
           
+          # Clean up any potential syntax errors
+          sed -i 's/\s*+\s*\]\)\)\)/\n        ])))/' dist/google-card.js
+          sed -i 's/\s*+\s*$//' dist/google-card.js
+          
+      - name: Verify JavaScript Syntax
+        run: |
+          node -c dist/google-card.js
+          
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if [ -f "dist/google-card.js" ]; then
+          if [ -f "dist/google-card.js" ] && node -c dist/google-card.js; then
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add -f dist/google-card.js
             git commit -m "chore: update dist files" || echo "No changes to commit"
             git push
           else
-            echo "dist/google-card.js not found - build may have failed"
+            echo "dist/google-card.js not found or contains syntax errors"
             exit 1
           fi
           
@@ -97,5 +118,6 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 permissions:
   contents: write
