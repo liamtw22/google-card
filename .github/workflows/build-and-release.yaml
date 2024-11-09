@@ -45,28 +45,42 @@ jobs:
           
           # Process each CSS template literal
           $content =~ s{
-              (css\(_templateObject\$\d+\s*\|\|\s*\(_templateObject\$\d+\s*=\s*_taggedTemplateLiteral\(\[\s*)'
+              (css\(_templateObject\$\d+\s*\|\|\s*\(_templateObject\$\d+\s*=\s*_taggedTemplateLiteral\(\[\s*)(['"])
               (.*?)
-              '\s*\]\)\)\)
+              \2\s*\]\)\)\)
           }{
               my $prefix = $1;
-              my $css = $2;
+              my $quote = $2;
+              my $css = $3;
               
               # Format the CSS
-              $css =~ s/\\n/\n          /g;    # Replace \n with newlines
-              $css =~ s/'/\\'/g;               # Escape quotes
-              $css =~ s/\s+$//mg;              # Remove trailing spaces
+              $css =~ s/\\n/\n          /g;        # Replace \n with newlines
+              $css =~ s/\Q$quote\E/\\$quote/g;     # Escape quotes
+              $css =~ s/\s+$//mg;                  # Remove trailing spaces
+              
+              # Remove any unneeded escapes
+              $css =~ s/\\([^$quote])/$1/g;
               
               # Reconstruct with proper formatting
-              "$prefix'\n          $css\n        '])))";
+              qq{$prefix$quote\n          $css\n        $quote])))};
           }gsex;
+          
+          # Clean up any double escapes
+          $content =~ s/\\\\/\\/g;
           
           print $content;
           EOF
           
           # Run the formatter
-          perl format_css.pl < dist/google-card.js > dist/google-card.formatted.js
+          perl format_css.pl < dist/google-card.js > dist/google-card.formatted.js &&
           mv dist/google-card.formatted.js dist/google-card.js
+          
+      - name: Clean up template literals
+        run: |
+          # Fix any remaining syntax issues with template literals
+          sed -i -E ':a;N;$!ba;s/\n[[:space:]]*\+[[:space:]]*\n[[:space:]]*\]/\n        ]/g' dist/google-card.js
+          sed -i -E 's/([^\\])\s+\+\s*$/\1/g' dist/google-card.js
+          sed -i -E 's/\\\n/\\n/g' dist/google-card.js
           
       - name: Verify JavaScript Syntax
         run: |
