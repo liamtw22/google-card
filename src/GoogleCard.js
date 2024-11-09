@@ -438,7 +438,7 @@ export class GoogleCard extends LitElement {
           left: 0;
           width: 100vw;
           height: 100vh;
-          z-index: 1;
+          z-index: var(--z-index-base);
           font-family: var(--font-family-primary);
           font-weight: var(--font-weight-regular);
         }
@@ -485,7 +485,7 @@ export class GoogleCard extends LitElement {
           box-sizing: border-box;
           transition: transform var(--transition-duration-normal) var(--transition-timing-default);
           transform: translateY(100%);
-          z-index: var(--z-index-floating);
+          z-index: var(--z-index-above);
           box-shadow: var(--shadow-lg);
           display: flex;
           flex-direction: column;
