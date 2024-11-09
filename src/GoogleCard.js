@@ -1,12 +1,16 @@
-// src/GoogleCard.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from './styles/shared.js';
 import './components/BackgroundRotator.js';
 import './components/WeatherDisplay.js';
 import './components/NightMode.js';
-import './components/Controls.js';
-import { DEFAULT_CONFIG } from './constants.js';
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
+import {
+  TIMING,
+  BRIGHTNESS,
+  UI,
+  DEFAULT_CONFIG,
+  TIME_FORMAT_OPTIONS
+} from './constants.js';
 
 export class GoogleCard extends LitElement {
   static get properties() {
@@ -39,19 +43,18 @@ export class GoogleCard extends LitElement {
   }
 
   initializeProperties() {
-    // Properties initialization
     this.error = null;
     this.debugInfo = {};
     this.showDebugInfo = false;
     this.isNightMode = false;
-    this.brightness = 128;
-    this.visualBrightness = 128;
+    this.brightness = BRIGHTNESS.DEFAULT;
+    this.visualBrightness = BRIGHTNESS.DEFAULT;
     this.showBrightnessCard = false;
     this.brightnessCardTransition = 'none';
     this.showOverlay = false;
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
-    this.previousBrightness = 128;
+    this.previousBrightness = BRIGHTNESS.DEFAULT;
     this.touchStartY = null;
     this.longPressTimer = null;
     this.overlayDismissTimer = null;
@@ -78,7 +81,6 @@ export class GoogleCard extends LitElement {
     if (!config.image_url) {
       throw new Error("You need to define an image_url");
     }
-    
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.showDebugInfo = this.config.show_debug;
     this.debugInfo = {
@@ -142,7 +144,7 @@ export class GoogleCard extends LitElement {
 
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(1, Math.min(255, Math.round(value)));
+    this.visualBrightness = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
 
     if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
     if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
@@ -154,12 +156,12 @@ export class GoogleCard extends LitElement {
       this.brightnessStabilizeTimer = setTimeout(() => {
         this.isAdjustingBrightness = false;
         this.requestUpdate();
-      }, 2000);
-    }, 250);
+      }, TIMING.BRIGHTNESS_STABILIZE_DELAY);
+    }, TIMING.BRIGHTNESS_DEBOUNCE_DELAY);
   }
 
   async setBrightness(value) {
-    const brightnessValue = Math.max(1, Math.min(255, Math.round(value)));
+    const brightnessValue = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
     
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
@@ -185,8 +187,7 @@ export class GoogleCard extends LitElement {
 
   updated(changedProperties) {
     if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
-      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
-      if (timeSinceLastUpdate > 2000) {
+      if (Date.now() - this.lastBrightnessUpdateTime > TIMING.BRIGHTNESS_STABILIZE_DELAY) {
         this.updateNightMode();
         this.updateBrightness();
       }
@@ -208,13 +209,13 @@ export class GoogleCard extends LitElement {
     if (newNightMode) {
       this.previousBrightness = this.brightness;
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await this.setBrightness(1);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING.NIGHT_MODE_TRANSITION_DELAY));
+      await this.setBrightness(BRIGHTNESS.NIGHT_MODE);
+      await new Promise(resolve => setTimeout(resolve, TIMING.NIGHT_MODE_TRANSITION_DELAY));
       await this.toggleAutoBrightness(true);
     } else {
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING.NIGHT_MODE_TRANSITION_DELAY));
       await this.setBrightness(this.previousBrightness);
     }
     
@@ -237,7 +238,7 @@ export class GoogleCard extends LitElement {
     e.preventDefault();
 
     const deltaY = this.touchStartY - e.touches[0].clientY;
-    if (Math.abs(deltaY) > 50) {
+    if (Math.abs(deltaY) > UI.SWIPE_THRESHOLD) {
       if (deltaY > 0) {
         this.showOverlay = true;
         this.startOverlayDismissTimer();
@@ -257,7 +258,7 @@ export class GoogleCard extends LitElement {
     if (!clickedDot) return;
 
     const newBrightness = parseInt(clickedDot.dataset.value);
-    this.updateBrightnessValue(newBrightness * 25.5);
+    this.updateBrightnessValue(newBrightness * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
   }
 
   handleBrightnessDrag(e) {
@@ -265,14 +266,14 @@ export class GoogleCard extends LitElement {
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
-    const newValue = Math.round((relativeX / rect.width) * 10);
-    this.updateBrightnessValue(newValue * 25.5);
+    const newValue = Math.round((relativeX / rect.width) * BRIGHTNESS.DOTS);
+    this.updateBrightnessValue(newValue * (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
   }
 
   handleSettingsIconTouchStart() {
     this.longPressTimer = setTimeout(() => {
       this.toggleDebugInfo();
-    }, 1000);
+    }, TIMING.LONG_PRESS_TIMEOUT);
   }
 
   handleSettingsIconTouchEnd() {
@@ -286,7 +287,7 @@ export class GoogleCard extends LitElement {
     this.clearOverlayDismissTimer();
     this.overlayDismissTimer = setTimeout(() => {
       this.dismissOverlay();
-    }, 10000);
+    }, TIMING.OVERLAY_DISMISS_TIMEOUT);
   }
 
   clearOverlayDismissTimer() {
@@ -300,7 +301,7 @@ export class GoogleCard extends LitElement {
     this.clearBrightnessCardDismissTimer();
     this.brightnessCardDismissTimer = setTimeout(() => {
       this.dismissBrightnessCard();
-    }, 10000);
+    }, TIMING.OVERLAY_DISMISS_TIMEOUT);
   }
 
   clearBrightnessCardDismissTimer() {
@@ -317,7 +318,7 @@ export class GoogleCard extends LitElement {
   }
 
   dismissBrightnessCard() {
-    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
+    this.brightnessCardTransition = 'transform var(--transition-duration-normal) var(--transition-timing-default)';
     this.showBrightnessCard = false;
     this.clearBrightnessCardDismissTimer();
     this.requestUpdate();
@@ -346,7 +347,7 @@ export class GoogleCard extends LitElement {
   }
 
   getBrightnessDisplayValue() {
-    return Math.round(this.visualBrightness / 25.5);
+    return Math.round(this.visualBrightness / (BRIGHTNESS.MAX / BRIGHTNESS.DOTS));
   }
 
   renderDebugInfo() {
@@ -377,6 +378,7 @@ export class GoogleCard extends LitElement {
           <div class="icon-row">
             <button class="icon-button" @click="${this.toggleBrightnessCard}">
               <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+            </button>
             <button class="icon-button">
               <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
@@ -412,7 +414,7 @@ export class GoogleCard extends LitElement {
                  @mousemove="${e => e.buttons === 1 && this.handleBrightnessDrag(e)}"
                  @touchstart="${this.handleBrightnessDrag}"
                  @touchmove="${this.handleBrightnessDrag}">
-              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => html`
+              ${Array.from({length: BRIGHTNESS.DOTS}, (_, i) => i + 1).map(value => html`
                 <div class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}" 
                      data-value="${value}">
                 </div>
@@ -430,8 +432,6 @@ export class GoogleCard extends LitElement {
       sharedStyles,
       css`
         :host {
-          --crossfade-time: 3s;
-          --overlay-height: 120px;
           display: block;
           position: fixed;
           top: 0;
@@ -441,6 +441,23 @@ export class GoogleCard extends LitElement {
           z-index: var(--z-index-base);
           font-family: var(--font-family-primary);
           font-weight: var(--font-weight-regular);
+          overflow: hidden;
+        }
+
+        .background-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: var(--z-index-below);
+        }
+
+        .weather-container {
+          position: absolute;
+          bottom: var(--spacing-4);
+          left: var(--spacing-4);
+          z-index: var(--z-index-above);
         }
 
         .debug-info {
@@ -448,8 +465,8 @@ export class GoogleCard extends LitElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.8);
-          color: white;
+          background: var(--color-overlay);
+          color: var(--color-text);
           padding: var(--spacing-4);
           border-radius: var(--border-radius-lg);
           font-size: var(--font-size-sm);
@@ -457,21 +474,22 @@ export class GoogleCard extends LitElement {
           max-width: 80%;
           max-height: 80%;
           overflow: auto;
+          box-shadow: var(--shadow-lg);
         }
 
         .debug-info h2,
         .debug-info h3 {
           margin-bottom: var(--spacing-2);
-        }
-
-        .debug-info p {
-          margin-bottom: var(--spacing-1);
+          font-weight: var(--font-weight-medium);
         }
 
         .debug-info pre {
           margin-top: var(--spacing-2);
           white-space: pre-wrap;
           word-break: break-all;
+          background: var(--color-background);
+          padding: var(--spacing-2);
+          border-radius: var(--border-radius-md);
         }
 
         .overlay {
@@ -482,10 +500,9 @@ export class GoogleCard extends LitElement {
           height: var(--overlay-height);
           background-color: var(--color-background-translucent);
           color: var(--color-text);
-          box-sizing: border-box;
-          transition: transform var(--transition-duration-normal) var(--transition-timing-default);
           transform: translateY(100%);
-          z-index: var(--z-index-above);
+          transition: transform var(--transition-duration-normal) var(--transition-timing-default);
+          z-index: var(--z-index-floating);
           box-shadow: var(--shadow-lg);
           display: flex;
           flex-direction: column;
@@ -493,8 +510,8 @@ export class GoogleCard extends LitElement {
           align-items: center;
           border-top-left-radius: var(--border-radius-lg);
           border-top-right-radius: var(--border-radius-lg);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(var(--backdrop-blur));
+          -webkit-backdrop-filter: blur(var(--backdrop-blur));
         }
 
         .overlay.show {
@@ -515,6 +532,7 @@ export class GoogleCard extends LitElement {
           align-items: center;
           width: 85%;
           max-width: 500px;
+          padding: var(--spacing-4);
         }
 
         .icon-button {
@@ -535,10 +553,9 @@ export class GoogleCard extends LitElement {
         }
 
         iconify-icon {
-          font-size: 50px;
-          display: block;
-          width: 50px;
-          height: 50px;
+          font-size: var(--font-size-4xl);
+          width: var(--font-size-4xl);
+          height: var(--font-size-4xl);
         }
 
         .brightness-card {
@@ -553,8 +570,8 @@ export class GoogleCard extends LitElement {
           z-index: var(--z-index-floating);
           transform: translateY(calc(100% + var(--spacing-5)));
           transition: transform var(--transition-duration-normal) var(--transition-timing-default);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(var(--backdrop-blur));
+          -webkit-backdrop-filter: blur(var(--backdrop-blur));
           max-width: 600px;
           margin: 0 auto;
         }
@@ -571,7 +588,7 @@ export class GoogleCard extends LitElement {
 
         .brightness-dots-container {
           flex-grow: 1;
-          margin-right: var(--spacing-2);
+          margin-right: var(--spacing-4);
           padding: 0 var(--spacing-2);
         }
 
@@ -622,6 +639,11 @@ export class GoogleCard extends LitElement {
             min-width: 50px;
             margin-right: var(--spacing-4);
           }
+
+          .weather-container {
+            bottom: var(--spacing-2);
+            left: var(--spacing-2);
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -637,21 +659,27 @@ export class GoogleCard extends LitElement {
 
   render() {
     if (this.isNightMode) {
-      return html`<night-mode .currentTime="${new Date().toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }).replace(/\s?[AP]M/, '')}"></night-mode>`;
+      return html`
+        <night-mode
+          .currentTime="${new Date().toLocaleTimeString('en-US', TIME_FORMAT_OPTIONS).replace(/\s?[AP]M/, '')}">
+        </night-mode>
+      `;
     }
 
     return html`
       <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap" rel="stylesheet">
-      <background-rotator 
-        .config="${this.config}"
-        .hass="${this.hass}"
-        @screen-size-update="${this.handleScreenSizeUpdate}"
-      ></background-rotator>
-      <weather-display .hass="${this.hass}"></weather-display>
+      <div class="background-container">
+        <background-rotator
+          .config="${this.config}"
+          .hass="${this.hass}"
+          @screen-size-update="${this.handleScreenSizeUpdate}">
+        </background-rotator>
+      </div>
+
+      <div class="weather-container">
+        <weather-display .hass="${this.hass}"></weather-display>
+      </div>
+
       ${this.showDebugInfo ? this.renderDebugInfo() : ''}
       ${!this.showBrightnessCard ? this.renderOverlay() : ''}
       ${this.renderBrightnessCard()}
