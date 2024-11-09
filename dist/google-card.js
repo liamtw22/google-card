@@ -205,8 +205,8 @@ customElements.define('background-rotator', class extends LitElement {
     this.isTransitioning = !1;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
     this.displayTime = DEFAULT_CONFIG.display_time;
-    this.screenWidth = window.innerWidth;
-    this.screenHeight = window.innerHeight;
+    this.screenWidth = window.outerWidth;
+    this.screenHeight = window.outerHeight;
     this.error = null;
     this.imageList = [];
     this.currentImageIndex = -1;
@@ -236,8 +236,8 @@ customElements.define('background-rotator', class extends LitElement {
   }
   updateScreenSize() {
     var pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.ceil(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.ceil(window.innerHeight * pixelRatio);
+    this.screenWidth = Math.ceil(window.outerWidth * pixelRatio);
+    this.screenHeight = Math.ceil(window.outerHeight * pixelRatio);
     // Force image update when screen size changes
         this.updateImage();
     this.dispatchEvent(new CustomEvent('screen-size-update', {
