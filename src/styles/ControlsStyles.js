@@ -1,4 +1,5 @@
-import { css } from "lit-element";
+// src/styles/ControlsStyles.js
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 export const controlsStyles = css`
   .overlay {
