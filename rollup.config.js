@@ -1,8 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
-import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
-import minifyHTML from 'rollup-plugin-minify-html-literals';
 import copy from 'rollup-plugin-copy';
 
 export default {
@@ -12,7 +10,6 @@ export default {
     format: 'es',
     sourcemap: true,
     indent: '  ',
-    // Preserve formatting
     preserveModules: true,
     preserveModulesRoot: 'src'
   },
@@ -21,18 +18,17 @@ export default {
       browser: true
     }),
     json(),
-    minifyHTML(),
     terser({
       format: {
         comments: false,
-        // Preserve formatting
         beautify: true,
         indent_level: 2,
         max_line_len: 100,
         semicolons: true
       },
       keep_classnames: true,
-      keep_fnames: true
+      keep_fnames: true,
+      mangle: false
     }),
     copy({
       targets: [
