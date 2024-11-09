@@ -1,6 +1,5 @@
 // src/components/WeatherClock.js
 import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { LitElement, html } from "lit-element";
 import { weatherClockStyles } from '../styles/WeatherClockStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 
