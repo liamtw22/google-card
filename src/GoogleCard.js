@@ -1,10 +1,10 @@
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { DEFAULT_CONFIG } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
-import { BackgroundRotator } from './components/BackgroundRotator';
-import { Controls } from './components/Controls';
-import { NightMode } from './components/NightMode';
-import { WeatherClock } from './components/WeatherClock';
+import './components/BackgroundRotator';
+import './components/Controls';
+import './components/NightMode';
+import './components/WeatherClock';
 
 export class GoogleCard extends LitElement {
   static get properties() {
