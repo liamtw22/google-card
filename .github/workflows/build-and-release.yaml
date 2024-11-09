@@ -26,7 +26,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          # Try normal install first
+          npm install || npm install --legacy-peer-deps
           echo "Dependencies installed successfully"
 
       - name: Validate code
@@ -59,7 +60,7 @@ jobs:
 
       - name: Commit build to dist
         run: |
-          git add dist/
+          git add dist/ || true
           git commit -m "chore: update dist files" || echo "No changes to commit"
           git push origin main || echo "No changes to push"
 
