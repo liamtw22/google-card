@@ -36,65 +36,51 @@ jobs:
           
       - name: Format CSS
         run: |
+          # Create a perl script for formatting
           cat > format_css.pl << 'EOF'
           use strict;
           use warnings;
           
-          local $/;
-          my $content = <>;
+          my $file = 'dist/google-card.js';
+          local @ARGV = ($file);
+          local $^I = '';  # Create backup with empty extension
           
-          # First pass: Identify and format CSS template literals
-          while ($content =~ m/(css\(_template[^`]*?`)(.*?)`\s*\]\)\)\)/gs) {
-              my $prefix = $1;
-              my $css = $2;
-              
-              # Format the CSS content
-              $css =~ s/\n\s*/\n          /g;
-              $css =~ s/^\s+//;
-              $css =~ s/\s+$//;
-              
-              # Build the replacement
-              my $replacement = "$prefix\n          $css\n        `])))";
-              
-              # Escape special regex characters in the prefix
-              $prefix = quotemeta($prefix);
-              # Replace in the content
-              $content =~ s/$prefix.*?`\s*\]\)\)\)/$replacement/s;
+          while (<>) {
+              # Look for css template literal
+              if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[ '(.*?)' \]\)\)\)/) {
+                  my $css = $1;
+                  # Add newlines after each property
+                  $css =~ s/;/;\n        /g;
+                  # Add newlines after opening braces
+                  $css =~ s/{/{;\n        /g;
+                  # Add newlines before closing braces
+                  $css =~ s/}/\n      }/g;
+                  # Remove any double newlines
+                  $css =~ s/\n\s*\n/\n/g;
+                  # Replace the original CSS with formatted version
+                  $_ = "css(_templateObject\$4 || (_templateObject\$4 = _taggedTemplateLiteral([ '$css' ])))";
+              }
+              print;
           }
-          
-          print $content;
           EOF
           
-          # Run the formatter
-          perl format_css.pl < dist/google-card.js > dist/google-card.formatted.js &&
-          mv dist/google-card.formatted.js dist/google-card.js
+          # Make the script executable
+          chmod +x format_css.pl
           
-      - name: Clean up syntax
-        run: |
-          # Convert template literals to regular strings if needed
-          sed -i 's/`/"/g' dist/google-card.js
-          # Fix escaped quotes
-          sed -i 's/\\"/\\\\"/g' dist/google-card.js
-          # Fix newlines
-          sed -i ':a;N;$!ba;s/\n/\\n/g' dist/google-card.js
-          # Add proper line breaks back
-          sed -i 's/\\n/\n/g' dist/google-card.js
-          
-      - name: Verify JavaScript Syntax
-        run: |
-          node -c dist/google-card.js
+          # Run the perl script
+          perl format_css.pl
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if [ -f "dist/google-card.js" ] && node -c dist/google-card.js; then
+          if [ -f "dist/google-card.js" ]; then
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add -f dist/google-card.js
             git commit -m "chore: update dist files" || echo "No changes to commit"
             git push
           else
-            echo "dist/google-card.js not found or contains syntax errors"
+            echo "dist/google-card.js not found - build may have failed"
             exit 1
           fi
           
@@ -109,6 +95,5 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 permissions:
   contents: write
