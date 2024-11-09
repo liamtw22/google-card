@@ -2,6 +2,7 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { LitElement, html } from "lit-element";
 import { weatherClockStyles } from '../styles/WeatherClockStyles';
+import { sharedStyles } from '../styles/SharedStyles';
 
 export class WeatherClock extends LitElement {
   static get properties() {
@@ -16,7 +17,7 @@ export class WeatherClock extends LitElement {
   }
 
   static get styles() {
-    return [weatherClockStyles];
+    return [weatherClockStyles, sharedStyles];
   }
 
   constructor() {
