@@ -14,45 +14,54 @@ export default {
   plugins: [
     resolve({
       browser: true,
-      preferBuiltins: false
+      preferBuiltins: false,
     }),
     commonjs({
       include: 'node_modules/**'
     }),
     babel({
       babelHelpers: 'bundled',
-      exclude: 'node_modules/**',
+      exclude: /node_modules/,
       presets: [
-        [
-          '@babel/preset-env',
-          {
-            targets: {
-              esmodules: true,
-            },
-            modules: false,
-            bugfixes: true,
+        ['@babel/preset-env', {
+          targets: {
+            esmodules: true,
           },
-        ],
+          modules: false,
+          bugfixes: true,
+          loose: true
+        }]
       ],
       plugins: [
-        ['@babel/plugin-proposal-decorators', { decoratorsBeforeExport: true }],
-        ['@babel/plugin-proposal-class-properties']
-      ],
+        ['@babel/plugin-transform-runtime', {
+          regenerator: true,
+          corejs: 3
+        }],
+        ['@babel/plugin-proposal-decorators', { 
+          decoratorsBeforeExport: true,
+          legacy: true
+        }],
+        ['@babel/plugin-proposal-class-properties', { 
+          loose: true 
+        }],
+        '@babel/plugin-transform-classes',
+        '@babel/plugin-transform-async-to-generator'
+      ]
     }),
     terser({
       format: {
-        beautify: true,      // Makes output readable
-        comments: 'all',     // Preserves comments
-        indent_level: 2,     // Indentation level
-        indent_start: 0,     // Starting indentation level
-        quote_style: 1,      // Use single quotes
-        wrap_iife: true,     // Wrap IIFEs
-        preamble: '// Google Card for Home Assistant\n// MIT License\n', // Optional header
+        beautify: true,
+        comments: 'all',
+        indent_level: 2,
+        indent_start: 0,
+        quote_style: 1,
+        wrap_iife: true,
+        preamble: '// Google Card for Home Assistant\n// MIT License\n',
       },
-      mangle: false,         // Don't mangle variable names
+      mangle: false,
       compress: {
-        sequences: false,    // Don't combine consecutive statements with comma
-        directives: false,   // Don't remove directives
+        sequences: false,
+        directives: false,
       },
       keep_classnames: true,
       keep_fnames: true
@@ -61,13 +70,5 @@ export default {
   external: [
     'lit-element',
     'lit-html'
-  ],
-  onwarn(warning, warn) {
-    // Skip certain warnings
-    if (warning.code === 'THIS_IS_UNDEFINED') return;
-    if (warning.code === 'CIRCULAR_DEPENDENCY') return;
-    
-    // Console everything else
-    warn(warning);
-  }
+  ]
 };
