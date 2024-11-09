@@ -1,235 +1,193 @@
 // src/components/BackgroundRotator.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { sharedStyles } from '../styles/shared.js';
-import { TIMING, DEFAULT_CONFIG } from '../constants.js';
+import { backgroundRotatorStyles } from '../styles/BackgroundRotatorStyles';
+import { 
+  TRANSITION_BUFFER,
+  IMAGE_SOURCE_TYPES 
+} from '../constants';
 
 export class BackgroundRotator extends LitElement {
   static get properties() {
     return {
+      hass: { type: Object },
+      config: { type: Object },
+      screenWidth: { type: Number },
+      screenHeight: { type: Number },
+      showDebugInfo: { type: Boolean },
+      currentImageIndex: { type: Number },
+      imageList: { type: Array },
       imageA: { type: String },
       imageB: { type: String },
       activeImage: { type: String },
       preloadedImage: { type: String },
-      isTransitioning: { type: Boolean },
-      crossfadeTime: { type: Number },
-      screenWidth: { type: Number },
-      screenHeight: { type: Number },
-      config: { type: Object },
       error: { type: String },
-      imageList: { type: Array },
-      currentImageIndex: { type: Number },
-      imageUpdateInterval: { type: Object },
-      imageListUpdateInterval: { type: Object },
-      displayTime: { type: Number }
+      debugInfo: { type: Object },
+      isTransitioning: { type: Boolean }
     };
+  }
+
+  static get styles() {
+    return [backgroundRotatorStyles];
   }
 
   constructor() {
     super();
     this.initializeProperties();
-    this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
 
   initializeProperties() {
-    this.imageA = '';
-    this.imageB = '';
-    this.activeImage = 'A';
-    this.preloadedImage = '';
-    this.isTransitioning = false;
-    this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
-    this.displayTime = DEFAULT_CONFIG.display_time;
-    this.screenWidth = window.innerWidth;
-    this.screenHeight = window.innerHeight;
-    this.error = null;
-    this.imageList = [];
     this.currentImageIndex = -1;
-    this.imageUpdateInterval = null;
-    this.imageListUpdateInterval = null;
-  }
-
-  static get styles() {
-    return [
-      sharedStyles,
-      css`
-        :host {
-          display: block;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: var(--z-index-below);
-          background-color: black;
-          overflow: hidden;
-        }
-
-        .background-image {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-          opacity: 0;
-          transition-property: opacity;
-          transition-timing-function: var(--transition-timing-default);
-          will-change: opacity;
-          transform: translateZ(0);
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
-        }
-
-        .background-image.active {
-          opacity: 1;
-        }
-
-        .error-message {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: var(--color-error);
-          color: white;
-          padding: var(--spacing-4);
-          border-radius: var(--border-radius-md);
-          font-size: var(--font-size-base);
-          text-align: center;
-          z-index: var(--z-index-above);
-          max-width: 80%;
-          box-shadow: var(--shadow-lg);
-        }
-      `
-    ];
+    this.imageList = [];
+    this.imageA = "";
+    this.imageB = "";
+    this.activeImage = "A";
+    this.preloadedImage = "";
+    this.error = null;
+    this.debugInfo = {};
+    this.isTransitioning = false;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    window.addEventListener('resize', this.boundUpdateScreenSize);
-    this.initializeImageList().then(() => {
-      this.startImageRotation();
-    });
+    this.startImageRotation();
+    this.startImageListUpdates();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    window.removeEventListener('resize', this.boundUpdateScreenSize);
     this.clearTimers();
   }
 
   clearTimers() {
-    if (this.imageUpdateInterval) clearInterval(this.imageUpdateInterval);
-    if (this.imageListUpdateInterval) clearInterval(this.imageListUpdateInterval);
+    clearInterval(this.imageUpdateInterval);
+    clearInterval(this.imageListUpdateInterval);
   }
 
-  updateScreenSize() {
-    const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
-    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
+  startImageListUpdates() {
+    this.updateImageList();
+    this.imageListUpdateInterval = setInterval(() => {
+      this.updateImageList();
+    }, this.config.image_list_update_interval * 1000);
+  }
 
+  startImageRotation() {
     this.updateImage();
+    this.imageUpdateInterval = setInterval(() => {
+      this.updateImage();
+    }, this.config.display_time * 1000);
+  }
 
-    this.dispatchEvent(new CustomEvent('screen-size-update', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        width: this.screenWidth,
-        height: this.screenHeight
-      }
-    }));
+  getImageSourceType() {
+    const { image_url } = this.config;
+    if (image_url.startsWith("media-source://")) return IMAGE_SOURCE_TYPES.MEDIA_SOURCE;
+    if (image_url.startsWith("https://api.unsplash")) return IMAGE_SOURCE_TYPES.UNSPLASH_API;
+    if (image_url.startsWith("immich+")) return IMAGE_SOURCE_TYPES.IMMICH_API;
+    if (image_url.includes("picsum.photos")) return IMAGE_SOURCE_TYPES.PICSUM;
+    return IMAGE_SOURCE_TYPES.URL;
+  }
 
+  getImageUrl() {
+    const timestamp_ms = Date.now();
+    const timestamp = Math.floor(timestamp_ms / 1000);
+    return this.config.image_url
+      .replace(/\${width}/g, this.screenWidth)
+      .replace(/\${height}/g, this.screenHeight)
+      .replace(/\${timestamp_ms}/g, timestamp_ms)
+      .replace(/\${timestamp}/g, timestamp);
+  }
+
+  async updateImageList() {
+    if (!this.screenWidth || !this.screenHeight) {
+      this.error = "Screen dimensions not set";
+      this.requestUpdate();
+      return;
+    }
+
+    try {
+      const newImageList = await this.fetchImageList();
+      this.imageList = this.config.image_order === "random" 
+        ? newImageList.sort(() => 0.5 - Math.random())
+        : newImageList.sort();
+        
+      this.error = null;
+      this.debugInfo.imageList = this.imageList;
+    } catch (error) {
+      this.error = `Error updating image list: ${error.message}`;
+    }
     this.requestUpdate();
   }
 
-  getImageUrl(template) {
-    const width = Math.ceil(this.screenWidth);
-    const height = Math.ceil(this.screenHeight);
-    const timestamp = Date.now();
-    
-    return template
-      .replace(/\${width}/g, width)
-      .replace(/\${height}/g, height)
-      .replace(/\${timestamp}/g, Math.floor(timestamp / 1000))
-      .replace(/\${timestamp_ms}/g, timestamp);
-  }
-
-  async initializeImageList() {
-    if (!this.config?.image_url) {
-      this.error = 'No image URL configured';
-      return;
-    }
-
-    try {
-      const imageUrl = this.getImageUrl(this.config.image_url);
-      this.imageList = [imageUrl];
-      this.currentImageIndex = -1;
-      this.error = null;
-      
-      await this.preloadImage(imageUrl);
-      
-      // Set initial image
-      this.imageA = imageUrl;
-      this.activeImage = 'A';
-      
-    } catch (error) {
-      console.error('Error initializing image list:', error);
-      this.error = 'Error initializing images';
+  async fetchImageList() {
+    const sourceType = this.getImageSourceType();
+    switch (sourceType) {
+      case IMAGE_SOURCE_TYPES.MEDIA_SOURCE:
+        return this.getImagesFromMediaSource();
+      case IMAGE_SOURCE_TYPES.UNSPLASH_API:
+        return this.getImagesFromUnsplashAPI();
+      case IMAGE_SOURCE_TYPES.IMMICH_API:
+        return this.getImagesFromImmichAPI();
+      default:
+        return [this.getImageUrl()];
     }
   }
 
-  async startImageRotation() {
+  async getImagesFromMediaSource() {
     try {
-      await this.updateImage(); // Initial image load
-      
-      this.imageUpdateInterval = setInterval(() => {
-        this.updateImage();
-      }, this.displayTime * 1000);
-      
+      const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, '');
+      const result = await this.hass.callWS({
+        type: "media_source/browse_media",
+        media_content_id: mediaContentId
+      });
+      return result.children
+        .filter(child => child.media_class === "image")
+        .map(child => child.media_content_id);
     } catch (error) {
-      console.error('Error starting image rotation:', error);
-      this.error = 'Error starting image rotation';
-      this.requestUpdate();
+      console.error("Error fetching images from media source:", error);
+      return [this.getImageUrl()];
     }
   }
 
-  async updateImage() {
-    if (this.isTransitioning) {
-      console.log('Skipping update - transition in progress');
-      return;
-    }
-    
+  async getImagesFromUnsplashAPI() {
     try {
-      const newImage = await this.getNextImage();
-      if (newImage) {
-        await this.transitionToNewImage(newImage);
-        await this.preloadNextImage();
-      }
+      const response = await fetch(`${this.config.image_url}&count=30`);
+      const data = await response.json();
+      return data.map(image => image.urls.regular);
     } catch (error) {
-      console.error('Error updating image:', error);
-      this.error = `Error updating image: ${error.message}`;
-      this.requestUpdate();
+      console.error("Error fetching images from Unsplash API:", error);
+      return [this.getImageUrl()];
     }
   }
 
-  async getNextImage() {
-    if (!this.config?.image_url) {
-      throw new Error('No image URL configured');
-    }
-
-    const nextImageUrl = this.getImageUrl(this.config.image_url);
-    
+  async getImagesFromImmichAPI() {
     try {
-      await this.preloadImage(nextImageUrl);
-      return nextImageUrl;
+      const apiUrl = this.config.image_url.replace(/^immich\+/, "");
+      const response = await fetch(`${apiUrl}/albums`, {
+        headers: {
+          'x-api-key': this.config.immich_api_key
+        }
+      });
+      const albums = await response.json();
+      
+      const imagePromises = albums.map(async (album) => {
+        const albumResponse = await fetch(`${apiUrl}/albums/${album.id}`, {
+          headers: {
+            'x-api-key': this.config.immich_api_key
+          }
+        });
+        const albumData = await albumResponse.json();
+        return albumData.assets
+          .filter(asset => asset.type === "IMAGE")
+          .map(asset => `${apiUrl}/assets/${asset.id}/original`);
+      });
+
+      return (await Promise.all(imagePromises)).flat();
     } catch (error) {
-      throw new Error(`Failed to load image: ${nextImageUrl}`);
+      console.error("Error fetching images from Immich API:", error);
+      return [this.getImageUrl()];
     }
   }
 
   async preloadImage(url) {
-    if (!url) return null;
-    
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(url);
@@ -238,93 +196,128 @@ export class BackgroundRotator extends LitElement {
     });
   }
 
-  async transitionToNewImage(newImage) {
-    if (this.isTransitioning) {
-      console.log('Transition already in progress');
-      return;
-    }
+  async preloadNextImage() {
+    const nextImageToPreload = this.getImageSourceType() === IMAGE_SOURCE_TYPES.PICSUM 
+      ? this.getImageUrl()
+      : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
 
+    try {
+      this.preloadedImage = await this.preloadImage(nextImageToPreload);
+    } catch (error) {
+      console.error("Error preloading next image:", error);
+      this.preloadedImage = "";
+    }
+  }
+
+  async getNextImage() {
+    let newImage;
+    if (this.preloadedImage) {
+      newImage = this.preloadedImage;
+      this.preloadedImage = "";
+    } else {
+      if (this.getImageSourceType() === IMAGE_SOURCE_TYPES.PICSUM) {
+        newImage = this.getImageUrl();
+      } else {
+        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
+        newImage = this.imageList[this.currentImageIndex];
+      }
+      newImage = await this.preloadImage(newImage);
+    }
+    return newImage;
+  }
+
+  async updateImage() {
+    if (this.isTransitioning) return;
+
+    try {
+      const newImage = await this.getNextImage();
+      await this.transitionToNewImage(newImage);
+      this.preloadNextImage();
+    } catch (error) {
+      console.error("Error updating image:", error);
+    }
+  }
+
+  async transitionToNewImage(newImage) {
     this.isTransitioning = true;
 
-    try {
-      if (this.activeImage === 'A') {
-        this.imageB = newImage;
-      } else {
-        this.imageA = newImage;
-      }
-
-      await this.updateComplete;
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
-      
-      await new Promise(resolve => 
-        setTimeout(resolve, (this.crossfadeTime * 1000) + 50)
-      );
-    } finally {
-      this.isTransitioning = false;
-      this.requestUpdate();
+    if (this.activeImage === "A") {
+      this.imageB = newImage;
+    } else {
+      this.imageA = newImage;
     }
+
+    this.updateDebugInfo();
+    this.requestUpdate();
+
+    await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
+    this.activeImage = this.activeImage === "A" ? "B" : "A";
+    this.requestUpdate();
+
+    await new Promise(resolve => setTimeout(resolve, this.config.crossfade_time * 1000 + TRANSITION_BUFFER));
+    this.isTransitioning = false;
   }
 
-  async preloadNextImage() {
-    if (!this.config?.image_url) return;
-    
-    try {
-      const nextImageUrl = this.getImageUrl(this.config.image_url);
-      this.preloadedImage = await this.preloadImage(nextImageUrl);
-    } catch (error) {
-      console.error('Error preloading next image:', error);
-      this.preloadedImage = '';
-    }
+  updateDebugInfo() {
+    this.debugInfo = {
+      imageA: this.imageA,
+      imageB: this.imageB,
+      activeImage: this.activeImage,
+      preloadedImage: this.preloadedImage,
+      imageList: this.imageList,
+      currentImageIndex: this.currentImageIndex,
+      config: this.config,
+      error: this.error
+    };
   }
 
-  render() {
-    const imageFit = this.config?.image_fit || DEFAULT_CONFIG.image_fit;
-    
+  renderBackgroundImages() {
+    const imageAOpacity = this.activeImage === "A" ? 1 : 0;
+    const imageBOpacity = this.activeImage === "B" ? 1 : 0;
+
     return html`
-      ${this.error ? html`
-        <div class="error-message">${this.error}</div>
-      ` : ''}
-      
-      <div class="background-image ${this.activeImage === 'A' ? 'active' : ''}"
-        style="
-          background-image: url('${this.imageA || ''}');
-          transition-duration: ${this.crossfadeTime}s;
-          background-size: ${imageFit};
-        ">
-      </div>
-      
-      <div class="background-image ${this.activeImage === 'B' ? 'active' : ''}"
-        style="
-          background-image: url('${this.imageB || ''}');
-          transition-duration: ${this.crossfadeTime}s;
-          background-size: ${imageFit};
-        ">
+      <div class="background-container">
+        <div class="background-image" 
+             style="background-image: url('${this.imageA}'); 
+                    opacity: ${imageAOpacity};">
+        </div>
+        <div class="background-image" 
+             style="background-image: url('${this.imageB}'); 
+                    opacity: ${imageBOpacity};">
+        </div>
       </div>
     `;
   }
 
-  // Public methods for external control
-  async forceImageUpdate() {
-    await this.updateImage();
+  renderDebugInfo() {
+    return html`
+      <div class="debug-info">
+        <h2>Background Rotator Debug Info</h2>
+        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
+        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
+        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
+        <p><strong>Image A:</strong> ${this.imageA}</p>
+        <p><strong>Image B:</strong> ${this.imageB}</p>
+        <p><strong>Active Image:</strong> ${this.activeImage}</p>
+        <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
+        <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
+        <p><strong>Current Image Index:</strong> ${this.currentImageIndex}</p>
+        <p><strong>Error:</strong> ${this.error}</p>
+        <h3>Image List:</h3>
+        <pre>${JSON.stringify(this.imageList, null, 2)}</pre>
+        <h3>Config:</h3>
+        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+      </div>
+    `;
   }
 
-  pauseRotation() {
-    this.clearTimers();
-  }
-
-  resumeRotation() {
-    this.startImageRotation();
-  }
-
-  setConfig(config) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
-    this.crossfadeTime = this.config.crossfade_time || DEFAULT_CONFIG.crossfade_time;
-    this.displayTime = this.config.display_time || DEFAULT_CONFIG.display_time;
-    this.initializeImageList();
-    this.requestUpdate();
+  render() {
+    return html`
+      ${this.renderBackgroundImages()}
+      ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+      ${this.showDebugInfo ? this.renderDebugInfo() : ''}
+    `;
   }
 }
 
-customElements.define('background-rotator', BackgroundRotator);
+customElements.define("background-rotator", BackgroundRotator);
