@@ -1,9 +1,6 @@
 # Dependencies
 /node_modules
 
-# Build output
-/dist
-
 # IDE files
 .idea/
 .vscode/
