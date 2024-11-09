@@ -1,63 +1,25 @@
+# Dependencies
+/node_modules
+
 # Build output
-dist/*
-!dist/google-card.js
+/dist
 
-# Dependency directories
-node_modules/
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Debug logs
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-logs/
-*.log
 
 # Environment variables
 .env
 .env.local
 .env.*.local
-.env.development
-.env.test
-.env.production
-
-# IDE / Editor directories
-.idea/
-.vscode/
-*.swp
-*.swo
-*.sublime-workspace
-*.sublime-project
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-.temp/
-
-# Test coverage
-coverage/
-
-# Rollup cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Keep specific dist file
-!dist/
-!dist/google-card.js
