@@ -5,23 +5,24 @@
         "esmodules": true
       },
       "modules": false,
-      "bugfixes": true,
-      "loose": true
+      "useBuiltIns": "usage",
+      "corejs": 3,
+      "bugfixes": true
     }]
   ],
   "plugins": [
     ["@babel/plugin-transform-runtime", {
       "regenerator": true,
-      "corejs": 3
+      "corejs": 3,
+      "helpers": true,
+      "useESModules": true
     }],
+    ["@babel/plugin-proposal-class-properties"],
     ["@babel/plugin-proposal-decorators", {
-      "version": "2023-05",
-      "decoratorsBeforeExport": true
+      "version": "2023-05"
     }],
-    ["@babel/plugin-proposal-class-properties", {
-      "loose": true
-    }],
-    "@babel/plugin-transform-classes",
-    "@babel/plugin-transform-async-to-generator"
+    "@babel/plugin-proposal-class-static-block",
+    "@babel/plugin-proposal-private-methods",
+    "@babel/plugin-syntax-top-level-await"
   ]
 }
