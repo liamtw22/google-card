@@ -15,8 +15,8 @@
       "corejs": 3
     }],
     ["@babel/plugin-proposal-decorators", {
-      "decoratorsBeforeExport": true,
-      "legacy": true
+      "version": "2023-05",
+      "decoratorsBeforeExport": true
     }],
     ["@babel/plugin-proposal-class-properties", {
       "loose": true
