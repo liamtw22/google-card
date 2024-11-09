@@ -55,7 +55,7 @@ export class BackgroundRotator extends LitElement {
           display: block;
           position: relative;
           width: 100%;
-          height: 100%;
+          : 100%;
           overflow: hidden;
           background-color: black;
         }
@@ -65,7 +65,7 @@ export class BackgroundRotator extends LitElement {
           top: 0;
           left: 0;
           width: 100%;
-          height: 100%;
+          : 100%;
           background-color: black;
           z-index: 1;
         }
@@ -75,7 +75,7 @@ export class BackgroundRotator extends LitElement {
           top: 0;
           left: 0;
           width: 100%;
-          height: 100%;
+          : 100%;
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -148,8 +148,8 @@ export class BackgroundRotator extends LitElement {
   getImageUrl(template) {
     const pixelRatio = window.devicePixelRatio || 1;
     // Multiply dimensions by pixel ratio and round up to nearest 100 for better caching
-    const width = Math.ceil(this.screenWidth * pixelRatio / 100) * 100;
-    const height = Math.ceil(this.screenHeight * pixelRatio / 100) * 100;
+    const width = this.screenWidth;
+    const height = this.screenHeight;
     
     const timestamp_ms = Date.now();
     const timestamp = Math.floor(timestamp_ms / 1000);
