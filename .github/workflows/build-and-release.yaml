@@ -36,60 +36,37 @@ jobs:
           
       - name: Format CSS
         run: |
-          # Create a perl script for formatting
           cat > format_css.pl << 'EOF'
           use strict;
           use warnings;
           
-          my $file = 'dist/google-card.js';
-          local @ARGV = ($file);
-          local $^I = '';
+          local $/;  # Enable slurp mode
+          my $content = <>;
           
-          while (<>) {
-              if (/css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[/) {
-                  my $line = $_;
-                  my $css = '';
-                  my $depth = 1;
-                  
-                  # Capture the opening of the template literal
-                  $line =~ s/(css\(_templateObject\$\d+ \|\| \(_templateObject\$\d+ = _taggedTemplateLiteral\(\[) '/'$1\n          '/;
-                  print $line;
-                  
-                  # Read until we find the matching closing bracket
-                  while (<>) {
-                      if (/\]\)\)\)/) {
-                          # Format the closing line
-                          s/^(\s*)'(\s*)\]\)\)\)/          '\n        ])))'/e;
-                          print;
-                          last;
-                      } else {
-                          # Format CSS content
-                          s/\\n/\n          /g;  # Replace literal \n with newlines and indent
-                          s/\\/\\\\/g;      # Escape backslashes
-                          s/'/\\'/g;        # Escape single quotes
-                          s/\s+$//;         # Remove trailing whitespace
-                          
-                          # Add proper line continuation
-                          print "          '$_' +\n";
-                      }
-                  }
-              } else {
-                  print;
-              }
-          }
+          # Process each CSS template literal
+          $content =~ s{
+              (css\(_templateObject\$\d+\s*\|\|\s*\(_templateObject\$\d+\s*=\s*_taggedTemplateLiteral\(\[\s*)'
+              (.*?)
+              '\s*\]\)\)\)
+          }{
+              my $prefix = $1;
+              my $css = $2;
+              
+              # Format the CSS
+              $css =~ s/\\n/\n          /g;    # Replace \n with newlines
+              $css =~ s/'/\\'/g;               # Escape quotes
+              $css =~ s/\s+$//mg;              # Remove trailing spaces
+              
+              # Reconstruct with proper formatting
+              "$prefix'\n          $css\n        '])))";
+          }gsex;
+          
+          print $content;
           EOF
           
-          # Make the script executable
-          chmod +x format_css.pl
-          
-          # Run the perl script
-          perl format_css.pl > dist/google-card.formatted.js
+          # Run the formatter
+          perl format_css.pl < dist/google-card.js > dist/google-card.formatted.js
           mv dist/google-card.formatted.js dist/google-card.js
-          
-      - name: Fix line endings
-        run: |
-          sed -i -E 's/([^\\])\s+\+\s*\n\s*\]\)\)\)/\1\n        ])))/' dist/google-card.js
-          sed -i -E 's/([^\\])\s+\+\s*$/\1/' dist/google-card.js
           
       - name: Verify JavaScript Syntax
         run: |
