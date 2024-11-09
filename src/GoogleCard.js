@@ -1,8 +1,16 @@
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from './styles/shared.js';
 import './components/BackgroundRotator.js';
 import './components/WeatherDisplay.js';
 import './components/NightMode.js';
+import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
+import {
+  TIMING,
+  BRIGHTNESS,
+  UI,
+  DEFAULT_CONFIG,
+  TIME_FORMAT_OPTIONS
+} from './constants.js';
 
 async setBrightness(value) {
     const brightnessValue = Math.max(BRIGHTNESS.MIN, Math.min(BRIGHTNESS.MAX, Math.round(value)));
