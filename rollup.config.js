@@ -20,7 +20,7 @@ export default {
       include: 'node_modules/**'
     }),
     babel({
-      babelHelpers: 'bundled',
+      babelHelpers: 'runtime',
       exclude: /node_modules/,
       presets: [
         ['@babel/preset-env', {
@@ -35,7 +35,9 @@ export default {
       plugins: [
         ['@babel/plugin-transform-runtime', {
           regenerator: true,
-          corejs: 3
+          corejs: 3,
+          helpers: true,
+          useESModules: true
         }],
         ['@babel/plugin-proposal-decorators', {
           version: "2023-05",
@@ -69,6 +71,7 @@ export default {
   ],
   external: [
     'lit-element',
-    'lit-html'
+    'lit-html',
+    /@babel\/runtime/
   ]
 };
