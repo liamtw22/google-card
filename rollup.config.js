@@ -1,55 +1,38 @@
 import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import babel from '@rollup/plugin-babel';
+import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
+import minifyHTML from 'rollup-plugin-minify-html-literals';
+import copy from 'rollup-plugin-copy';
 
 export default {
   input: 'src/GoogleCard.js',
   output: {
-    file: 'dist/google-card.js',
+    dir: 'dist',
     format: 'es',
-    sourcemap: true,
-    indent: '  ',
+    sourcemap: true
   },
   plugins: [
-    resolve({
-      browser: true,
-      preferBuiltins: false
-    }),
-    commonjs({
-      include: 'node_modules/**',
-    }),
-    babel({
-      babelHelpers: 'runtime',
-      exclude: /node_modules/,
-      extensions: ['.js'],
-      assumptions: {
-        setPublicClassFields: true,
-        privateFieldsAsProperties: true
-      }
-    }),
+    resolve(),
+    json(),
+    minifyHTML(),
     terser({
       format: {
-        beautify: true,
-        comments: 'all',
-        indent_level: 2,
-        indent_start: 0,
-        quote_style: 1,
-        wrap_iife: true,
-        preamble: '// Google Card for Home Assistant\n// MIT License\n',
-      },
-      mangle: false,
-      compress: {
-        sequences: false,
-        directives: false,
-      },
-      keep_classnames: true,
-      keep_fnames: true
+        comments: false
+      }
+    }),
+    copy({
+      targets: [
+        { 
+          src: 'package.json', 
+          dest: 'dist',
+          transform: (contents) => {
+            const pkg = JSON.parse(contents.toString());
+            pkg.private = false;
+            return JSON.stringify(pkg, null, 2);
+          }
+        }
+      ]
     })
-  ],
-  external: [
-    'lit-element',
-    'lit-html',
-    /@babel\/runtime/
   ]
 };
