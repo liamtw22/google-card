@@ -3,8 +3,11 @@ import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 
 export const weatherClockStyles = css`
   .weather-component {
+    position: fixed;
+    bottom: 30px;
+    left: 40px;
     display: flex;
-    justify-content: space-between;
+    justify-content: start;
     align-items: center;
     color: white;
     font-family: 'Product Sans Regular', sans-serif;
