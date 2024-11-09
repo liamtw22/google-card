@@ -1,8 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
+import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
-import { babel } from '@rollup/plugin-babel';
 import minifyHTML from 'rollup-plugin-minify-html-literals';
 import copy from 'rollup-plugin-copy';
 
@@ -11,23 +10,29 @@ export default {
   output: {
     dir: 'dist',
     format: 'es',
-    sourcemap: true
+    sourcemap: true,
+    indent: '  ',
+    // Preserve formatting
+    preserveModules: true,
+    preserveModulesRoot: 'src'
   },
   plugins: [
     resolve({
       browser: true
     }),
-    commonjs(),
-    babel({
-      babelHelpers: 'bundled',
-      exclude: 'node_modules/**'
-    }),
     json(),
     minifyHTML(),
     terser({
       format: {
-        comments: false
-      }
+        comments: false,
+        // Preserve formatting
+        beautify: true,
+        indent_level: 2,
+        max_line_len: 100,
+        semicolons: true
+      },
+      keep_classnames: true,
+      keep_fnames: true
     }),
     copy({
       targets: [
