@@ -1,6 +1,7 @@
 // src/components/BackgroundRotator.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { backgroundRotatorStyles } from '../styles/BackgroundRotatorStyles';
+import { sharedStyles } from '../styles/SharedStyles';
 import { 
   TRANSITION_BUFFER,
   IMAGE_SOURCE_TYPES 
@@ -27,7 +28,7 @@ export class BackgroundRotator extends LitElement {
   }
 
   static get styles() {
-    return [backgroundRotatorStyles];
+    return [backgroundRotatorStyles, sharedStyles];
   }
 
   constructor() {
