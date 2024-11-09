@@ -1,6 +1,7 @@
 // src/components/Controls.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { controlsStyles } from '../styles/ControlsStyles';
+import { sharedStyles } from '../styles/SharedStyles';
 import {
   OVERLAY_DISMISS_TIMEOUT,
   LONG_PRESS_TIMEOUT,
@@ -28,7 +29,7 @@ export class Controls extends LitElement {
   }
 
   static get styles() {
-    return [controlsStyles];
+    return [controlsStyles, sharedStyles];
   }
 
   constructor() {
