@@ -1,7 +1,7 @@
 // src/components/BackgroundRotator.js
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from '../styles/shared.js';
-import { TIMING, IMAGE_SOURCE_TYPES, DEFAULT_CONFIG } from '../constants.js';
+import { TIMING, DEFAULT_CONFIG } from '../constants.js';
 
 export class BackgroundRotator extends LitElement {
   static get properties() {
@@ -38,8 +38,8 @@ export class BackgroundRotator extends LitElement {
     this.isTransitioning = false;
     this.crossfadeTime = DEFAULT_CONFIG.crossfade_time;
     this.displayTime = DEFAULT_CONFIG.display_time;
-    this.screenWidth = window.outerWidth;
-    this.screenHeight = window.outerHeight;
+    this.screenWidth = window.innerWidth;
+    this.screenHeight = window.innerHeight;
     this.error = null;
     this.imageList = [];
     this.currentImageIndex = -1;
@@ -53,21 +53,14 @@ export class BackgroundRotator extends LitElement {
       css`
         :host {
           display: block;
-          position: relative;
-          width: 100%;
-          : 100%;
-          overflow: hidden;
-          background-color: black;
-        }
-
-        .background-container {
-          position: absolute;
+          position: fixed;
           top: 0;
           left: 0;
           width: 100%;
-          : 100%;
+          height: 100%;
+          z-index: var(--z-index-below);
           background-color: black;
-          z-index: 1;
+          overflow: hidden;
         }
 
         .background-image {
@@ -75,18 +68,21 @@ export class BackgroundRotator extends LitElement {
           top: 0;
           left: 0;
           width: 100%;
-          : 100%;
+          height: 100%;
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          will-change: opacity, transform;
+          opacity: 0;
           transition-property: opacity;
-          transition-timing-function: ease-in-out;
+          transition-timing-function: var(--transition-timing-default);
+          will-change: opacity;
           transform: translateZ(0);
           backface-visibility: hidden;
           -webkit-backface-visibility: hidden;
-          image-rendering: -webkit-optimize-contrast;
-          image-rendering: crisp-edges;
+        }
+
+        .background-image.active {
+          opacity: 1;
         }
 
         .error-message {
@@ -100,18 +96,20 @@ export class BackgroundRotator extends LitElement {
           border-radius: var(--border-radius-md);
           font-size: var(--font-size-base);
           text-align: center;
-          z-index: 2;
+          z-index: var(--z-index-above);
           max-width: 80%;
+          box-shadow: var(--shadow-lg);
         }
       `
     ];
   }
 
-  async connectedCallback() {
+  connectedCallback() {
     super.connectedCallback();
     window.addEventListener('resize', this.boundUpdateScreenSize);
-    await this.initializeImageList();
-    await this.startImageRotation();
+    this.initializeImageList().then(() => {
+      this.startImageRotation();
+    });
   }
 
   disconnectedCallback() {
@@ -127,10 +125,9 @@ export class BackgroundRotator extends LitElement {
 
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.ceil(window.outerWidth * pixelRatio);
-    this.screenHeight = Math.ceil(window.outerHeight * pixelRatio);
+    this.screenWidth = Math.round(window.innerWidth * pixelRatio);
+    this.screenHeight = Math.round(window.innerHeight * pixelRatio);
 
-    // Force image update when screen size changes
     this.updateImage();
 
     this.dispatchEvent(new CustomEvent('screen-size-update', {
@@ -146,19 +143,15 @@ export class BackgroundRotator extends LitElement {
   }
 
   getImageUrl(template) {
-    const pixelRatio = window.devicePixelRatio || 1;
-    // Multiply dimensions by pixel ratio and round up to nearest 100 for better caching
-    const width = this.screenWidth;
-    const height = this.screenHeight;
-    
-    const timestamp_ms = Date.now();
-    const timestamp = Math.floor(timestamp_ms / 1000);
+    const width = Math.ceil(this.screenWidth);
+    const height = Math.ceil(this.screenHeight);
+    const timestamp = Date.now();
     
     return template
       .replace(/\${width}/g, width)
       .replace(/\${height}/g, height)
-      .replace(/\${timestamp_ms}/g, timestamp_ms)
-      .replace(/\${timestamp}/g, timestamp);
+      .replace(/\${timestamp}/g, Math.floor(timestamp / 1000))
+      .replace(/\${timestamp_ms}/g, timestamp);
   }
 
   async initializeImageList() {
@@ -173,8 +166,12 @@ export class BackgroundRotator extends LitElement {
       this.currentImageIndex = -1;
       this.error = null;
       
-      // Load initial image
       await this.preloadImage(imageUrl);
+      
+      // Set initial image
+      this.imageA = imageUrl;
+      this.activeImage = 'A';
+      
     } catch (error) {
       console.error('Error initializing image list:', error);
       this.error = 'Error initializing images';
@@ -184,9 +181,11 @@ export class BackgroundRotator extends LitElement {
   async startImageRotation() {
     try {
       await this.updateImage(); // Initial image load
+      
       this.imageUpdateInterval = setInterval(() => {
         this.updateImage();
       }, this.displayTime * 1000);
+      
     } catch (error) {
       console.error('Error starting image rotation:', error);
       this.error = 'Error starting image rotation';
@@ -218,11 +217,9 @@ export class BackgroundRotator extends LitElement {
       throw new Error('No image URL configured');
     }
 
-    // Generate a new image URL with current timestamp
     const nextImageUrl = this.getImageUrl(this.config.image_url);
     
     try {
-      // Ensure the image is loaded before returning
       await this.preloadImage(nextImageUrl);
       return nextImageUrl;
     } catch (error) {
@@ -232,6 +229,7 @@ export class BackgroundRotator extends LitElement {
 
   async preloadImage(url) {
     if (!url) return null;
+    
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(url);
@@ -249,22 +247,17 @@ export class BackgroundRotator extends LitElement {
     this.isTransitioning = true;
 
     try {
-      // Set new image
       if (this.activeImage === 'A') {
         this.imageB = newImage;
       } else {
         this.imageA = newImage;
       }
 
-      // Force a reflow before changing opacity
-      this.requestUpdate();
       await this.updateComplete;
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Switch active image
       this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
       
-      // Wait for transition to complete
       await new Promise(resolve => 
         setTimeout(resolve, (this.crossfadeTime * 1000) + 50)
       );
@@ -286,42 +279,28 @@ export class BackgroundRotator extends LitElement {
     }
   }
 
-  setConfig(config) {
-    this.config = config;
-    this.crossfadeTime = config.crossfade_time || DEFAULT_CONFIG.crossfade_time;
-    this.displayTime = config.display_time || DEFAULT_CONFIG.display_time;
-    this.initializeImageList();
-    this.requestUpdate();
-  }
-
   render() {
     const imageFit = this.config?.image_fit || DEFAULT_CONFIG.image_fit;
     
     return html`
-      <div class="background-container">
-        ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
-        <div
-          class="background-image"
-          style="
-            background-image: url('${this.imageA || ''}');
-            opacity: ${this.activeImage === 'A' ? 1 : 0};
-            transition-duration: ${this.crossfadeTime}s;
-            background-size: ${imageFit};
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-          "
-        ></div>
-        <div
-          class="background-image"
-          style="
-            background-image: url('${this.imageB || ''}');
-            opacity: ${this.activeImage === 'B' ? 1 : 0};
-            transition-duration: ${this.crossfadeTime}s;
-            background-size: ${imageFit};
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-          "
-        ></div>
+      ${this.error ? html`
+        <div class="error-message">${this.error}</div>
+      ` : ''}
+      
+      <div class="background-image ${this.activeImage === 'A' ? 'active' : ''}"
+        style="
+          background-image: url('${this.imageA || ''}');
+          transition-duration: ${this.crossfadeTime}s;
+          background-size: ${imageFit};
+        ">
+      </div>
+      
+      <div class="background-image ${this.activeImage === 'B' ? 'active' : ''}"
+        style="
+          background-image: url('${this.imageB || ''}');
+          transition-duration: ${this.crossfadeTime}s;
+          background-size: ${imageFit};
+        ">
       </div>
     `;
   }
@@ -337,6 +316,14 @@ export class BackgroundRotator extends LitElement {
 
   resumeRotation() {
     this.startImageRotation();
+  }
+
+  setConfig(config) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.crossfadeTime = this.config.crossfade_time || DEFAULT_CONFIG.crossfade_time;
+    this.displayTime = this.config.display_time || DEFAULT_CONFIG.display_time;
+    this.initializeImageList();
+    this.requestUpdate();
   }
 }
 
