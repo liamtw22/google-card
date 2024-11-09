@@ -45,18 +45,19 @@ jobs:
           npm run build
           echo "Build completed successfully"
 
-      - name: Stage changes
+      - name: Stage dist file
         run: |
-          git add .
+          git add dist/google-card.js
           git status
 
-      - name: Commit changes
+      - name: Commit dist file
         run: |
-          git commit -m "chore: update dist files and format source" || echo "No changes to commit"
-
-      - name: Push changes
-        run: |
-          git push origin main || echo "No changes to push"
+          if git diff --staged --quiet; then
+            echo "No changes to google-card.js"
+          else
+            git commit -m "chore: update dist/google-card.js"
+            git push origin main
+          fi
 
       - name: Verify build exists
         run: |
@@ -83,8 +84,7 @@ jobs:
             Release of version ${{ steps.get_version.outputs.version }}
             
             Changes in this release:
-            - Updated dist files
-            - Formatted source files
+            - Updated dist/google-card.js
           draft: false
           prerelease: false
 
