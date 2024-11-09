@@ -14,41 +14,19 @@ export default {
   plugins: [
     resolve({
       browser: true,
-      preferBuiltins: false,
+      preferBuiltins: false
     }),
     commonjs({
-      include: 'node_modules/**'
+      include: 'node_modules/**',
     }),
     babel({
       babelHelpers: 'runtime',
       exclude: /node_modules/,
-      presets: [
-        ['@babel/preset-env', {
-          targets: {
-            esmodules: true
-          },
-          modules: false,
-          bugfixes: true,
-          loose: true
-        }]
-      ],
-      plugins: [
-        ['@babel/plugin-transform-runtime', {
-          regenerator: true,
-          corejs: 3,
-          helpers: true,
-          useESModules: true
-        }],
-        ['@babel/plugin-proposal-decorators', {
-          version: "2023-05",
-          decoratorsBeforeExport: true
-        }],
-        ['@babel/plugin-proposal-class-properties', {
-          loose: true
-        }],
-        '@babel/plugin-transform-classes',
-        '@babel/plugin-transform-async-to-generator'
-      ]
+      extensions: ['.js'],
+      assumptions: {
+        setPublicClassFields: true,
+        privateFieldsAsProperties: true
+      }
     }),
     terser({
       format: {
