@@ -25,7 +25,7 @@ export default {
       presets: [
         ['@babel/preset-env', {
           targets: {
-            esmodules: true,
+            esmodules: true
           },
           modules: false,
           bugfixes: true,
@@ -37,12 +37,12 @@ export default {
           regenerator: true,
           corejs: 3
         }],
-        ['@babel/plugin-proposal-decorators', { 
-          decoratorsBeforeExport: true,
-          legacy: true
+        ['@babel/plugin-proposal-decorators', {
+          version: "2023-05",
+          decoratorsBeforeExport: true
         }],
-        ['@babel/plugin-proposal-class-properties', { 
-          loose: true 
+        ['@babel/plugin-proposal-class-properties', {
+          loose: true
         }],
         '@babel/plugin-transform-classes',
         '@babel/plugin-transform-async-to-generator'
