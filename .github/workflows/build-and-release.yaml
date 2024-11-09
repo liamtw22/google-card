@@ -59,7 +59,7 @@ jobs:
                   while (<>) {
                       if (/\]\)\)\)/) {
                           # Format the closing line
-                          s/^(\s*)'(\s*)\]\)\)\)/'          ' . "\n        ])))"/e;
+                          s/^(\s*)'(\s*)\]\)\)\)/          '\n        ])))'/e;
                           print;
                           last;
                       } else {
@@ -83,11 +83,13 @@ jobs:
           chmod +x format_css.pl
           
           # Run the perl script
-          perl format_css.pl
+          perl format_css.pl > dist/google-card.formatted.js
+          mv dist/google-card.formatted.js dist/google-card.js
           
-          # Clean up any potential syntax errors
-          sed -i 's/\s*+\s*\]\)\)\)/\n        ])))/' dist/google-card.js
-          sed -i 's/\s*+\s*$//' dist/google-card.js
+      - name: Fix line endings
+        run: |
+          sed -i -E 's/([^\\])\s+\+\s*\n\s*\]\)\)\)/\1\n        ])))/' dist/google-card.js
+          sed -i -E 's/([^\\])\s+\+\s*$/\1/' dist/google-card.js
           
       - name: Verify JavaScript Syntax
         run: |
