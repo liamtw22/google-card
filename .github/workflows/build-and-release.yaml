@@ -1,5 +1,4 @@
 name: Build and Release
-
 on:
   push:
     branches:
@@ -22,9 +21,7 @@ jobs:
           node-version: '16'
           
       - name: Install dependencies
-        run: |
-          npm install --no-package-lock
-          npm install --no-save js-beautify
+        run: npm install --no-package-lock
         
       - name: Create dist directory
         run: mkdir -p dist
@@ -37,28 +34,6 @@ jobs:
       - name: Remove export line
         run: |
           sed -i 's/export { GoogleCard };//' dist/google-card.js
-          
-      - name: Format JS with CSS
-        run: |
-          npx js-beautify --type js \
-            --indent-size 2 \
-            --indent-char " " \
-            --max-preserve-newlines 2 \
-            --preserve-newlines \
-            --end-with-newline \
-            --wrap-line-length 80 \
-            --brace-style collapse \
-            --keep-array-indentation \
-            --break-chained-methods \
-            -r dist/google-card.js
-          
-      - name: Verify formatting
-        run: |
-          # Check if the file has multiple lines
-          if [ $(wc -l < dist/google-card.js) -lt 100 ]; then
-            echo "Formatting verification failed - file appears to be minified"
-            exit 1
-          fi
           
       - name: Commit dist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
