@@ -45,9 +45,9 @@ export class GoogleCard extends LitElement {
     this.isNightMode = false;
     this.showBrightnessCard = false;
     this.brightnessCardTransition = 'none';
-    this.brightness = DEFAULT_BRIGHTNESS;
-    this.visualBrightness = DEFAULT_BRIGHTNESS;
-    this.previousBrightness = DEFAULT_BRIGHTNESS;
+    this.brightness = DEFAULT_CONFIG.brightness || 128;
+    this.visualBrightness = DEFAULT_CONFIG.brightness || 128;
+    this.previousBrightness = DEFAULT_CONFIG.brightness || 128;
     this.isInNightMode = false;
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
@@ -65,7 +65,7 @@ export class GoogleCard extends LitElement {
     this.config = {
       ...DEFAULT_CONFIG,
       ...config,
-      sensor_update_delay: config.sensor_update_delay || DEFAULT_SENSOR_UPDATE_DELAY
+      sensor_update_delay: config.sensor_update_delay || DEFAULT_CONFIG.sensor_update_delay
     };
 
     this.showDebugInfo = this.config.show_debug;
@@ -151,7 +151,7 @@ export class GoogleCard extends LitElement {
   // Brightness Management
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    this.visualBrightness = Math.max(1, Math.min(255, Math.round(value)));
     
     if (this.brightnessStabilizeTimer) {
       clearTimeout(this.brightnessStabilizeTimer);
@@ -164,7 +164,7 @@ export class GoogleCard extends LitElement {
       this.brightnessStabilizeTimer = setTimeout(() => {
         this.isAdjustingBrightness = false;
         this.requestUpdate();
-      }, BRIGHTNESS_STABILIZE_DELAY);
+      }, 2000);
     } catch (error) {
       console.error('Error updating brightness:', error);
       this.visualBrightness = this.brightness;
@@ -172,7 +172,7 @@ export class GoogleCard extends LitElement {
   }
 
   async setBrightness(value) {
-    const brightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    const brightness = Math.max(1, Math.min(255, Math.round(value)));
     
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
@@ -202,7 +202,7 @@ export class GoogleCard extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
-      if (timeSinceLastUpdate > BRIGHTNESS_STABILIZE_DELAY) {
+      if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
       }
     }
@@ -234,15 +234,15 @@ export class GoogleCard extends LitElement {
   async enterNightMode() {
     this.previousBrightness = this.brightness;
     await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
-    await this.setBrightness(MIN_BRIGHTNESS);
-    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await this.setBrightness(1);
+    await new Promise(resolve => setTimeout(resolve, 100));
     await this.toggleAutoBrightness(true);
   }
 
   async exitNightMode() {
     await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+    await new Promise(resolve => setTimeout(resolve, 100));
     await this.setBrightness(this.previousBrightness);
   }
 
