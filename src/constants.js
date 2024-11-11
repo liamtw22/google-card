@@ -1,3 +1,4 @@
+// src/constants.js
 export const OVERLAY_DISMISS_TIMEOUT = 10000;
 export const LONG_PRESS_TIMEOUT = 1000;
 export const NIGHT_MODE_TRANSITION_DELAY = 100;
