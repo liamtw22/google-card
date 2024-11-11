@@ -97,7 +97,7 @@ export class WeatherClock extends LitElement {
   getWeatherIcon(state) {
     const iconMapping = {
       'clear-night': 'clear-night',
-      cloudy: 'cloudy-fill',
+      cloudy: 'cloudy',
       fog: 'fog',
       hail: 'hail',
       lightning: 'thunderstorms',
