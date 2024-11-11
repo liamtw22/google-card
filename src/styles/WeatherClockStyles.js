@@ -63,7 +63,7 @@ export const weatherClockStyles = css`
 
   .aqi {
     font-size: 20px;
-    padding: 5px 10px;
+    padding: 6px 10px 5px 10px;
     border-radius: 6px;
     font-weight: 500;
     margin-top: 5px;
