@@ -57,17 +57,17 @@ export class Controls extends LitElement {
   }
 
   firstUpdated() {
-    document.addEventListener('touchstart', this.handleTouchStart);
-    document.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-    document.addEventListener('touchend', this.handleTouchEnd);
+    window.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+    window.addEventListener('touchend', this.handleTouchEnd, { passive: true });
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearAllTimers();
-    document.removeEventListener('touchstart', this.handleTouchStart);
-    document.removeEventListener('touchmove', this.handleTouchMove);
-    document.removeEventListener('touchend', this.handleTouchEnd);
+    window.removeEventListener('touchstart', this.handleTouchStart);
+    window.removeEventListener('touchmove', this.handleTouchMove);
+    window.removeEventListener('touchend', this.handleTouchEnd);
   }
 
   clearAllTimers() {
@@ -79,7 +79,9 @@ export class Controls extends LitElement {
   }
 
   handleTouchStart(event) {
-    this.touchStartY = event.touches[0].clientY;
+    if (event.touches.length === 1) {
+      this.touchStartY = event.touches[0].clientY;
+    }
   }
 
   handleTouchMove(event) {
@@ -89,22 +91,25 @@ export class Controls extends LitElement {
   }
 
   handleTouchEnd(event) {
-    const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-
-    if (Math.abs(deltaY) > SWIPE_THRESHOLD) {
-      if (deltaY > 0 && !this.showBrightnessCard) {
-        this.showOverlay = true;
-        this.dispatchEvent(new CustomEvent('overlayToggle', {
-          detail: true,
-          bubbles: true,
-          composed: true,
-        }));
-        this.startOverlayDismissTimer();
-      } else if (deltaY < 0) {
-        if (this.showBrightnessCard) {
-          this.dismissBrightnessCard();
-        } else if (this.showOverlay) {
-          this.dismissOverlay();
+    if (event.changedTouches.length === 1) {
+      const deltaY = this.touchStartY - event.changedTouches[0].clientY;
+      
+      if (Math.abs(deltaY) > SWIPE_THRESHOLD) {
+        if (deltaY > 0 && !this.showBrightnessCard) {
+          this.showOverlay = true;
+          this.requestUpdate();
+          this.dispatchEvent(new CustomEvent('overlayToggle', {
+            detail: true,
+            bubbles: true,
+            composed: true,
+          }));
+          this.startOverlayDismissTimer();
+        } else if (deltaY < 0) {
+          if (this.showBrightnessCard) {
+            this.dismissBrightnessCard();
+          } else if (this.showOverlay) {
+            this.dismissOverlay();
+          }
         }
       }
     }
@@ -130,6 +135,7 @@ export class Controls extends LitElement {
 
   dismissOverlay() {
     this.showOverlay = false;
+    this.requestUpdate();
     if (this.overlayDismissTimer) {
       clearTimeout(this.overlayDismissTimer);
     }
@@ -140,7 +146,11 @@ export class Controls extends LitElement {
     }));
   }
 
-  toggleBrightnessCard() {
+  toggleBrightnessCard(e) {
+    if (e) {
+      e.stopPropagation();
+    }
+    
     if (!this.showBrightnessCard) {
       this.showOverlay = false;
       this.brightnessCardTransition = 'none';
@@ -266,23 +276,19 @@ export class Controls extends LitElement {
 
   render() {
     return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
-        rel="stylesheet"
-      />
-      <div class="controls-container">
-        ${!this.showBrightnessCard ? this.renderOverlay() : ''}
-        ${this.renderBrightnessCard()}
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? this.renderOverlay() : ''}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
       </div>
     `;
   }
 
   renderOverlay() {
     return html`
-      <div class="overlay ${this.showOverlay ? 'show' : ''}">
+      <div class="overlay show" @click="${(e) => e.stopPropagation()}">
         <div class="icon-container">
           <div class="icon-row">
-            <button class="icon-button" @click="${this.toggleBrightnessCard}">
+            <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
               <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
@@ -314,8 +320,9 @@ export class Controls extends LitElement {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
       <div
-        class="brightness-card ${this.showBrightnessCard ? 'show' : ''}"
+        class="brightness-card show"
         style="transition: ${this.brightnessCardTransition};"
+        @click="${(e) => e.stopPropagation()}"
       >
         <div class="brightness-control">
           <div class="brightness-dots-container">
