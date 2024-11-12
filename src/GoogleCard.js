@@ -46,8 +46,8 @@ export class GoogleCard extends LitElement {
     this.showBrightnessCard = false;
     this.brightnessCardTransition = 'none';
     this.brightness = DEFAULT_CONFIG.brightness || 128;
-    this.visualBrightness = DEFAULT_CONFIG.brightness || 128;
-    this.previousBrightness = DEFAULT_CONFIG.brightness || 128;
+    this.visualBrightness = this.brightness;
+    this.previousBrightness = this.brightness;
     this.isInNightMode = false;
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
@@ -74,14 +74,22 @@ export class GoogleCard extends LitElement {
   firstUpdated() {
     super.firstUpdated();
     // Set up event listeners
-    this.addEventListener('overlayToggle', this.handleOverlayToggle);
-    this.addEventListener('brightnessCardToggle', this.handleBrightnessCardToggle);
-    this.addEventListener('brightnessChange', this.handleBrightnessChange);
-    this.addEventListener('debugToggle', this.handleDebugToggle);
+    this.setupEventListeners();
     window.addEventListener('resize', this.boundUpdateScreenSize);
 
     // Start time updates
     this.startTimeUpdates();
+  }
+
+  setupEventListeners() {
+    this.addEventListener('overlayToggle', this.handleOverlayToggle);
+    this.addEventListener('brightnessCardToggle', this.handleBrightnessCardToggle);
+    this.addEventListener('brightnessChange', this.handleBrightnessChange);
+    this.addEventListener('debugToggle', this.handleDebugToggle);
+    this.addEventListener('nightModeExit', () => {
+      this.isNightMode = false;
+      this.requestUpdate();
+    });
   }
 
   connectedCallback() {
@@ -97,6 +105,7 @@ export class GoogleCard extends LitElement {
     this.removeEventListener('brightnessCardToggle', this.handleBrightnessCardToggle);
     this.removeEventListener('brightnessChange', this.handleBrightnessChange);
     this.removeEventListener('debugToggle', this.handleDebugToggle);
+    this.removeEventListener('nightModeExit', this.handleNightModeExit);
   }
 
   clearTimers() {
@@ -122,6 +131,11 @@ export class GoogleCard extends LitElement {
 
   handleDebugToggle = () => {
     this.showDebugInfo = !this.showDebugInfo;
+    this.requestUpdate();
+  }
+
+  handleNightModeExit = () => {
+    this.isNightMode = false;
     this.requestUpdate();
   }
 
