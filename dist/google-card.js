@@ -476,7 +476,8 @@ customElements.define("google-controls", class Controls extends LitElement {
     return [ controlsStyles, sharedStyles ];
   }
   constructor() {
-    super(), this.initializeProperties();
+    super(), this.initializeProperties(), this.handleTouchStart = this.handleTouchStart.bind(this), 
+    this.handleTouchMove = this.handleTouchMove.bind(this), this.handleTouchEnd = this.handleTouchEnd.bind(this);
   }
   initializeProperties() {
     this.showOverlay = !1, this.showBrightnessCard = !1, this.brightnessCardTransition = "none", 
@@ -486,84 +487,83 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.longPressTimer = null;
   }
   firstUpdated() {
-    this.addEventListener("touchstart", this.handleTouchStart), this.addEventListener("touchmove", this.handleTouchMove), 
-    this.addEventListener("touchend", this.handleTouchEnd);
+    document.addEventListener("touchstart", this.handleTouchStart), document.addEventListener("touchmove", this.handleTouchMove, {
+      passive: !1
+    }), document.addEventListener("touchend", this.handleTouchEnd);
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.removeEventListener("touchstart", this.handleTouchStart), 
-    this.removeEventListener("touchmove", this.handleTouchMove), this.removeEventListener("touchend", this.handleTouchEnd), 
-    this.clearAllTimers();
+    super.disconnectedCallback(), this.clearAllTimers(), document.removeEventListener("touchstart", this.handleTouchStart), 
+    document.removeEventListener("touchmove", this.handleTouchMove), document.removeEventListener("touchend", this.handleTouchEnd);
   }
   clearAllTimers() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
     this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
     this.longPressTimer && clearTimeout(this.longPressTimer);
   }
-  handleTouchStart=event => {
+  handleTouchStart(event) {
     this.touchStartY = event.touches[0].clientY;
-  };
-  handleTouchMove=event => {
-    event.preventDefault();
-  };
-  handleTouchEnd=event => {
+  }
+  handleTouchMove(event) {
+    (this.showBrightnessCard || this.showOverlay) && event.preventDefault();
+  }
+  handleTouchEnd(event) {
     const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-    deltaY > 50 && !this.showBrightnessCard ? (this.showOverlay = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
+    Math.abs(deltaY) > 50 && (deltaY > 0 && !this.showBrightnessCard ? (this.showOverlay = !0, 
+    this.dispatchEvent(new CustomEvent("overlayToggle", {
       detail: !0,
-      composed: !0,
-      bubbles: !0
-    })), this.startOverlayDismissTimer()) : deltaY < -50 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.dismissOverlay());
-  };
+      bubbles: !0,
+      composed: !0
+    })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay()));
+  }
   startOverlayDismissTimer() {
-    this.clearOverlayDismissTimer(), this.overlayDismissTimer = setTimeout((() => {
+    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.overlayDismissTimer = setTimeout((() => {
       this.dismissOverlay();
     }), 1e4);
   }
-  clearOverlayDismissTimer() {
-    this.overlayDismissTimer && (clearTimeout(this.overlayDismissTimer), this.overlayDismissTimer = null);
-  }
   startBrightnessCardDismissTimer() {
-    this.clearBrightnessCardDismissTimer(), this.brightnessCardDismissTimer = setTimeout((() => {
+    this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    this.brightnessCardDismissTimer = setTimeout((() => {
       this.dismissBrightnessCard();
     }), 1e4);
   }
-  clearBrightnessCardDismissTimer() {
-    this.brightnessCardDismissTimer && (clearTimeout(this.brightnessCardDismissTimer), 
-    this.brightnessCardDismissTimer = null);
-  }
   dismissOverlay() {
-    this.showOverlay = !1, this.clearOverlayDismissTimer(), this.dispatchEvent(new CustomEvent("overlayToggle", {
+    this.showOverlay = !1, this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), 
+    this.dispatchEvent(new CustomEvent("overlayToggle", {
       detail: !1,
-      composed: !0,
-      bubbles: !0
+      bubbles: !0,
+      composed: !0
     }));
   }
   toggleBrightnessCard() {
     this.showBrightnessCard ? this.dismissBrightnessCard() : (this.showOverlay = !1, 
     this.brightnessCardTransition = "none", this.showBrightnessCard = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
       detail: !1,
-      composed: !0,
-      bubbles: !0
+      bubbles: !0,
+      composed: !0
     })), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
       detail: !0,
-      composed: !0,
-      bubbles: !0
+      bubbles: !0,
+      composed: !0
     })), this.startBrightnessCardDismissTimer());
   }
   dismissBrightnessCard() {
     this.brightnessCardTransition = "transform 0.3s ease-in-out", this.showBrightnessCard = !1, 
-    this.clearBrightnessCardDismissTimer(), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
+    this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
       detail: !1,
-      composed: !0,
-      bubbles: !0
+      bubbles: !0,
+      composed: !0
     }));
   }
   async handleBrightnessChange(e) {
+    e.stopPropagation();
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
     const newBrightness = parseInt(clickedDot.dataset.value);
     await this.updateBrightnessValue(25.5 * newBrightness);
   }
   async handleBrightnessDrag(e) {
+    e.stopPropagation();
     const rect = this.shadowRoot.querySelector(".brightness-dots").getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
     await this.updateBrightnessValue(25.5 * newValue);
   }
@@ -571,8 +571,8 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
     this.dispatchEvent(new CustomEvent("brightnessChange", {
       detail: this.visualBrightness,
-      composed: !0,
-      bubbles: !0
+      bubbles: !0,
+      composed: !0
     })), this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
     this.brightnessUpdateTimer = setTimeout((async () => {
       await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
@@ -596,19 +596,30 @@ customElements.define("google-controls", class Controls extends LitElement {
     }
     this.startBrightnessCardDismissTimer();
   }
-  handleSettingsIconTouchStart=() => {
-    this.longPressTimer = setTimeout((() => {
+  handleSettingsIconTouchStart=e => {
+    e.stopPropagation(), this.longPressTimer = setTimeout((() => {
       this.dispatchEvent(new CustomEvent("debugToggle", {
-        composed: !0,
-        bubbles: !0
+        bubbles: !0,
+        composed: !0
       }));
     }), 1e3);
   };
-  handleSettingsIconTouchEnd=() => {
-    this.longPressTimer && clearTimeout(this.longPressTimer);
+  handleSettingsIconTouchEnd=e => {
+    e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer);
   };
   getBrightnessDisplayValue() {
     return Math.round(this.visualBrightness / 25.5);
+  }
+  render() {
+    return html`
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
+        rel="stylesheet"
+      />
+      <div class="controls-container">
+        ${this.showBrightnessCard ? "" : this.renderOverlay()} ${this.renderBrightnessCard()}
+      </div>
+    `;
   }
   renderOverlay() {
     return html`
@@ -669,17 +680,6 @@ customElements.define("google-controls", class Controls extends LitElement {
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
         </div>
-      </div>
-    `;
-  }
-  render() {
-    return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
-        rel="stylesheet"
-      />
-      <div class="controls-container">
-        ${this.showBrightnessCard ? "" : this.renderOverlay()} ${this.renderBrightnessCard()}
       </div>
     `;
   }
