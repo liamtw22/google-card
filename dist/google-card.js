@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
   image_order: "sorted",
   show_debug: !1,
   sensor_update_delay: 500
-}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css`
+}, sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
@@ -132,7 +132,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     super.disconnectedCallback(), this.clearTimers();
   }
   clearTimers() {
-    clearInterval(this.imageUpdateInterval), clearInterval(this.imageListUpdateInterval);
+    this.imageUpdateInterval && clearInterval(this.imageUpdateInterval), this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval);
   }
   startImageListUpdates() {
     this.updateImageList(), this.imageListUpdateInterval = setInterval((() => {
@@ -146,7 +146,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
   getImageSourceType() {
     const {image_url: image_url} = this.config;
-    return image_url.startsWith("media-source://") ? IMAGE_SOURCE_TYPES_MEDIA_SOURCE : image_url.startsWith("https://api.unsplash") ? IMAGE_SOURCE_TYPES_UNSPLASH_API : image_url.startsWith("immich+") ? IMAGE_SOURCE_TYPES_IMMICH_API : image_url.includes("picsum.photos") ? IMAGE_SOURCE_TYPES_PICSUM : IMAGE_SOURCE_TYPES_URL;
+    return image_url.startsWith("media-source://") ? "media-source" : image_url.startsWith("https://api.unsplash") ? "unsplash-api" : image_url.startsWith("immich+") ? "immich-api" : image_url.includes("picsum.photos") ? "picsum" : "url";
   }
   getImageUrl() {
     const timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3);
@@ -158,7 +158,8 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     try {
       const newImageList = await this.fetchImageList();
       this.imageList = "random" === this.config.image_order ? newImageList.sort((() => .5 - Math.random())) : newImageList.sort(), 
-      this.error = null, this.debugInfo.imageList = this.imageList;
+      -1 === this.currentImageIndex && this.imageList.length > 0 && (this.imageA = await this.preloadImage(this.imageList[0]), 
+      this.currentImageIndex = 0), this.error = null, this.debugInfo.imageList = this.imageList;
     } catch (error) {
       this.error = `Error updating image list: ${error.message}`;
     }
@@ -166,13 +167,13 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
   async fetchImageList() {
     switch (this.getImageSourceType()) {
-     case IMAGE_SOURCE_TYPES_MEDIA_SOURCE:
+     case "media-source":
       return this.getImagesFromMediaSource();
 
-     case IMAGE_SOURCE_TYPES_UNSPLASH_API:
+     case "unsplash-api":
       return this.getImagesFromUnsplashAPI();
 
-     case IMAGE_SOURCE_TYPES_IMMICH_API:
+     case "immich-api":
       return this.getImagesFromImmichAPI();
 
      default:
@@ -225,7 +226,8 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     }));
   }
   async preloadNextImage() {
-    const nextImageToPreload = this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? this.getImageUrl() : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
+    if (0 === this.imageList.length) return;
+    const nextImageToPreload = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
     try {
       this.preloadedImage = await this.preloadImage(nextImageToPreload);
     } catch (error) {
@@ -233,15 +235,20 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     }
   }
   async getNextImage() {
+    if (0 === this.imageList.length) return null;
     let newImage;
-    return this.preloadedImage ? (newImage = this.preloadedImage, this.preloadedImage = "") : (this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? newImage = this.getImageUrl() : (this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length, 
-    newImage = this.imageList[this.currentImageIndex]), newImage = await this.preloadImage(newImage)), 
-    newImage;
+    try {
+      return this.preloadedImage ? (newImage = this.preloadedImage, this.preloadedImage = "") : ("picsum" === this.getImageSourceType() ? newImage = this.getImageUrl() : (this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length, 
+      newImage = this.imageList[this.currentImageIndex]), newImage = await this.preloadImage(newImage)), 
+      newImage;
+    } catch (error) {
+      return console.error("Error getting next image:", error), null;
+    }
   }
   async updateImage() {
-    if (!this.isTransitioning) try {
+    if (!this.isTransitioning && 0 !== this.imageList.length) try {
       const newImage = await this.getNextImage();
-      await this.transitionToNewImage(newImage), this.preloadNextImage();
+      newImage && (await this.transitionToNewImage(newImage), this.preloadNextImage());
     } catch (error) {
       console.error("Error updating image:", error);
     }
@@ -264,21 +271,25 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       error: this.error
     };
   }
-  renderBackgroundImages() {
+  render() {
     const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0;
     return html`
       <div class="background-container">
         <div
           class="background-image"
           style="background-image: url('${this.imageA}'); 
-                    opacity: ${imageAOpacity};"
+                 opacity: ${imageAOpacity};
+                 background-size: ${this.config.image_fit || "contain"};"
         ></div>
         <div
           class="background-image"
           style="background-image: url('${this.imageB}'); 
-                    opacity: ${imageBOpacity};"
+                 opacity: ${imageBOpacity};
+                 background-size: ${this.config.image_fit || "contain"};"
         ></div>
       </div>
+      ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+      ${this.showDebugInfo ? this.renderDebugInfo() : ""}
     `;
   }
   renderDebugInfo() {
@@ -300,13 +311,6 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
         <h3>Config:</h3>
         <pre>${JSON.stringify(this.config, null, 2)}</pre>
       </div>
-    `;
-  }
-  render() {
-    return html`
-      ${this.renderBackgroundImages()}
-      ${this.error ? html`<div class="error">${this.error}</div>` : ""}
-      ${this.showDebugInfo ? this.renderDebugInfo() : ""}
     `;
   }
 });
