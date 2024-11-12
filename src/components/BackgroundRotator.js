@@ -2,7 +2,7 @@
 import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 import { backgroundRotatorStyles } from '../styles/BackgroundRotatorStyles';
 import { sharedStyles } from '../styles/SharedStyles';
-import { TRANSITION_BUFFER, IMAGE_SOURCE_TYPES } from '../constants';
+import { TRANSITION_BUFFER } from '../constants';
 
 export class BackgroundRotator extends LitElement {
   static get properties() {
@@ -57,8 +57,8 @@ export class BackgroundRotator extends LitElement {
   }
 
   clearTimers() {
-    clearInterval(this.imageUpdateInterval);
-    clearInterval(this.imageListUpdateInterval);
+    if (this.imageUpdateInterval) clearInterval(this.imageUpdateInterval);
+    if (this.imageListUpdateInterval) clearInterval(this.imageListUpdateInterval);
   }
 
   startImageListUpdates() {
@@ -77,11 +77,11 @@ export class BackgroundRotator extends LitElement {
 
   getImageSourceType() {
     const { image_url } = this.config;
-    if (image_url.startsWith('media-source://')) return IMAGE_SOURCE_TYPES.MEDIA_SOURCE;
-    if (image_url.startsWith('https://api.unsplash')) return IMAGE_SOURCE_TYPES.UNSPLASH_API;
-    if (image_url.startsWith('immich+')) return IMAGE_SOURCE_TYPES.IMMICH_API;
-    if (image_url.includes('picsum.photos')) return IMAGE_SOURCE_TYPES.PICSUM;
-    return IMAGE_SOURCE_TYPES.URL;
+    if (image_url.startsWith('media-source://')) return 'media-source';
+    if (image_url.startsWith('https://api.unsplash')) return 'unsplash-api';
+    if (image_url.startsWith('immich+')) return 'immich-api';
+    if (image_url.includes('picsum.photos')) return 'picsum';
+    return 'url';
   }
 
   getImageUrl() {
@@ -103,10 +103,15 @@ export class BackgroundRotator extends LitElement {
 
     try {
       const newImageList = await this.fetchImageList();
-      this.imageList =
-        this.config.image_order === 'random'
-          ? newImageList.sort(() => 0.5 - Math.random())
-          : newImageList.sort();
+      this.imageList = this.config.image_order === 'random'
+        ? newImageList.sort(() => 0.5 - Math.random())
+        : newImageList.sort();
+
+      // Set initial image if first load
+      if (this.currentImageIndex === -1 && this.imageList.length > 0) {
+        this.imageA = await this.preloadImage(this.imageList[0]);
+        this.currentImageIndex = 0;
+      }
 
       this.error = null;
       this.debugInfo.imageList = this.imageList;
@@ -119,11 +124,11 @@ export class BackgroundRotator extends LitElement {
   async fetchImageList() {
     const sourceType = this.getImageSourceType();
     switch (sourceType) {
-      case IMAGE_SOURCE_TYPES.MEDIA_SOURCE:
+      case 'media-source':
         return this.getImagesFromMediaSource();
-      case IMAGE_SOURCE_TYPES.UNSPLASH_API:
+      case 'unsplash-api':
         return this.getImagesFromUnsplashAPI();
-      case IMAGE_SOURCE_TYPES.IMMICH_API:
+      case 'immich-api':
         return this.getImagesFromImmichAPI();
       default:
         return [this.getImageUrl()];
@@ -138,8 +143,8 @@ export class BackgroundRotator extends LitElement {
         media_content_id: mediaContentId,
       });
       return result.children
-        .filter((child) => child.media_class === 'image')
-        .map((child) => child.media_content_id);
+        .filter(child => child.media_class === 'image')
+        .map(child => child.media_content_id);
     } catch (error) {
       console.error('Error fetching images from media source:', error);
       return [this.getImageUrl()];
@@ -150,7 +155,7 @@ export class BackgroundRotator extends LitElement {
     try {
       const response = await fetch(`${this.config.image_url}&count=30`);
       const data = await response.json();
-      return data.map((image) => image.urls.regular);
+      return data.map(image => image.urls.regular);
     } catch (error) {
       console.error('Error fetching images from Unsplash API:', error);
       return [this.getImageUrl()];
@@ -175,8 +180,8 @@ export class BackgroundRotator extends LitElement {
         });
         const albumData = await albumResponse.json();
         return albumData.assets
-          .filter((asset) => asset.type === 'IMAGE')
-          .map((asset) => `${apiUrl}/assets/${asset.id}/original`);
+          .filter(asset => asset.type === 'IMAGE')
+          .map(asset => `${apiUrl}/assets/${asset.id}/original`);
       });
 
       return (await Promise.all(imagePromises)).flat();
@@ -196,10 +201,11 @@ export class BackgroundRotator extends LitElement {
   }
 
   async preloadNextImage() {
-    const nextImageToPreload =
-      this.getImageSourceType() === IMAGE_SOURCE_TYPES.PICSUM
-        ? this.getImageUrl()
-        : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
+    if (this.imageList.length === 0) return;
+
+    const nextImageToPreload = this.getImageSourceType() === 'picsum'
+      ? this.getImageUrl()
+      : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
 
     try {
       this.preloadedImage = await this.preloadImage(nextImageToPreload);
@@ -210,29 +216,38 @@ export class BackgroundRotator extends LitElement {
   }
 
   async getNextImage() {
+    if (this.imageList.length === 0) return null;
+
     let newImage;
-    if (this.preloadedImage) {
-      newImage = this.preloadedImage;
-      this.preloadedImage = '';
-    } else {
-      if (this.getImageSourceType() === IMAGE_SOURCE_TYPES.PICSUM) {
-        newImage = this.getImageUrl();
+    try {
+      if (this.preloadedImage) {
+        newImage = this.preloadedImage;
+        this.preloadedImage = '';
       } else {
-        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-        newImage = this.imageList[this.currentImageIndex];
+        if (this.getImageSourceType() === 'picsum') {
+          newImage = this.getImageUrl();
+        } else {
+          this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
+          newImage = this.imageList[this.currentImageIndex];
+        }
+        newImage = await this.preloadImage(newImage);
       }
-      newImage = await this.preloadImage(newImage);
+      return newImage;
+    } catch (error) {
+      console.error('Error getting next image:', error);
+      return null;
     }
-    return newImage;
   }
 
   async updateImage() {
-    if (this.isTransitioning) return;
+    if (this.isTransitioning || this.imageList.length === 0) return;
 
     try {
       const newImage = await this.getNextImage();
-      await this.transitionToNewImage(newImage);
-      this.preloadNextImage();
+      if (newImage) {
+        await this.transitionToNewImage(newImage);
+        this.preloadNextImage();
+      }
     } catch (error) {
       console.error('Error updating image:', error);
     }
@@ -250,13 +265,11 @@ export class BackgroundRotator extends LitElement {
     this.updateDebugInfo();
     this.requestUpdate();
 
-    await new Promise((resolve) => setTimeout(resolve, TRANSITION_BUFFER));
+    await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
     this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
     this.requestUpdate();
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, this.config.crossfade_time * 1000 + TRANSITION_BUFFER)
-    );
+    await new Promise(resolve => setTimeout(resolve, this.config.crossfade_time * 1000 + TRANSITION_BUFFER));
     this.isTransitioning = false;
   }
 
@@ -273,7 +286,7 @@ export class BackgroundRotator extends LitElement {
     };
   }
 
-  renderBackgroundImages() {
+  render() {
     const imageAOpacity = this.activeImage === 'A' ? 1 : 0;
     const imageBOpacity = this.activeImage === 'B' ? 1 : 0;
 
@@ -282,14 +295,18 @@ export class BackgroundRotator extends LitElement {
         <div
           class="background-image"
           style="background-image: url('${this.imageA}'); 
-                    opacity: ${imageAOpacity};"
+                 opacity: ${imageAOpacity};
+                 background-size: ${this.config.image_fit || 'contain'};"
         ></div>
         <div
           class="background-image"
           style="background-image: url('${this.imageB}'); 
-                    opacity: ${imageBOpacity};"
+                 opacity: ${imageBOpacity};
+                 background-size: ${this.config.image_fit || 'contain'};"
         ></div>
       </div>
+      ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+      ${this.showDebugInfo ? this.renderDebugInfo() : ''}
     `;
   }
 
@@ -312,14 +329,6 @@ export class BackgroundRotator extends LitElement {
         <h3>Config:</h3>
         <pre>${JSON.stringify(this.config, null, 2)}</pre>
       </div>
-    `;
-  }
-
-  render() {
-    return html`
-      ${this.renderBackgroundImages()}
-      ${this.error ? html`<div class="error">${this.error}</div>` : ''}
-      ${this.showDebugInfo ? this.renderDebugInfo() : ''}
     `;
   }
 }
