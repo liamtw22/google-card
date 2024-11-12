@@ -2,6 +2,20 @@
 import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 
 export const controlsStyles = css`
+  :host {
+    --control-z-index: 1000;
+  }
+
+  .controls-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: auto;
+    z-index: var(--control-z-index);
+    touch-action: none;
+  }
+
   .overlay {
     position: fixed;
     bottom: 0;
@@ -13,7 +27,7 @@ export const controlsStyles = css`
     box-sizing: border-box;
     transition: transform 0.3s ease-in-out;
     transform: translateY(100%);
-    z-index: 4;
+    z-index: calc(var(--control-z-index) + 1);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
@@ -21,6 +35,8 @@ export const controlsStyles = css`
     align-items: center;
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
+    pointer-events: auto;
+    touch-action: none;
   }
 
   .overlay.show {
@@ -33,6 +49,7 @@ export const controlsStyles = css`
     display: flex;
     justify-content: center;
     align-items: center;
+    pointer-events: auto;
   }
 
   .icon-row {
@@ -40,6 +57,7 @@ export const controlsStyles = css`
     justify-content: space-between;
     align-items: center;
     width: 85%;
+    pointer-events: auto;
   }
 
   .icon-button {
@@ -53,6 +71,8 @@ export const controlsStyles = css`
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: auto;
+    touch-action: none;
   }
 
   .icon-button:hover {
@@ -68,9 +88,11 @@ export const controlsStyles = css`
     border-radius: 20px;
     padding: 40px 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 3;
+    z-index: calc(var(--control-z-index) + 2);
     transform: translateY(calc(100% + 20px));
     transition: transform 0.3s ease-in-out;
+    pointer-events: auto;
+    touch-action: none;
   }
 
   .brightness-card.show {
@@ -81,12 +103,14 @@ export const controlsStyles = css`
     display: flex;
     align-items: center;
     width: 100%;
+    pointer-events: auto;
   }
 
   .brightness-dots-container {
     flex-grow: 1;
     margin-right: 10px;
     padding: 0 10px;
+    pointer-events: auto;
   }
 
   .brightness-dots {
@@ -94,6 +118,8 @@ export const controlsStyles = css`
     justify-content: space-between;
     align-items: center;
     height: 30px;
+    pointer-events: auto;
+    touch-action: none;
   }
 
   .brightness-dot {
@@ -103,6 +129,7 @@ export const controlsStyles = css`
     background-color: #d1d1d1;
     transition: background-color 0.2s ease;
     cursor: pointer;
+    pointer-events: auto;
   }
 
   .brightness-dot.active {
@@ -116,6 +143,7 @@ export const controlsStyles = css`
     color: black;
     font-weight: 300;
     margin-right: 20px;
+    pointer-events: none;
   }
 
   iconify-icon {
@@ -123,5 +151,17 @@ export const controlsStyles = css`
     display: block;
     width: 50px;
     height: 50px;
+    pointer-events: none;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .controls-container {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .overlay {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+    }
   }
 `;
