@@ -5,7 +5,7 @@ import { sharedStyles } from '../styles/SharedStyles';
 import {
   NIGHT_MODE_TRANSITION_DELAY,
   MIN_BRIGHTNESS,
-  DEFAULT_SENSOR_UPDATE_DELAY
+  DEFAULT_SENSOR_UPDATE_DELAY,
 } from '../constants';
 
 export class NightMode extends LitElement {
@@ -15,7 +15,7 @@ export class NightMode extends LitElement {
       currentTime: { type: String },
       brightness: { type: Number },
       isInNightMode: { type: Boolean },
-      previousBrightness: { type: Number }
+      previousBrightness: { type: Number },
     };
   }
 
@@ -61,7 +61,7 @@ export class NightMode extends LitElement {
     this.currentTime = now.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     }).replace(/\s?[AP]M/, '');
   }
 
@@ -95,7 +95,7 @@ export class NightMode extends LitElement {
 
       this.dispatchEvent(new CustomEvent('nightModeExit', {
         bubbles: true,
-        composed: true
+        composed: true,
       }));
     } catch (error) {
       console.error('Error exiting night mode:', error);
@@ -109,12 +109,12 @@ export class NightMode extends LitElement {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_screen_brightness_level',
         data: {
-          command: value
-        }
+          command: value,
+        },
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors'
+        message: 'command_update_sensors',
       });
 
       await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
@@ -133,8 +133,8 @@ export class NightMode extends LitElement {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_auto_screen_brightness',
         data: {
-          command: enabled ? 'turn_on' : 'turn_off'
-        }
+          command: enabled ? 'turn_on' : 'turn_off',
+        },
       });
     } catch (error) {
       console.error('Error toggling auto brightness:', error);
