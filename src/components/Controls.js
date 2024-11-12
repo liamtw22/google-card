@@ -10,7 +10,7 @@ import {
   MIN_BRIGHTNESS,
   MAX_BRIGHTNESS,
   SWIPE_THRESHOLD,
-  DEFAULT_SENSOR_UPDATE_DELAY,
+  DEFAULT_SENSOR_UPDATE_DELAY
 } from '../constants';
 
 export class Controls extends LitElement {
@@ -24,7 +24,7 @@ export class Controls extends LitElement {
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
       touchStartY: { type: Number },
-      lastBrightnessUpdateTime: { type: Number },
+      lastBrightnessUpdateTime: { type: Number }
     };
   }
 
@@ -46,6 +46,13 @@ export class Controls extends LitElement {
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
     this.touchStartY = 0;
+    
+    // Initialize timers as null
+    this.overlayDismissTimer = null;
+    this.brightnessCardDismissTimer = null;
+    this.brightnessUpdateTimer = null;
+    this.brightnessStabilizeTimer = null;
+    this.longPressTimer = null;
   }
 
   firstUpdated() {
@@ -193,6 +200,7 @@ export class Controls extends LitElement {
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
     this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
+    
     this.dispatchEvent(new CustomEvent('brightnessChange', { 
       detail: this.visualBrightness,
       composed: true,
@@ -205,29 +213,30 @@ export class Controls extends LitElement {
     this.brightnessUpdateTimer = setTimeout(async () => {
       await this.setBrightness(value);
       this.lastBrightnessUpdateTime = Date.now();
-
+      
       this.brightnessStabilizeTimer = setTimeout(() => {
         this.isAdjustingBrightness = false;
+        this.requestUpdate();
       }, BRIGHTNESS_STABILIZE_DELAY);
     }, BRIGHTNESS_DEBOUNCE_DELAY);
   }
 
   async setBrightness(value) {
     const internalValue = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
-
+    
     try {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_screen_brightness_level',
         data: {
           command: internalValue,
-        },
+        }
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors',
+        message: 'command_update_sensors'
       });
 
-      await new Promise((resolve) => setTimeout(resolve, SENSOR_UPDATE_DELAY));
+      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
 
       this.brightness = internalValue;
     } catch (error) {
