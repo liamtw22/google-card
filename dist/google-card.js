@@ -472,36 +472,43 @@ customElements.define("google-controls", class Controls extends LitElement {
     return [ controlsStyles, sharedStyles ];
   }
   constructor() {
-    super(), this.initializeProperties(), this.setupEventListeners();
+    super(), this.initializeProperties();
   }
   initializeProperties() {
     this.showOverlay = !1, this.showBrightnessCard = !1, this.brightnessCardTransition = "none", 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.lastBrightnessUpdateTime = 0;
+    this.lastBrightnessUpdateTime = 0, this.touchStartY = 0, this.overlayDismissTimer = null, 
+    this.brightnessCardDismissTimer = null, this.brightnessUpdateTimer = null, this.brightnessStabilizeTimer = null, 
+    this.longPressTimer = null;
   }
-  setupEventListeners() {
-    this.addEventListener("touchstart", this.handleTouchStart.bind(this)), this.addEventListener("touchmove", this.handleTouchMove.bind(this)), 
-    this.addEventListener("touchend", this.handleTouchEnd.bind(this));
+  firstUpdated() {
+    this.addEventListener("touchstart", this.handleTouchStart), this.addEventListener("touchmove", this.handleTouchMove), 
+    this.addEventListener("touchend", this.handleTouchEnd);
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers();
+    super.disconnectedCallback(), this.removeEventListener("touchstart", this.handleTouchStart), 
+    this.removeEventListener("touchmove", this.handleTouchMove), this.removeEventListener("touchend", this.handleTouchEnd), 
+    this.clearAllTimers();
   }
   clearAllTimers() {
-    this.clearOverlayDismissTimer(), this.clearBrightnessCardDismissTimer(), this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), 
-    this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), this.longPressTimer && clearTimeout(this.longPressTimer);
+    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
+    this.longPressTimer && clearTimeout(this.longPressTimer);
   }
-  handleTouchStart(event) {
-    event.preventDefault(), this.touchStartY = event.touches[0].clientY;
-  }
-  handleTouchMove(event) {
+  handleTouchStart=event => {
+    this.touchStartY = event.touches[0].clientY;
+  };
+  handleTouchMove=event => {
     event.preventDefault();
-  }
-  handleTouchEnd(event) {
+  };
+  handleTouchEnd=event => {
     const deltaY = this.touchStartY - event.changedTouches[0].clientY;
     deltaY > 50 && !this.showBrightnessCard ? (this.showOverlay = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !0
+      detail: !0,
+      composed: !0,
+      bubbles: !0
     })), this.startOverlayDismissTimer()) : deltaY < -50 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.dismissOverlay());
-  }
+  };
   startOverlayDismissTimer() {
     this.clearOverlayDismissTimer(), this.overlayDismissTimer = setTimeout((() => {
       this.dismissOverlay();
@@ -521,21 +528,29 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   dismissOverlay() {
     this.showOverlay = !1, this.clearOverlayDismissTimer(), this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !1
+      detail: !1,
+      composed: !0,
+      bubbles: !0
     }));
   }
   toggleBrightnessCard() {
     this.showBrightnessCard ? this.dismissBrightnessCard() : (this.showOverlay = !1, 
     this.brightnessCardTransition = "none", this.showBrightnessCard = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !1
+      detail: !1,
+      composed: !0,
+      bubbles: !0
     })), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
-      detail: !0
+      detail: !0,
+      composed: !0,
+      bubbles: !0
     })), this.startBrightnessCardDismissTimer());
   }
   dismissBrightnessCard() {
     this.brightnessCardTransition = "transform 0.3s ease-in-out", this.showBrightnessCard = !1, 
     this.clearBrightnessCardDismissTimer(), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
-      detail: !1
+      detail: !1,
+      composed: !0,
+      bubbles: !0
     }));
   }
   async handleBrightnessChange(e) {
@@ -551,11 +566,13 @@ customElements.define("google-controls", class Controls extends LitElement {
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
     this.dispatchEvent(new CustomEvent("brightnessChange", {
-      detail: this.visualBrightness
+      detail: this.visualBrightness,
+      composed: !0,
+      bubbles: !0
     })), this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
     this.brightnessUpdateTimer = setTimeout((async () => {
       await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
-        this.isAdjustingBrightness = !1;
+        this.isAdjustingBrightness = !1, this.requestUpdate();
       }), 2e3);
     }), 250);
   }
@@ -575,14 +592,17 @@ customElements.define("google-controls", class Controls extends LitElement {
     }
     this.startBrightnessCardDismissTimer();
   }
-  handleSettingsIconTouchStart() {
+  handleSettingsIconTouchStart=() => {
     this.longPressTimer = setTimeout((() => {
-      this.dispatchEvent(new CustomEvent("debugToggle"));
+      this.dispatchEvent(new CustomEvent("debugToggle", {
+        composed: !0,
+        bubbles: !0
+      }));
     }), 1e3);
-  }
-  handleSettingsIconTouchEnd() {
+  };
+  handleSettingsIconTouchEnd=() => {
     this.longPressTimer && clearTimeout(this.longPressTimer);
-  }
+  };
   getBrightnessDisplayValue() {
     return Math.round(this.visualBrightness / 25.5);
   }
@@ -654,7 +674,9 @@ customElements.define("google-controls", class Controls extends LitElement {
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
       />
-      ${this.showBrightnessCard ? "" : this.renderOverlay()} ${this.renderBrightnessCard()}
+      <div class="controls-container">
+        ${this.showBrightnessCard ? "" : this.renderOverlay()} ${this.renderBrightnessCard()}
+      </div>
     `;
   }
 });
@@ -705,10 +727,11 @@ customElements.define("night-mode", class NightMode extends LitElement {
     return [ sharedStyles, nightModeStyles ];
   }
   constructor() {
-    super(), this.initializeProperties(), this.timeUpdateInterval = null;
+    super(), this.initializeProperties();
   }
   initializeProperties() {
-    this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1;
+    this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1, 
+    this.timeUpdateInterval = null;
   }
   connectedCallback() {
     super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.enterNightMode();
@@ -742,7 +765,10 @@ customElements.define("night-mode", class NightMode extends LitElement {
     if (this.isInNightMode) try {
       await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
       await this.setBrightness(this.previousBrightness), this.isInNightMode = !1, this.requestUpdate(), 
-      this.dispatchEvent(new CustomEvent("nightModeExit"));
+      this.dispatchEvent(new CustomEvent("nightModeExit", {
+        bubbles: !0,
+        composed: !0
+      }));
     } catch (error) {
       console.error("Error exiting night mode:", error);
     }
@@ -798,8 +824,11 @@ customElements.define("night-mode", class NightMode extends LitElement {
 
 const weatherClockStyles = css`
   .weather-component {
+    position: fixed;
+    bottom: 30px;
+    left: 40px;
     display: flex;
-    justify-content: space-between;
+    justify-content: start;
     align-items: center;
     color: white;
     font-family: 'Product Sans Regular', sans-serif;
@@ -855,7 +884,7 @@ const weatherClockStyles = css`
 
   .aqi {
     font-size: 20px;
-    padding: 5px 10px;
+    padding: 6px 10px 5px 10px;
     border-radius: 6px;
     font-weight: 500;
     margin-top: 5px;
@@ -934,7 +963,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   getWeatherIcon(state) {
     return {
       "clear-night": "clear-night",
-      cloudy: "cloudy-fill",
+      cloudy: "cloudy",
       fog: "fog",
       hail: "hail",
       lightning: "thunderstorms",
@@ -1024,6 +1053,9 @@ class GoogleCard extends LitElement {
       isInNightMode: {
         type: Boolean
       },
+      previousBrightness: {
+        type: Number
+      },
       isAdjustingBrightness: {
         type: Boolean
       },
@@ -1040,43 +1072,136 @@ class GoogleCard extends LitElement {
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isNightMode = !1, this.showBrightnessCard = !1, 
-    this.brightnessCardTransition = "none", this.isAdjustingBrightness = !1, this.lastBrightnessUpdateTime = 0, 
-    this.updateScreenSize();
+    this.brightnessCardTransition = "none", this.brightness = DEFAULT_CONFIG.brightness || 128, 
+    this.visualBrightness = this.brightness, this.previousBrightness = this.brightness, 
+    this.isInNightMode = !1, this.isAdjustingBrightness = !1, this.lastBrightnessUpdateTime = 0, 
+    this.updateScreenSize(), this.updateTime();
   }
   setConfig(config) {
     if (!config.image_url) throw new Error("You need to define an image_url");
     this.config = {
       ...DEFAULT_CONFIG,
-      ...config
+      ...config,
+      sensor_update_delay: config.sensor_update_delay || DEFAULT_CONFIG.sensor_update_delay
     }, this.showDebugInfo = this.config.show_debug;
   }
+  firstUpdated() {
+    super.firstUpdated(), this.setupEventListeners(), window.addEventListener("resize", this.boundUpdateScreenSize), 
+    this.startTimeUpdates();
+  }
+  setupEventListeners() {
+    this.addEventListener("overlayToggle", this.handleOverlayToggle), this.addEventListener("brightnessCardToggle", this.handleBrightnessCardToggle), 
+    this.addEventListener("brightnessChange", this.handleBrightnessChange), this.addEventListener("debugToggle", this.handleDebugToggle), 
+    this.addEventListener("nightModeExit", (() => {
+      this.isNightMode = !1, this.requestUpdate();
+    }));
+  }
   connectedCallback() {
-    super.connectedCallback(), window.addEventListener("resize", this.boundUpdateScreenSize);
+    super.connectedCallback(), this.updateNightMode();
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), window.removeEventListener("resize", this.boundUpdateScreenSize);
+    super.disconnectedCallback(), this.clearTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
+    this.removeEventListener("overlayToggle", this.handleOverlayToggle), this.removeEventListener("brightnessCardToggle", this.handleBrightnessCardToggle), 
+    this.removeEventListener("brightnessChange", this.handleBrightnessChange), this.removeEventListener("debugToggle", this.handleDebugToggle), 
+    this.removeEventListener("nightModeExit", this.handleNightModeExit);
   }
+  clearTimers() {
+    this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer);
+  }
+  handleOverlayToggle=event => {
+    this.showOverlay = event.detail, this.requestUpdate();
+  };
+  handleBrightnessCardToggle=event => {
+    this.showBrightnessCard = event.detail, this.brightnessCardTransition = "transform 0.3s ease-in-out", 
+    this.requestUpdate();
+  };
+  handleBrightnessChange=async event => {
+    await this.updateBrightnessValue(event.detail);
+  };
+  handleDebugToggle=() => {
+    this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
+  };
+  handleNightModeExit=() => {
+    this.isNightMode = !1, this.requestUpdate();
+  };
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
-    this.screenWidth = Math.round(window.innerWidth * pixelRatio), this.screenHeight = Math.round(window.innerHeight * pixelRatio);
+    this.screenWidth = Math.round(window.innerWidth * pixelRatio), this.screenHeight = Math.round(window.innerHeight * pixelRatio), 
+    this.requestUpdate();
   }
-  async handleBrightnessChange(newBrightness) {
-    await this.controls.updateBrightnessValue(newBrightness);
+  startTimeUpdates() {
+    this.timeUpdateInterval = setInterval((() => {
+      this.updateTime();
+    }), 1e3);
   }
-  handleOverlayToggle(show) {
-    this.showOverlay = show, this.requestUpdate();
+  updateTime() {
+    const now = new Date;
+    this.currentTime = now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: !0
+    }).replace(/\s?[AP]M/, "");
   }
-  handleBrightnessCardToggle(show) {
-    this.showBrightnessCard = show, this.requestUpdate();
+  async updateBrightnessValue(value) {
+    this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
+    this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer);
+    try {
+      await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
+        this.isAdjustingBrightness = !1, this.requestUpdate();
+      }), 2e3);
+    } catch (error) {
+      console.error("Error updating brightness:", error), this.visualBrightness = this.brightness;
+    }
   }
-  handleNightModeChange(isNightMode) {
-    this.isNightMode = isNightMode, this.requestUpdate();
+  async setBrightness(value) {
+    const brightness = Math.max(1, Math.min(255, Math.round(value)));
+    try {
+      await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
+        message: "command_screen_brightness_level",
+        data: {
+          command: brightness
+        }
+      }), await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
+        message: "command_update_sensors"
+      }), await new Promise((resolve => setTimeout(resolve, this.config.sensor_update_delay))), 
+      this.brightness = brightness, this.isNightMode || (this.previousBrightness = brightness);
+    } catch (error) {
+      throw console.error("Error setting brightness:", error), error;
+    }
   }
-  handleDebugToggle() {
-    this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
+  updated(changedProperties) {
+    if (changedProperties.has("hass") && !this.isAdjustingBrightness) {
+      Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
+    }
+  }
+  updateNightMode() {
+    if (!this.hass?.states["sensor.liam_room_display_light_sensor"]) return;
+    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"], shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+    shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode);
+  }
+  async handleNightModeTransition(newNightMode) {
+    newNightMode ? await this.enterNightMode() : await this.exitNightMode(), this.isInNightMode = newNightMode, 
+    this.isNightMode = newNightMode, this.requestUpdate();
+  }
+  async enterNightMode() {
+    this.previousBrightness = this.brightness, await this.toggleAutoBrightness(!1), 
+    await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
+    await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0);
+  }
+  async exitNightMode() {
+    await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
+    await this.setBrightness(this.previousBrightness);
+  }
+  async toggleAutoBrightness(enabled) {
+    await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
+      message: "command_auto_screen_brightness",
+      data: {
+        command: enabled ? "turn_on" : "turn_off"
+      }
+    });
   }
   render() {
-    return this.isNightMode ? html` <night-mode .currentTime=${this.currentTime}></night-mode> ` : html`
+    return this.isNightMode ? html` <night-mode .currentTime=${this.currentTime} .hass=${this.hass}></night-mode> ` : html`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
@@ -1092,18 +1217,38 @@ class GoogleCard extends LitElement {
 
       <weather-clock .hass=${this.hass}></weather-clock>
 
-      <controls
+      <google-controls
         .hass=${this.hass}
         .showOverlay=${this.showOverlay}
         .showBrightnessCard=${this.showBrightnessCard}
         .brightnessCardTransition=${this.brightnessCardTransition}
         .brightness=${this.brightness}
         .visualBrightness=${this.visualBrightness}
-        @brightnessChange=${e => this.handleBrightnessChange(e.detail)}
-        @overlayToggle=${e => this.handleOverlayToggle(e.detail)}
-        @brightnessCardToggle=${e => this.handleBrightnessCardToggle(e.detail)}
-        @debugToggle=${() => this.handleDebugToggle()}
-      ></controls>
+        .isAdjustingBrightness=${this.isAdjustingBrightness}
+      ></google-controls>
+
+      ${this.showDebugInfo ? this.renderDebugInfo() : ""}
+    `;
+  }
+  renderDebugInfo() {
+    return html`
+      <div class="debug-info">
+        <h2>Google Card Debug Info</h2>
+        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
+        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
+        <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
+        <p><strong>Show Overlay:</strong> ${this.showOverlay}</p>
+        <p><strong>Show Brightness Card:</strong> ${this.showBrightnessCard}</p>
+        <p><strong>Current Brightness:</strong> ${this.brightness}</p>
+        <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
+        <p><strong>Previous Brightness:</strong> ${this.previousBrightness}</p>
+        <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness}</p>
+        <p>
+          <strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}
+        </p>
+        <h3>Config:</h3>
+        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+      </div>
     `;
   }
 }
