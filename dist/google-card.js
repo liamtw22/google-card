@@ -527,13 +527,17 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.longPressTimer = null;
   }
   firstUpdated() {
-    document.addEventListener("touchstart", this.handleTouchStart), document.addEventListener("touchmove", this.handleTouchMove, {
+    window.addEventListener("touchstart", this.handleTouchStart, {
+      passive: !0
+    }), window.addEventListener("touchmove", this.handleTouchMove, {
       passive: !1
-    }), document.addEventListener("touchend", this.handleTouchEnd);
+    }), window.addEventListener("touchend", this.handleTouchEnd, {
+      passive: !0
+    });
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers(), document.removeEventListener("touchstart", this.handleTouchStart), 
-    document.removeEventListener("touchmove", this.handleTouchMove), document.removeEventListener("touchend", this.handleTouchEnd);
+    super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("touchstart", this.handleTouchStart), 
+    window.removeEventListener("touchmove", this.handleTouchMove), window.removeEventListener("touchend", this.handleTouchEnd);
   }
   clearAllTimers() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
@@ -541,19 +545,21 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.longPressTimer && clearTimeout(this.longPressTimer);
   }
   handleTouchStart(event) {
-    this.touchStartY = event.touches[0].clientY;
+    1 === event.touches.length && (this.touchStartY = event.touches[0].clientY);
   }
   handleTouchMove(event) {
     (this.showBrightnessCard || this.showOverlay) && event.preventDefault();
   }
   handleTouchEnd(event) {
-    const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-    Math.abs(deltaY) > 50 && (deltaY > 0 && !this.showBrightnessCard ? (this.showOverlay = !0, 
-    this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !0,
-      bubbles: !0,
-      composed: !0
-    })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay()));
+    if (1 === event.changedTouches.length) {
+      const deltaY = this.touchStartY - event.changedTouches[0].clientY;
+      Math.abs(deltaY) > 50 && (deltaY > 0 && !this.showBrightnessCard ? (this.showOverlay = !0, 
+      this.requestUpdate(), this.dispatchEvent(new CustomEvent("overlayToggle", {
+        detail: !0,
+        bubbles: !0,
+        composed: !0
+      })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay()));
+    }
   }
   startOverlayDismissTimer() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.overlayDismissTimer = setTimeout((() => {
@@ -567,15 +573,15 @@ customElements.define("google-controls", class Controls extends LitElement {
     }), 1e4);
   }
   dismissOverlay() {
-    this.showOverlay = !1, this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), 
+    this.showOverlay = !1, this.requestUpdate(), this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), 
     this.dispatchEvent(new CustomEvent("overlayToggle", {
       detail: !1,
       bubbles: !0,
       composed: !0
     }));
   }
-  toggleBrightnessCard() {
-    this.showBrightnessCard ? this.dismissBrightnessCard() : (this.showOverlay = !1, 
+  toggleBrightnessCard(e) {
+    e && e.stopPropagation(), this.showBrightnessCard ? this.dismissBrightnessCard() : (this.showOverlay = !1, 
     this.brightnessCardTransition = "none", this.showBrightnessCard = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
       detail: !1,
       bubbles: !0,
@@ -652,21 +658,18 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   render() {
     return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
-        rel="stylesheet"
-      />
-      <div class="controls-container">
-        ${this.showBrightnessCard ? "" : this.renderOverlay()} ${this.renderBrightnessCard()}
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? this.renderOverlay() : ""}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
       </div>
     `;
   }
   renderOverlay() {
     return html`
-      <div class="overlay ${this.showOverlay ? "show" : ""}">
+      <div class="overlay show" @click="${e => e.stopPropagation()}">
         <div class="icon-container">
           <div class="icon-row">
-            <button class="icon-button" @click="${this.toggleBrightnessCard}">
+            <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
               <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
@@ -697,8 +700,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
       <div
-        class="brightness-card ${this.showBrightnessCard ? "show" : ""}"
+        class="brightness-card show"
         style="transition: ${this.brightnessCardTransition};"
+        @click="${e => e.stopPropagation()}"
       >
         <div class="brightness-control">
           <div class="brightness-dots-container">
