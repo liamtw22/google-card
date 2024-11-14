@@ -504,9 +504,6 @@ customElements.define("google-controls", class Controls extends LitElement {
       isAdjustingBrightness: {
         type: Boolean
       },
-      touchStartY: {
-        type: Number
-      },
       lastBrightnessUpdateTime: {
         type: Number
       }
@@ -516,115 +513,45 @@ customElements.define("google-controls", class Controls extends LitElement {
     return [ controlsStyles, sharedStyles ];
   }
   constructor() {
-    super(), this.initializeProperties(), this.handleTouchStart = this.handleTouchStart.bind(this), 
-    this.handleTouchMove = this.handleTouchMove.bind(this), this.handleTouchEnd = this.handleTouchEnd.bind(this);
+    super(), this.initializeProperties();
   }
   initializeProperties() {
     this.showOverlay = !1, this.showBrightnessCard = !1, this.brightnessCardTransition = "none", 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.lastBrightnessUpdateTime = 0, this.touchStartY = 0, this.overlayDismissTimer = null, 
-    this.brightnessCardDismissTimer = null, this.brightnessUpdateTimer = null, this.brightnessStabilizeTimer = null, 
+    this.lastBrightnessUpdateTime = 0, this.brightnessUpdateTimer = null, this.brightnessStabilizeTimer = null, 
     this.longPressTimer = null;
   }
-  firstUpdated() {
-    window.addEventListener("touchstart", this.handleTouchStart, {
-      passive: !0
-    }), window.addEventListener("touchmove", this.handleTouchMove, {
-      passive: !1
-    }), window.addEventListener("touchend", this.handleTouchEnd, {
-      passive: !0
-    });
-  }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("touchstart", this.handleTouchStart), 
-    window.removeEventListener("touchmove", this.handleTouchMove), window.removeEventListener("touchend", this.handleTouchEnd);
+    super.disconnectedCallback(), this.clearAllTimers();
   }
   clearAllTimers() {
-    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
     this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
     this.longPressTimer && clearTimeout(this.longPressTimer);
   }
-  handleTouchStart(event) {
-    1 === event.touches.length && (this.touchStartY = event.touches[0].clientY);
-  }
-  handleTouchMove(event) {
-    (this.showBrightnessCard || this.showOverlay) && event.preventDefault();
-  }
-  handleTouchEnd(event) {
-    if (1 === event.changedTouches.length) {
-      const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-      Math.abs(deltaY) > 50 && (deltaY > 0 && !this.showBrightnessCard ? (this.showOverlay = !0, 
-      this.requestUpdate(), this.dispatchEvent(new CustomEvent("overlayToggle", {
-        detail: !0,
-        bubbles: !0,
-        composed: !0
-      })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay()));
-    }
-  }
-  startOverlayDismissTimer() {
-    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.overlayDismissTimer = setTimeout((() => {
-      this.dismissOverlay();
-    }), 1e4);
-  }
-  startBrightnessCardDismissTimer() {
-    this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
-    this.brightnessCardDismissTimer = setTimeout((() => {
-      this.dismissBrightnessCard();
-    }), 1e4);
-  }
-  dismissOverlay() {
-    this.showOverlay = !1, this.requestUpdate(), this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), 
-    this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !1,
-      bubbles: !0,
-      composed: !0
-    }));
-  }
-  toggleBrightnessCard(e) {
-    e && e.stopPropagation(), this.showBrightnessCard ? this.dismissBrightnessCard() : (this.showOverlay = !1, 
-    this.brightnessCardTransition = "none", this.showBrightnessCard = !0, this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: !1,
-      bubbles: !0,
-      composed: !0
-    })), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
-      detail: !0,
-      bubbles: !0,
-      composed: !0
-    })), this.startBrightnessCardDismissTimer());
-  }
-  dismissBrightnessCard() {
-    this.brightnessCardTransition = "transform 0.3s ease-in-out", this.showBrightnessCard = !1, 
-    this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
-    this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
-      detail: !1,
-      bubbles: !0,
-      composed: !0
-    }));
-  }
-  async handleBrightnessChange(e) {
+  handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
     const newBrightness = parseInt(clickedDot.dataset.value);
-    await this.updateBrightnessValue(25.5 * newBrightness);
+    this.updateBrightnessValue(25.5 * newBrightness);
   }
-  async handleBrightnessDrag(e) {
+  handleBrightnessDrag(e) {
     e.stopPropagation();
     const rect = this.shadowRoot.querySelector(".brightness-dots").getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
-    await this.updateBrightnessValue(25.5 * newValue);
+    this.updateBrightnessValue(25.5 * newValue);
   }
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
-    this.dispatchEvent(new CustomEvent("brightnessChange", {
-      detail: this.visualBrightness,
-      bubbles: !0,
-      composed: !0
-    })), this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
+    this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
     this.brightnessUpdateTimer = setTimeout((async () => {
       await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
         this.isAdjustingBrightness = !1, this.requestUpdate();
       }), 2e3);
-    }), 250);
+    }), 250), this.dispatchEvent(new CustomEvent("brightnessChange", {
+      detail: this.visualBrightness,
+      bubbles: !0,
+      composed: !0
+    }));
   }
   async setBrightness(value) {
     const internalValue = Math.max(1, Math.min(255, Math.round(value)));
@@ -636,11 +563,21 @@ customElements.define("google-controls", class Controls extends LitElement {
         }
       }), await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
         message: "command_update_sensors"
-      }), await new Promise((resolve => setTimeout(resolve, 500))), this.brightness = internalValue;
+      }), await new Promise((resolve => setTimeout(resolve, 500))), this.brightness = internalValue, 
+      this.requestUpdate();
     } catch (error) {
       console.error("Error setting brightness:", error), this.visualBrightness = this.brightness;
     }
-    this.startBrightnessCardDismissTimer();
+  }
+  getBrightnessDisplayValue() {
+    return Math.round(this.visualBrightness / 25.5);
+  }
+  toggleBrightnessCard(e) {
+    e && e.stopPropagation(), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
+      detail: !this.showBrightnessCard,
+      bubbles: !0,
+      composed: !0
+    }));
   }
   handleSettingsIconTouchStart=e => {
     e.stopPropagation(), this.longPressTimer = setTimeout((() => {
@@ -653,9 +590,6 @@ customElements.define("google-controls", class Controls extends LitElement {
   handleSettingsIconTouchEnd=e => {
     e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer);
   };
-  getBrightnessDisplayValue() {
-    return Math.round(this.visualBrightness / 25.5);
-  }
   render() {
     return html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
