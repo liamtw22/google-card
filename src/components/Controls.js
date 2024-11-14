@@ -3,14 +3,12 @@ import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-elemen
 import { controlsStyles } from '../styles/ControlsStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
-  OVERLAY_DISMISS_TIMEOUT,
-  LONG_PRESS_TIMEOUT,
   BRIGHTNESS_DEBOUNCE_DELAY,
   BRIGHTNESS_STABILIZE_DELAY,
   MIN_BRIGHTNESS,
   MAX_BRIGHTNESS,
-  SWIPE_THRESHOLD,
   DEFAULT_SENSOR_UPDATE_DELAY,
+  LONG_PRESS_TIMEOUT
 } from '../constants';
 
 export class Controls extends LitElement {
@@ -23,7 +21,6 @@ export class Controls extends LitElement {
       brightness: { type: Number },
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
-      touchStartY: { type: Number },
       lastBrightnessUpdateTime: { type: Number },
     };
   }
@@ -35,9 +32,6 @@ export class Controls extends LitElement {
   constructor() {
     super();
     this.initializeProperties();
-    this.handleTouchStart = this.handleTouchStart.bind(this);
-    this.handleTouchMove = this.handleTouchMove.bind(this);
-    this.handleTouchEnd = this.handleTouchEnd.bind(this);
   }
 
   initializeProperties() {
@@ -48,171 +42,46 @@ export class Controls extends LitElement {
     this.visualBrightness = 128;
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
-    this.touchStartY = 0;
-    this.overlayDismissTimer = null;
-    this.brightnessCardDismissTimer = null;
     this.brightnessUpdateTimer = null;
     this.brightnessStabilizeTimer = null;
     this.longPressTimer = null;
   }
 
-  firstUpdated() {
-    window.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-    window.addEventListener('touchend', this.handleTouchEnd, { passive: true });
-  }
-
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearAllTimers();
-    window.removeEventListener('touchstart', this.handleTouchStart);
-    window.removeEventListener('touchmove', this.handleTouchMove);
-    window.removeEventListener('touchend', this.handleTouchEnd);
   }
 
   clearAllTimers() {
-    if (this.overlayDismissTimer) clearTimeout(this.overlayDismissTimer);
-    if (this.brightnessCardDismissTimer) clearTimeout(this.brightnessCardDismissTimer);
     if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
     if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
   }
 
-  handleTouchStart(event) {
-    if (event.touches.length === 1) {
-      this.touchStartY = event.touches[0].clientY;
-    }
-  }
-
-  handleTouchMove(event) {
-    if (this.showBrightnessCard || this.showOverlay) {
-      event.preventDefault();
-    }
-  }
-
-  handleTouchEnd(event) {
-    if (event.changedTouches.length === 1) {
-      const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-      
-      if (Math.abs(deltaY) > SWIPE_THRESHOLD) {
-        if (deltaY > 0 && !this.showBrightnessCard) {
-          this.showOverlay = true;
-          this.requestUpdate();
-          this.dispatchEvent(new CustomEvent('overlayToggle', {
-            detail: true,
-            bubbles: true,
-            composed: true,
-          }));
-          this.startOverlayDismissTimer();
-        } else if (deltaY < 0) {
-          if (this.showBrightnessCard) {
-            this.dismissBrightnessCard();
-          } else if (this.showOverlay) {
-            this.dismissOverlay();
-          }
-        }
-      }
-    }
-  }
-
-  startOverlayDismissTimer() {
-    if (this.overlayDismissTimer) {
-      clearTimeout(this.overlayDismissTimer);
-    }
-    this.overlayDismissTimer = setTimeout(() => {
-      this.dismissOverlay();
-    }, OVERLAY_DISMISS_TIMEOUT);
-  }
-
-  startBrightnessCardDismissTimer() {
-    if (this.brightnessCardDismissTimer) {
-      clearTimeout(this.brightnessCardDismissTimer);
-    }
-    this.brightnessCardDismissTimer = setTimeout(() => {
-      this.dismissBrightnessCard();
-    }, OVERLAY_DISMISS_TIMEOUT);
-  }
-
-  dismissOverlay() {
-    this.showOverlay = false;
-    this.requestUpdate();
-    if (this.overlayDismissTimer) {
-      clearTimeout(this.overlayDismissTimer);
-    }
-    this.dispatchEvent(new CustomEvent('overlayToggle', {
-      detail: false,
-      bubbles: true,
-      composed: true,
-    }));
-  }
-
-  toggleBrightnessCard(e) {
-    if (e) {
-      e.stopPropagation();
-    }
-    
-    if (!this.showBrightnessCard) {
-      this.showOverlay = false;
-      this.brightnessCardTransition = 'none';
-      this.showBrightnessCard = true;
-      this.dispatchEvent(new CustomEvent('overlayToggle', {
-        detail: false,
-        bubbles: true,
-        composed: true,
-      }));
-      this.dispatchEvent(new CustomEvent('brightnessCardToggle', {
-        detail: true,
-        bubbles: true,
-        composed: true,
-      }));
-      this.startBrightnessCardDismissTimer();
-    } else {
-      this.dismissBrightnessCard();
-    }
-  }
-
-  dismissBrightnessCard() {
-    this.brightnessCardTransition = 'transform 0.3s ease-in-out';
-    this.showBrightnessCard = false;
-    if (this.brightnessCardDismissTimer) {
-      clearTimeout(this.brightnessCardDismissTimer);
-    }
-    this.dispatchEvent(new CustomEvent('brightnessCardToggle', {
-      detail: false,
-      bubbles: true,
-      composed: true,
-    }));
-  }
-
-  async handleBrightnessChange(e) {
+  // Brightness Control Handlers
+  handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
     if (!clickedDot) return;
 
     const newBrightness = parseInt(clickedDot.dataset.value);
-    await this.updateBrightnessValue(newBrightness * 25.5);
+    this.updateBrightnessValue(newBrightness * 25.5);
   }
 
-  async handleBrightnessDrag(e) {
+  handleBrightnessDrag(e) {
     e.stopPropagation();
     const container = this.shadowRoot.querySelector('.brightness-dots');
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
     const newValue = Math.round((relativeX / rect.width) * 10);
-    await this.updateBrightnessValue(newValue * 25.5);
+    this.updateBrightnessValue(newValue * 25.5);
   }
 
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
     this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
     
-    this.dispatchEvent(new CustomEvent('brightnessChange', {
-      detail: this.visualBrightness,
-      bubbles: true,
-      composed: true,
-    }));
-
     if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
     if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
 
@@ -225,6 +94,12 @@ export class Controls extends LitElement {
         this.requestUpdate();
       }, BRIGHTNESS_STABILIZE_DELAY);
     }, BRIGHTNESS_DEBOUNCE_DELAY);
+
+    this.dispatchEvent(new CustomEvent('brightnessChange', {
+      detail: this.visualBrightness,
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   async setBrightness(value) {
@@ -234,23 +109,38 @@ export class Controls extends LitElement {
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
         message: 'command_screen_brightness_level',
         data: {
-          command: internalValue,
-        },
+          command: internalValue
+        }
       });
 
       await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors',
+        message: 'command_update_sensors'
       });
 
       await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
       
       this.brightness = internalValue;
+      this.requestUpdate();
     } catch (error) {
       console.error('Error setting brightness:', error);
       this.visualBrightness = this.brightness;
     }
+  }
 
-    this.startBrightnessCardDismissTimer();
+  getBrightnessDisplayValue() {
+    return Math.round(this.visualBrightness / 25.5);
+  }
+
+  toggleBrightnessCard(e) {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    this.dispatchEvent(new CustomEvent('brightnessCardToggle', {
+      detail: !this.showBrightnessCard,
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   handleSettingsIconTouchStart = (e) => {
@@ -268,10 +158,6 @@ export class Controls extends LitElement {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
     }
-  }
-
-  getBrightnessDisplayValue() {
-    return Math.round(this.visualBrightness / 25.5);
   }
 
   render() {
