@@ -67,7 +67,7 @@ const DEFAULT_CONFIG = {
   }
 `;
 
-customElements.define("background-rotator", class BackgroundRotator extends LitElement {
+class BackgroundRotator extends LitElement {
   static get properties() {
     return {
       hass: {
@@ -313,7 +313,9 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       </div>
     `;
   }
-});
+}
+
+customElements.define("background-rotator", BackgroundRotator), customElements.define("background-rotator", BackgroundRotator);
 
 const controlsStyles = css`
   :host {
