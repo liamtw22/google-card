@@ -1291,7 +1291,8 @@ class GoogleCard extends LitElement {
     this.visualBrightness = this.brightness, this.previousBrightness = this.brightness, 
     this.isInNightMode = !1, this.isAdjustingBrightness = !1, this.lastBrightnessUpdateTime = 0, 
     this.touchStartY = 0, this.touchStartX = 0, this.touchStartTime = 0, this.overlayDismissTimer = null, 
-    this.brightnessStabilizeTimer = null, this.timeUpdateInterval = null, this.debugTouchInfo = {
+    this.brightnessCardDismissTimer = null, this.brightnessStabilizeTimer = null, this.timeUpdateInterval = null, 
+    this.debugTouchInfo = {
       touchStartY: 0,
       currentY: 0,
       deltaY: 0,
@@ -1328,8 +1329,8 @@ class GoogleCard extends LitElement {
     }));
   }
   clearAllTimers() {
-    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
-    this.timeUpdateInterval && clearInterval(this.timeUpdateInterval);
+    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval);
   }
   updateScreenSize() {
     const pixelRatio = window.devicePixelRatio || 1;
@@ -1393,6 +1394,12 @@ class GoogleCard extends LitElement {
       this.dismissOverlay();
     }), 1e4);
   }
+  startBrightnessCardDismissTimer() {
+    this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    this.brightnessCardDismissTimer = setTimeout((() => {
+      this.dismissBrightnessCard();
+    }), 1e4);
+  }
   dismissOverlay() {
     this.isOverlayTransitioning || (this.isOverlayTransitioning = !0, this.isOverlayVisible = !1, 
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), requestAnimationFrame((() => {
@@ -1403,7 +1410,8 @@ class GoogleCard extends LitElement {
   }
   dismissBrightnessCard() {
     this.isBrightnessCardTransitioning || (this.isBrightnessCardTransitioning = !0, 
-    this.isBrightnessCardVisible = !1, requestAnimationFrame((() => {
+    this.isBrightnessCardVisible = !1, this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
+    requestAnimationFrame((() => {
       this.requestUpdate(), setTimeout((() => {
         this.showBrightnessCard = !1, this.isBrightnessCardTransitioning = !1, this.requestUpdate();
       }), 300);
@@ -1436,11 +1444,6 @@ class GoogleCard extends LitElement {
       throw console.error("Error setting brightness:", error), error;
     }
   }
-  updateNightMode() {
-    if (!this.hass?.states["sensor.liam_room_display_light_sensor"]) return;
-    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"], shouldBeInNightMode = 0 === parseInt(lightSensor.state);
-    shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode);
-  }
   async handleNightModeTransition(newNightMode) {
     newNightMode ? await this.enterNightMode() : await this.exitNightMode(), this.isInNightMode = newNightMode, 
     this.isNightMode = newNightMode, this.requestUpdate();
@@ -1462,30 +1465,20 @@ class GoogleCard extends LitElement {
       }
     });
   }
-  handleOverlayToggle=event => {
-    const shouldShow = event.detail;
-    shouldShow && !this.showOverlay ? (this.showOverlay = !0, this.isOverlayTransitioning = !0, 
-    requestAnimationFrame((() => {
-      requestAnimationFrame((() => {
-        this.isOverlayVisible = !0, this.requestUpdate(), setTimeout((() => {
-          this.isOverlayTransitioning = !1, this.requestUpdate();
-        }), 300);
-      }));
-    })), this.startOverlayDismissTimer()) : !shouldShow && this.showOverlay && this.dismissOverlay();
-  };
   handleBrightnessCardToggle=event => {
     const shouldShow = event.detail;
-    shouldShow && !this.showBrightnessCard ? (this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, 
-    requestAnimationFrame((() => {
-      requestAnimationFrame((() => {
-        this.isBrightnessCardVisible = !0, this.requestUpdate(), setTimeout((() => {
+    shouldShow && !this.showBrightnessCard ? requestAnimationFrame((() => {
+      this.isOverlayVisible = !1, this.showOverlay = !1, this.isOverlayTransitioning = !1, 
+      this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, requestAnimationFrame((() => {
+        this.isBrightnessCardVisible = !0, this.startBrightnessCardDismissTimer(), this.requestUpdate(), 
+        setTimeout((() => {
           this.isBrightnessCardTransitioning = !1, this.requestUpdate();
         }), 300);
       }));
-    }))) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
+    })) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
   };
   handleBrightnessChange=async event => {
-    await this.updateBrightnessValue(event.detail);
+    await this.updateBrightnessValue(event.detail), this.startBrightnessCardDismissTimer();
   };
   handleDebugToggle=() => {
     this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
@@ -1493,6 +1486,11 @@ class GoogleCard extends LitElement {
   handleNightModeExit=() => {
     this.isNightMode = !1, this.requestUpdate();
   };
+  updateNightMode() {
+    if (!this.hass?.states["sensor.liam_room_display_light_sensor"]) return;
+    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"], shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+    shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode);
+  }
   updated(changedProperties) {
     if (changedProperties.has("hass") && !this.isAdjustingBrightness) {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
@@ -1509,6 +1507,9 @@ class GoogleCard extends LitElement {
         <div>Overlay Shown: ${this.showOverlay}</div>
         <div>Overlay Visible: ${this.isOverlayVisible}</div>
         <div>Overlay Transitioning: ${this.isOverlayTransitioning}</div>
+        <div>Brightness Card Shown: ${this.showBrightnessCard}</div>
+        <div>Brightness Card Visible: ${this.isBrightnessCardVisible}</div>
+        <div>Brightness Card Transitioning: ${this.isBrightnessCardTransitioning}</div>
       </div>
     ` : "";
   }
