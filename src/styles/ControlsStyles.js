@@ -11,6 +11,7 @@ export const controlsStyles = css`
     --icon-button-size: 52px;
     --brightness-dot-size: 12px;
     --brightness-value-size: 40px;
+    --border-radius: 20px;
   }
 
   .controls-container {
@@ -32,19 +33,17 @@ export const controlsStyles = css`
     background-color: rgba(255, 255, 255, 0.95);
     color: #333;
     box-sizing: border-box;
-    transform: translateY(100%);
+    transform: translateY(calc(100% + 20px));
     opacity: 0;
-    transition: 
-      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: none;
     z-index: calc(var(--control-z-index) + 1);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
     pointer-events: auto;
     touch-action: none;
     will-change: transform, opacity;
@@ -76,16 +75,6 @@ export const controlsStyles = css`
     align-items: center;
     width: 85%;
     pointer-events: auto;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: 
-      opacity var(--overlay-transition-duration) ease,
-      transform var(--overlay-transition-duration) ease;
-  }
-
-  .overlay.show .icon-row {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   .icon-button {
@@ -125,15 +114,13 @@ export const controlsStyles = css`
     right: 20px;
     height: var(--brightness-card-height);
     background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
+    border-radius: var(--border-radius);
     padding: 40px 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: calc(var(--control-z-index) + 2);
     transform: translateY(calc(100% + 20px));
     opacity: 0;
-    transition: 
-      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: none;
     pointer-events: auto;
     touch-action: none;
     will-change: transform, opacity;
@@ -247,7 +234,6 @@ export const controlsStyles = css`
     }
   }
 
-  /* Dark mode support */
   @media (prefers-color-scheme: dark) {
     .overlay,
     .brightness-card {
@@ -284,7 +270,6 @@ export const controlsStyles = css`
     }
   }
 
-  /* Animation for button press */
   @keyframes button-press {
     0% { transform: scale(1); }
     50% { transform: scale(0.95); }
@@ -295,10 +280,32 @@ export const controlsStyles = css`
     animation: button-press 0.2s ease;
   }
 
-  /* Smooth transitions for all interactive elements */
-  * {
-    transition-property: transform, opacity, background-color, color;
-    transition-duration: 0.2s;
-    transition-timing-function: ease;
+  /* High contrast mode support */
+  @media (forced-colors: active) {
+    .icon-button:hover,
+    .icon-button:active {
+      border: 1px solid ButtonText;
+    }
+
+    .brightness-dot {
+      border: 1px solid ButtonText;
+    }
+
+    .brightness-dot.active {
+      background-color: ButtonText;
+    }
+  }
+
+  /* Reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    .overlay,
+    .brightness-card,
+    .overlay.transitioning,
+    .brightness-card.transitioning {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 `;
