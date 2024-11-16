@@ -508,5 +508,3 @@ window.customCards.push({
   preview: true,
   documentationURL: 'https://github.com/liamtw22/google-card',
 });
-
-export { GoogleCard };
