@@ -324,7 +324,7 @@ const controlsStyles = css`
     --overlay-height: 120px;
     --brightness-card-height: 70px;
     --icon-size: 50px;
-    --icon-button-size: 52px;
+    --icon-button-size: 60px;
     --brightness-dot-size: 12px;
     --brightness-value-size: 40px;
     --border-radius: 20px;
