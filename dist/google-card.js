@@ -659,15 +659,6 @@ customElements.define("google-controls", class Controls extends LitElement {
       isAdjustingBrightness: {
         type: Boolean
       },
-      lastBrightnessUpdateTime: {
-        type: Number
-      },
-      brightnessUpdateTimer: {
-        type: Object
-      },
-      brightnessStabilizeTimer: {
-        type: Object
-      },
       longPressTimer: {
         type: Object
       }
@@ -683,15 +674,10 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
     this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.lastBrightnessUpdateTime = 0, this.brightnessUpdateTimer = null, this.brightnessStabilizeTimer = null, 
     this.longPressTimer = null;
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers();
-  }
-  clearAllTimers() {
-    this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
-    this.longPressTimer && clearTimeout(this.longPressTimer);
+    super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer);
   }
   handleBrightnessChange(e) {
     e.stopPropagation();
@@ -737,39 +723,6 @@ customElements.define("google-controls", class Controls extends LitElement {
   };
   classMap(classes) {
     return Object.entries(classes).filter((([_, value]) => Boolean(value))).map((([className]) => className)).join(" ");
-  }
-  renderBrightnessCard() {
-    const brightnessDisplayValue = this.getBrightnessDisplayValue();
-    return html`
-      <div
-        class="brightness-card ${this.classMap({
-      show: this.isBrightnessCardVisible,
-      transitioning: this.isBrightnessCardTransitioning
-    })}"
-        @click="${e => e.stopPropagation()}"
-      >
-        <div class="brightness-control">
-          <div class="brightness-dots-container">
-            <div
-              class="brightness-dots"
-              @click="${this.handleBrightnessChange}"
-              @mousedown="${this.handleBrightnessDrag}"
-              @mousemove="${e => 1 === e.buttons && this.handleBrightnessDrag(e)}"
-              @touchstart="${this.handleBrightnessDrag}"
-              @touchmove="${this.handleBrightnessDrag}"
-            >
-              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
-                  <div
-                    class="brightness-dot ${value <= brightnessDisplayValue ? "active" : ""}"
-                    data-value="${value}"
-                  ></div>
-                `))}
-            </div>
-          </div>
-          <span class="brightness-value">${brightnessDisplayValue}</span>
-        </div>
-      </div>
-    `;
   }
   render() {
     return html`
@@ -818,7 +771,36 @@ customElements.define("google-controls", class Controls extends LitElement {
                 </div>
               </div>
             ` : ""}
-        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
+        ${this.showBrightnessCard ? html`
+              <div
+                class="brightness-card ${this.classMap({
+      show: this.isBrightnessCardVisible,
+      transitioning: this.isBrightnessCardTransitioning
+    })}"
+                @click="${e => e.stopPropagation()}"
+              >
+                <div class="brightness-control">
+                  <div class="brightness-dots-container">
+                    <div
+                      class="brightness-dots"
+                      @click="${this.handleBrightnessChange}"
+                      @mousedown="${this.handleBrightnessDrag}"
+                      @mousemove="${e => 1 === e.buttons && this.handleBrightnessDrag(e)}"
+                      @touchstart="${this.handleBrightnessDrag}"
+                      @touchmove="${this.handleBrightnessDrag}"
+                    >
+                      ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
+                          <div
+                            class="brightness-dot ${value <= this.getBrightnessDisplayValue() ? "active" : ""}"
+                            data-value="${value}"
+                          ></div>
+                        `))}
+                    </div>
+                  </div>
+                  <span class="brightness-value">${this.getBrightnessDisplayValue()}</span>
+                </div>
+              </div>
+            ` : ""}
       </div>
     `;
   }
