@@ -1,9 +1,9 @@
-// src/styles/ControlsStyles.js
 import { css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
 
 export const controlsStyles = css`
   :host {
     --control-z-index: 1000;
+    --overlay-transition-duration: 0.3s;
   }
 
   .controls-container {
@@ -25,7 +25,7 @@ export const controlsStyles = css`
     background-color: rgba(255, 255, 255, 0.95);
     color: #333;
     box-sizing: border-box;
-    transition: transform 0.3s ease-in-out;
+    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(100%);
     z-index: calc(var(--control-z-index) + 1);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
@@ -37,6 +37,7 @@ export const controlsStyles = css`
     border-top-right-radius: 20px;
     pointer-events: auto;
     touch-action: none;
+    will-change: transform;
   }
 
   .overlay.show {
@@ -67,16 +68,22 @@ export const controlsStyles = css`
     color: #333;
     padding: 10px;
     border-radius: 50%;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
     touch-action: none;
+    width: 52px;
+    height: 52px;
   }
 
   .icon-button:hover {
     background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .icon-button:active {
+    background-color: rgba(0, 0, 0, 0.2);
   }
 
   .brightness-card {
@@ -90,9 +97,10 @@ export const controlsStyles = css`
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: calc(var(--control-z-index) + 2);
     transform: translateY(calc(100% + 20px));
-    transition: transform 0.3s ease-in-out;
+    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
     touch-action: none;
+    will-change: transform;
   }
 
   .brightness-card.show {
@@ -147,10 +155,11 @@ export const controlsStyles = css`
   }
 
   iconify-icon {
-    font-size: 50px;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
     display: block;
-    width: 50px;
-    height: 50px;
+    color: #333;
     pointer-events: none;
   }
 
@@ -162,6 +171,27 @@ export const controlsStyles = css`
     .overlay {
       padding-bottom: env(safe-area-inset-bottom, 0);
       height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+    }
+
+    .brightness-card {
+      padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+      margin-bottom: env(safe-area-inset-bottom, 0);
+    }
+  }
+
+  @media (display-mode: standalone) {
+    .controls-container {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .overlay {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+    }
+
+    .brightness-card {
+      padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+      margin-bottom: env(safe-area-inset-bottom, 0);
     }
   }
 `;
