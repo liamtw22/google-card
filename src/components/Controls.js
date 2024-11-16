@@ -1,5 +1,6 @@
 // src/components/Controls.js
 import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 import { controlsStyles } from '../styles/ControlsStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
