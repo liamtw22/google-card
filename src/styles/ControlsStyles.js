@@ -25,8 +25,13 @@ export const controlsStyles = css`
     background-color: rgba(255, 255, 255, 0.95);
     color: #333;
     box-sizing: border-box;
-    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: 
+      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear var(--overlay-transition-duration);
     z-index: calc(var(--control-z-index) + 1);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -37,11 +42,17 @@ export const controlsStyles = css`
     border-top-right-radius: 20px;
     pointer-events: auto;
     touch-action: none;
-    will-change: transform;
+    will-change: transform, opacity, visibility;
   }
 
   .overlay.show {
     transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    transition: 
+      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0s;
   }
 
   .icon-container {
@@ -59,6 +70,16 @@ export const controlsStyles = css`
     align-items: center;
     width: 85%;
     pointer-events: auto;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: 
+      opacity var(--overlay-transition-duration) ease,
+      transform var(--overlay-transition-duration) ease;
+  }
+
+  .overlay.show .icon-row {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .icon-button {
@@ -97,14 +118,25 @@ export const controlsStyles = css`
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: calc(var(--control-z-index) + 2);
     transform: translateY(calc(100% + 20px));
-    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    visibility: hidden;
+    transition: 
+      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear var(--overlay-transition-duration);
     pointer-events: auto;
     touch-action: none;
-    will-change: transform;
+    will-change: transform, opacity, visibility;
   }
 
   .brightness-card.show {
     transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    transition: 
+      transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0s;
   }
 
   .brightness-control {
