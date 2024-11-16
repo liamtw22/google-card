@@ -4,8 +4,6 @@ import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 import { controlsStyles } from '../styles/ControlsStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
-  BRIGHTNESS_DEBOUNCE_DELAY,
-  BRIGHTNESS_STABILIZE_DELAY,
   MIN_BRIGHTNESS,
   MAX_BRIGHTNESS,
   LONG_PRESS_TIMEOUT
@@ -67,7 +65,6 @@ export class Controls extends LitElement {
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
   }
 
-  // Brightness Control Handlers
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
@@ -130,11 +127,10 @@ export class Controls extends LitElement {
     }
   }
 
-  // Class mapping helper
   classMap(classes) {
     return Object.entries(classes)
-      .filter(([key, value]) => Boolean(value))
-      .map(([key]) => key)
+      .filter(([_, value]) => Boolean(value))
+      .map(([className]) => className)
       .join(' ');
   }
 
