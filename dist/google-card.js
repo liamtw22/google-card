@@ -321,6 +321,12 @@ const controlsStyles = css`
   :host {
     --control-z-index: 1000;
     --overlay-transition-duration: 0.3s;
+    --overlay-height: 120px;
+    --brightness-card-height: 140px;
+    --icon-size: 32px;
+    --icon-button-size: 52px;
+    --brightness-dot-size: 12px;
+    --brightness-value-size: 40px;
   }
 
   .controls-container {
@@ -328,7 +334,7 @@ const controlsStyles = css`
     bottom: 0;
     left: 0;
     width: 100%;
-    pointer-events: auto;
+    pointer-events: none;
     z-index: var(--control-z-index);
     touch-action: none;
   }
@@ -344,10 +350,8 @@ const controlsStyles = css`
     box-sizing: border-box;
     transform: translateY(100%);
     opacity: 0;
-    visibility: hidden;
     transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      visibility 0s linear var(--overlay-transition-duration);
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: calc(var(--control-z-index) + 1);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -358,16 +362,17 @@ const controlsStyles = css`
     border-top-right-radius: 20px;
     pointer-events: auto;
     touch-action: none;
-    will-change: transform, opacity, visibility;
+    will-change: transform, opacity;
+  }
+
+  .overlay.transitioning {
+    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .overlay.show {
     transform: translateY(0);
     opacity: 1;
-    visibility: visible;
-    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      visibility 0s linear 0s;
   }
 
   .icon-container {
@@ -403,14 +408,16 @@ const controlsStyles = css`
     color: #333;
     padding: 10px;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
     touch-action: none;
-    width: 52px;
-    height: 52px;
+    width: var(--icon-button-size);
+    height: var(--icon-button-size);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .icon-button:hover {
@@ -419,6 +426,7 @@ const controlsStyles = css`
 
   .icon-button:active {
     background-color: rgba(0, 0, 0, 0.2);
+    transform: scale(0.95);
   }
 
   .brightness-card {
@@ -426,6 +434,7 @@ const controlsStyles = css`
     bottom: 20px;
     left: 20px;
     right: 20px;
+    height: var(--brightness-card-height);
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 40px 20px;
@@ -433,22 +442,21 @@ const controlsStyles = css`
     z-index: calc(var(--control-z-index) + 2);
     transform: translateY(calc(100% + 20px));
     opacity: 0;
-    visibility: hidden;
     transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      visibility 0s linear var(--overlay-transition-duration);
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
     touch-action: none;
-    will-change: transform, opacity, visibility;
+    will-change: transform, opacity;
+  }
+
+  .brightness-card.transitioning {
+    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
+      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .brightness-card.show {
     transform: translateY(0);
     opacity: 1;
-    visibility: visible;
-    transition: transform var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      opacity var(--overlay-transition-duration) cubic-bezier(0.4, 0, 0.2, 1),
-      visibility 0s linear 0s;
   }
 
   .brightness-control {
@@ -456,6 +464,7 @@ const controlsStyles = css`
     align-items: center;
     width: 100%;
     pointer-events: auto;
+    height: 100%;
   }
 
   .brightness-dots-container {
@@ -472,16 +481,21 @@ const controlsStyles = css`
     height: 30px;
     pointer-events: auto;
     touch-action: none;
+    padding: 10px 0;
   }
 
   .brightness-dot {
-    width: 12px;
-    height: 12px;
+    width: var(--brightness-dot-size);
+    height: var(--brightness-dot-size);
     border-radius: 50%;
     background-color: #d1d1d1;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease;
     cursor: pointer;
     pointer-events: auto;
+  }
+
+  .brightness-dot:hover {
+    transform: scale(1.2);
   }
 
   .brightness-dot.active {
@@ -491,17 +505,18 @@ const controlsStyles = css`
   .brightness-value {
     min-width: 60px;
     text-align: right;
-    font-size: 40px;
-    color: black;
+    font-size: var(--brightness-value-size);
+    color: #333;
     font-weight: 300;
     margin-right: 20px;
     pointer-events: none;
+    font-family: 'Rubik', sans-serif;
   }
 
   iconify-icon {
-    font-size: 32px;
-    width: 32px;
-    height: 32px;
+    font-size: var(--icon-size);
+    width: var(--icon-size);
+    height: var(--icon-size);
     display: block;
     color: #333;
     pointer-events: none;
@@ -538,6 +553,67 @@ const controlsStyles = css`
       margin-bottom: env(safe-area-inset-bottom, 0);
     }
   }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .overlay,
+    .brightness-card {
+      background-color: rgba(32, 33, 36, 0.95);
+      color: #fff;
+    }
+
+    .icon-button {
+      color: #fff;
+    }
+
+    .icon-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .icon-button:active {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .brightness-dot {
+      background-color: #5f6368;
+    }
+
+    .brightness-dot.active {
+      background-color: #fff;
+    }
+
+    .brightness-value {
+      color: #fff;
+    }
+
+    iconify-icon {
+      color: #fff;
+    }
+  }
+
+  /* Animation for button press */
+  @keyframes button-press {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .icon-button:active {
+    animation: button-press 0.2s ease;
+  }
+
+  /* Smooth transitions for all interactive elements */
+  * {
+    transition-property: transform, opacity, background-color, color;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+  }
 `;
 
 customElements.define("google-controls", class Controls extends LitElement {
@@ -549,11 +625,20 @@ customElements.define("google-controls", class Controls extends LitElement {
       showOverlay: {
         type: Boolean
       },
+      isOverlayVisible: {
+        type: Boolean
+      },
+      isOverlayTransitioning: {
+        type: Boolean
+      },
       showBrightnessCard: {
         type: Boolean
       },
-      brightnessCardTransition: {
-        type: String
+      isBrightnessCardVisible: {
+        type: Boolean
+      },
+      isBrightnessCardTransitioning: {
+        type: Boolean
       },
       brightness: {
         type: Number
@@ -566,6 +651,15 @@ customElements.define("google-controls", class Controls extends LitElement {
       },
       lastBrightnessUpdateTime: {
         type: Number
+      },
+      brightnessUpdateTimer: {
+        type: Object
+      },
+      brightnessStabilizeTimer: {
+        type: Object
+      },
+      longPressTimer: {
+        type: Object
       }
     };
   }
@@ -576,7 +670,8 @@ customElements.define("google-controls", class Controls extends LitElement {
     super(), this.initializeProperties();
   }
   initializeProperties() {
-    this.showOverlay = !1, this.showBrightnessCard = !1, this.brightnessCardTransition = "none", 
+    this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
+    this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
     this.lastBrightnessUpdateTime = 0, this.brightnessUpdateTimer = null, this.brightnessStabilizeTimer = null, 
     this.longPressTimer = null;
@@ -597,37 +692,17 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   handleBrightnessDrag(e) {
     e.stopPropagation();
-    const rect = this.shadowRoot.querySelector(".brightness-dots").getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
+    const container = this.shadowRoot.querySelector(".brightness-dots");
+    if (!container) return;
+    const rect = container.getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
     this.updateBrightnessValue(25.5 * newValue);
   }
   async updateBrightnessValue(value) {
-    this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
-    this.brightnessUpdateTimer && clearTimeout(this.brightnessUpdateTimer), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
-    this.brightnessUpdateTimer = setTimeout((async () => {
-      await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
-        this.isAdjustingBrightness = !1, this.requestUpdate();
-      }), 2e3);
-    }), 250), this.dispatchEvent(new CustomEvent("brightnessChange", {
-      detail: this.visualBrightness,
+    this.dispatchEvent(new CustomEvent("brightnessChange", {
+      detail: Math.max(1, Math.min(255, Math.round(value))),
       bubbles: !0,
       composed: !0
     }));
-  }
-  async setBrightness(value) {
-    const internalValue = Math.max(1, Math.min(255, Math.round(value)));
-    try {
-      await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
-        message: "command_screen_brightness_level",
-        data: {
-          command: internalValue
-        }
-      }), await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
-        message: "command_update_sensors"
-      }), await new Promise((resolve => setTimeout(resolve, 500))), this.brightness = internalValue, 
-      this.requestUpdate();
-    } catch (error) {
-      console.error("Error setting brightness:", error), this.visualBrightness = this.brightness;
-    }
   }
   getBrightnessDisplayValue() {
     return Math.round(this.visualBrightness / 25.5);
@@ -650,52 +725,17 @@ customElements.define("google-controls", class Controls extends LitElement {
   handleSettingsIconTouchEnd=e => {
     e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer);
   };
-  render() {
-    return html`
-      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
-        ${this.showOverlay ? this.renderOverlay() : ""}
-        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
-      </div>
-    `;
-  }
-  renderOverlay() {
-    return html`
-      <div class="overlay show" @click="${e => e.stopPropagation()}">
-        <div class="icon-container">
-          <div class="icon-row">
-            <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
-              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-              ></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
-            </button>
-            <button
-              class="icon-button"
-              @touchstart="${this.handleSettingsIconTouchStart}"
-              @touchend="${this.handleSettingsIconTouchEnd}"
-              @touchcancel="${this.handleSettingsIconTouchEnd}"
-            >
-              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+  classMap(classes) {
+    return Object.entries(classes).filter((([_, value]) => Boolean(value))).map((([className]) => className)).join(" ");
   }
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
       <div
-        class="brightness-card show"
-        style="transition: ${this.brightnessCardTransition};"
+        class="brightness-card ${this.classMap({
+      show: this.isBrightnessCardVisible,
+      transitioning: this.isBrightnessCardTransitioning
+    })}"
         @click="${e => e.stopPropagation()}"
       >
         <div class="brightness-control">
@@ -718,6 +758,57 @@ customElements.define("google-controls", class Controls extends LitElement {
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
         </div>
+      </div>
+    `;
+  }
+  render() {
+    return html`
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? html`
+              <div
+                class="overlay ${this.classMap({
+      show: this.isOverlayVisible,
+      transitioning: this.isOverlayTransitioning
+    })}"
+                @click="${e => e.stopPropagation()}"
+              >
+                <div class="icon-container">
+                  <div class="icon-row">
+                    <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
+                      <iconify-icon
+                        icon="material-symbols-light:sunny-outline-rounded"
+                      ></iconify-icon>
+                    </button>
+                    <button class="icon-button">
+                      <iconify-icon
+                        icon="material-symbols-light:volume-up-outline-rounded"
+                      ></iconify-icon>
+                    </button>
+                    <button class="icon-button">
+                      <iconify-icon
+                        icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+                      ></iconify-icon>
+                    </button>
+                    <button class="icon-button">
+                      <iconify-icon
+                        icon="material-symbols-light:alarm-add-outline-rounded"
+                      ></iconify-icon>
+                    </button>
+                    <button
+                      class="icon-button"
+                      @touchstart="${this.handleSettingsIconTouchStart}"
+                      @touchend="${this.handleSettingsIconTouchEnd}"
+                      @touchcancel="${this.handleSettingsIconTouchEnd}"
+                    >
+                      <iconify-icon
+                        icon="material-symbols-light:settings-outline-rounded"
+                      ></iconify-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : ""}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
       </div>
     `;
   }
