@@ -47,7 +47,6 @@ export const weatherClockStyles = css`
     align-items: center;
     margin-top: 10px;
     font-weight: 500;
-    margin-right: -5px;
   }
 
   .weather-icon {
@@ -59,14 +58,14 @@ export const weatherClockStyles = css`
     font-size: 35px;
     font-weight: 500;
     text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+    padding-top: 2px;
   }
 
   .aqi {
     font-size: 20px;
-    padding: 6px 10px 5px 10px;
+    padding: 7px 15px 5px 15px;
     border-radius: 6px;
     font-weight: 500;
-    margin-top: 5px;
     margin-left: 30px;
     align-self: flex-end;
     min-width: 60px;
