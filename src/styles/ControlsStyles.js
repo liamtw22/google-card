@@ -6,8 +6,8 @@ export const controlsStyles = css`
     --control-z-index: 1000;
     --overlay-transition-duration: 0.3s;
     --overlay-height: 120px;
-    --brightness-card-height: 140px;
-    --icon-size: 32px;
+    --brightness-card-height: 70px;
+    --icon-size: 50px;
     --icon-button-size: 52px;
     --brightness-dot-size: 12px;
     --brightness-value-size: 40px;
