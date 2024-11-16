@@ -1233,6 +1233,10 @@ class GoogleCard extends LitElement {
           display: block;
           width: 100%;
           height: 100%;
+          position: fixed;
+          top: 0;
+          left: 0;
+          overflow: hidden;
         }
 
         .touch-container {
@@ -1270,11 +1274,26 @@ class GoogleCard extends LitElement {
 
         .debug-info h2 {
           margin-top: 0;
+          color: #fff;
         }
 
         .debug-info pre {
           white-space: pre-wrap;
           word-wrap: break-word;
+        }
+
+        .swipe-debug-overlay {
+          position: fixed;
+          top: 10px;
+          left: 10px;
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 10px;
+          border-radius: 5px;
+          font-family: monospace;
+          font-size: 12px;
+          z-index: 9999;
+          pointer-events: none;
         }
       ` ];
   }
@@ -1375,7 +1394,12 @@ class GoogleCard extends LitElement {
         deltaY: deltaY
       }, deltaY > 0 && !this.showBrightnessCard && !this.showOverlay ? (this.showOverlay = !0, 
       this.isOverlayTransitioning = !0, requestAnimationFrame((() => {
-        this.isOverlayVisible = !0, this.startOverlayDismissTimer();
+        requestAnimationFrame((() => {
+          this.isOverlayVisible = !0, this.startOverlayDismissTimer(), this.requestUpdate(), 
+          setTimeout((() => {
+            this.isOverlayTransitioning = !1, this.requestUpdate();
+          }), 300);
+        }));
       }))) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay())), 
       this.requestUpdate();
     }
@@ -1387,15 +1411,19 @@ class GoogleCard extends LitElement {
   }
   dismissOverlay() {
     this.isOverlayTransitioning || (this.isOverlayTransitioning = !0, this.isOverlayVisible = !1, 
-    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), setTimeout((() => {
-      this.showOverlay = !1, this.isOverlayTransitioning = !1, this.requestUpdate();
-    }), 300));
+    this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), requestAnimationFrame((() => {
+      this.requestUpdate(), setTimeout((() => {
+        this.showOverlay = !1, this.isOverlayTransitioning = !1, this.requestUpdate();
+      }), 300);
+    })));
   }
   dismissBrightnessCard() {
     this.isBrightnessCardTransitioning || (this.isBrightnessCardTransitioning = !0, 
-    this.isBrightnessCardVisible = !1, setTimeout((() => {
-      this.showBrightnessCard = !1, this.isBrightnessCardTransitioning = !1, this.requestUpdate();
-    }), 300));
+    this.isBrightnessCardVisible = !1, requestAnimationFrame((() => {
+      this.requestUpdate(), setTimeout((() => {
+        this.showBrightnessCard = !1, this.isBrightnessCardTransitioning = !1, this.requestUpdate();
+      }), 300);
+    })));
   }
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
@@ -1450,6 +1478,37 @@ class GoogleCard extends LitElement {
       }
     });
   }
+  handleOverlayToggle=event => {
+    const shouldShow = event.detail;
+    shouldShow && !this.showOverlay ? (this.showOverlay = !0, this.isOverlayTransitioning = !0, 
+    requestAnimationFrame((() => {
+      requestAnimationFrame((() => {
+        this.isOverlayVisible = !0, this.requestUpdate(), setTimeout((() => {
+          this.isOverlayTransitioning = !1, this.requestUpdate();
+        }), 300);
+      }));
+    })), this.startOverlayDismissTimer()) : !shouldShow && this.showOverlay && this.dismissOverlay();
+  };
+  handleBrightnessCardToggle=event => {
+    const shouldShow = event.detail;
+    shouldShow && !this.showBrightnessCard ? (this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, 
+    requestAnimationFrame((() => {
+      requestAnimationFrame((() => {
+        this.isBrightnessCardVisible = !0, this.requestUpdate(), setTimeout((() => {
+          this.isBrightnessCardTransitioning = !1, this.requestUpdate();
+        }), 300);
+      }));
+    }))) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
+  };
+  handleBrightnessChange=async event => {
+    await this.updateBrightnessValue(event.detail);
+  };
+  handleDebugToggle=() => {
+    this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
+  };
+  handleNightModeExit=() => {
+    this.isNightMode = !1, this.requestUpdate();
+  };
   updated(changedProperties) {
     if (changedProperties.has("hass") && !this.isAdjustingBrightness) {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
@@ -1457,21 +1516,7 @@ class GoogleCard extends LitElement {
   }
   renderSwipeDebugOverlay() {
     return this.showDebugInfo ? html`
-      <div
-        style="
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 9999;
-        pointer-events: none;
-      "
-      >
+      <div class="swipe-debug-overlay">
         <div>Start Y: ${this.debugTouchInfo.touchStartY.toFixed(1)}</div>
         <div>Current Y: ${this.debugTouchInfo.currentY.toFixed(1)}</div>
         <div>Delta Y: ${this.debugTouchInfo.deltaY.toFixed(1)}</div>
@@ -1479,7 +1524,7 @@ class GoogleCard extends LitElement {
         <div>Swipe Count: ${this.debugTouchInfo.swipeCount}</div>
         <div>Overlay Shown: ${this.showOverlay}</div>
         <div>Overlay Visible: ${this.isOverlayVisible}</div>
-        <div>Transitioning: ${this.isOverlayTransitioning}</div>
+        <div>Overlay Transitioning: ${this.isOverlayTransitioning}</div>
       </div>
     ` : "";
   }
@@ -1510,34 +1555,6 @@ class GoogleCard extends LitElement {
       </div>
     `;
   }
-  handleOverlayToggle=event => {
-    const shouldShow = event.detail;
-    shouldShow && !this.showOverlay ? (this.showOverlay = !0, this.isOverlayTransitioning = !0, 
-    requestAnimationFrame((() => {
-      this.isOverlayVisible = !0, setTimeout((() => {
-        this.isOverlayTransitioning = !1, this.requestUpdate();
-      }), 300);
-    })), this.startOverlayDismissTimer()) : !shouldShow && this.showOverlay && this.dismissOverlay(), 
-    this.requestUpdate();
-  };
-  handleBrightnessCardToggle=event => {
-    const shouldShow = event.detail;
-    shouldShow && !this.showBrightnessCard ? (this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, 
-    requestAnimationFrame((() => {
-      this.isBrightnessCardVisible = !0, setTimeout((() => {
-        this.isBrightnessCardTransitioning = !1, this.requestUpdate();
-      }), 300);
-    }))) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard(), this.requestUpdate();
-  };
-  handleBrightnessChange=async event => {
-    await this.updateBrightnessValue(event.detail);
-  };
-  handleDebugToggle=() => {
-    this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
-  };
-  handleNightModeExit=() => {
-    this.isNightMode = !1, this.requestUpdate();
-  };
   render() {
     const mainContent = this.isNightMode ? html` <night-mode .currentTime=${this.currentTime} .hass=${this.hass}></night-mode> ` : html`
           <background-rotator
