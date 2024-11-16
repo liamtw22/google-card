@@ -74,7 +74,7 @@ export class Controls extends LitElement {
     this.updateBrightnessValue(newValue * 25.5);
   }
 
-  async updateBrightnessValue(value) {
+  updateBrightnessValue(value) {
     this.dispatchEvent(new CustomEvent('brightnessChange', {
       detail: Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value))),
       bubbles: true,
@@ -122,77 +122,87 @@ export class Controls extends LitElement {
       .join(' ');
   }
 
+  renderBrightnessCard() {
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
+    
+    return html`
+      <div
+        class="brightness-card ${this.classMap({
+          'show': this.isBrightnessCardVisible,
+          'transitioning': this.isBrightnessCardTransitioning
+        })}"
+        @click="${(e) => e.stopPropagation()}"
+      >
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div
+              class="brightness-dots"
+              @click="${this.handleBrightnessChange}"
+              @mousedown="${this.handleBrightnessDrag}"
+              @mousemove="${(e) => e.buttons === 1 && this.handleBrightnessDrag(e)}"
+              @touchstart="${this.handleBrightnessDrag}"
+              @touchmove="${this.handleBrightnessDrag}"
+            >
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
+                (value) => html`
+                  <div
+                    class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}"
+                    data-value="${value}"
+                  ></div>
+                `
+              )}
+            </div>
+          </div>
+          <span class="brightness-value">${brightnessDisplayValue}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderOverlay() {
+    return html`
+      <div 
+        class="overlay ${this.classMap({
+          'show': this.isOverlayVisible,
+          'transitioning': this.isOverlayTransitioning
+        })}"
+        @click="${(e) => e.stopPropagation()}"
+      >
+        <div class="icon-container">
+          <div class="icon-row">
+            <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+              ></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
+            </button>
+            <button
+              class="icon-button"
+              @touchstart="${this.handleSettingsIconTouchStart}"
+              @touchend="${this.handleSettingsIconTouchEnd}"
+              @touchcancel="${this.handleSettingsIconTouchEnd}"
+            >
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   render() {
     return html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
-        ${this.showOverlay ? html`
-          <div 
-            class="overlay ${this.classMap({
-              'show': this.isOverlayVisible,
-              'transitioning': this.isOverlayTransitioning
-            })}"
-            @click="${(e) => e.stopPropagation()}"
-          >
-            <div class="icon-container">
-              <div class="icon-row">
-                <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
-                  <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-                </button>
-                <button class="icon-button">
-                  <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
-                </button>
-                <button class="icon-button">
-                  <iconify-icon
-                    icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-                  ></iconify-icon>
-                </button>
-                <button class="icon-button">
-                  <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
-                </button>
-                <button
-                  class="icon-button"
-                  @touchstart="${this.handleSettingsIconTouchStart}"
-                  @touchend="${this.handleSettingsIconTouchEnd}"
-                  @touchcancel="${this.handleSettingsIconTouchEnd}"
-                >
-                  <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
-                </button>
-              </div>
-            </div>
-          </div>
-        ` : ''}
-        ${this.showBrightnessCard ? html`
-          <div
-            class="brightness-card ${this.classMap({
-              'show': this.isBrightnessCardVisible,
-              'transitioning': this.isBrightnessCardTransitioning
-            })}"
-            @click="${(e) => e.stopPropagation()}"
-          >
-            <div class="brightness-control">
-              <div class="brightness-dots-container">
-                <div
-                  class="brightness-dots"
-                  @click="${this.handleBrightnessChange}"
-                  @mousedown="${this.handleBrightnessDrag}"
-                  @mousemove="${(e) => e.buttons === 1 && this.handleBrightnessDrag(e)}"
-                  @touchstart="${this.handleBrightnessDrag}"
-                  @touchmove="${this.handleBrightnessDrag}"
-                >
-                  ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
-                    (value) => html`
-                      <div
-                        class="brightness-dot ${value <= this.getBrightnessDisplayValue() ? 'active' : ''}"
-                        data-value="${value}"
-                      ></div>
-                    `
-                  )}
-                </div>
-              </div>
-              <span class="brightness-value">${this.getBrightnessDisplayValue()}</span>
-            </div>
-          </div>
-        ` : ''}
+        ${this.showOverlay ? this.renderOverlay() : ''}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
       </div>
     `;
   }
