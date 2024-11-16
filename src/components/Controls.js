@@ -8,7 +8,6 @@ import {
   BRIGHTNESS_STABILIZE_DELAY,
   MIN_BRIGHTNESS,
   MAX_BRIGHTNESS,
-  DEFAULT_SENSOR_UPDATE_DELAY,
   LONG_PRESS_TIMEOUT
 } from '../constants';
 
@@ -17,12 +16,18 @@ export class Controls extends LitElement {
     return {
       hass: { type: Object },
       showOverlay: { type: Boolean },
+      isOverlayVisible: { type: Boolean },
+      isOverlayTransitioning: { type: Boolean },
       showBrightnessCard: { type: Boolean },
-      brightnessCardTransition: { type: String },
+      isBrightnessCardVisible: { type: Boolean },
+      isBrightnessCardTransitioning: { type: Boolean },
       brightness: { type: Number },
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
       lastBrightnessUpdateTime: { type: Number },
+      brightnessUpdateTimer: { type: Object },
+      brightnessStabilizeTimer: { type: Object },
+      longPressTimer: { type: Object }
     };
   }
 
@@ -37,8 +42,11 @@ export class Controls extends LitElement {
 
   initializeProperties() {
     this.showOverlay = false;
+    this.isOverlayVisible = false;
+    this.isOverlayTransitioning = false;
     this.showBrightnessCard = false;
-    this.brightnessCardTransition = 'none';
+    this.isBrightnessCardVisible = false;
+    this.isBrightnessCardTransitioning = false;
     this.brightness = 128;
     this.visualBrightness = 128;
     this.isAdjustingBrightness = false;
@@ -72,6 +80,8 @@ export class Controls extends LitElement {
   handleBrightnessDrag(e) {
     e.stopPropagation();
     const container = this.shadowRoot.querySelector('.brightness-dots');
+    if (!container) return;
+
     const rect = container.getBoundingClientRect();
     const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
@@ -80,52 +90,11 @@ export class Controls extends LitElement {
   }
 
   async updateBrightnessValue(value) {
-    this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
-    
-    if (this.brightnessUpdateTimer) clearTimeout(this.brightnessUpdateTimer);
-    if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
-
-    this.brightnessUpdateTimer = setTimeout(async () => {
-      await this.setBrightness(value);
-      this.lastBrightnessUpdateTime = Date.now();
-      
-      this.brightnessStabilizeTimer = setTimeout(() => {
-        this.isAdjustingBrightness = false;
-        this.requestUpdate();
-      }, BRIGHTNESS_STABILIZE_DELAY);
-    }, BRIGHTNESS_DEBOUNCE_DELAY);
-
     this.dispatchEvent(new CustomEvent('brightnessChange', {
-      detail: this.visualBrightness,
+      detail: Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value))),
       bubbles: true,
       composed: true,
     }));
-  }
-
-  async setBrightness(value) {
-    const internalValue = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
-    
-    try {
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_screen_brightness_level',
-        data: {
-          command: internalValue
-        }
-      });
-
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors'
-      });
-
-      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
-      
-      this.brightness = internalValue;
-      this.requestUpdate();
-    } catch (error) {
-      console.error('Error setting brightness:', error);
-      this.visualBrightness = this.brightness;
-    }
   }
 
   getBrightnessDisplayValue() {
@@ -161,54 +130,22 @@ export class Controls extends LitElement {
     }
   }
 
-  render() {
-    return html`
-      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
-        ${this.showOverlay ? this.renderOverlay() : ''}
-        ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
-      </div>
-    `;
-  }
-
-  renderOverlay() {
-    return html`
-      <div class="overlay show" @click="${(e) => e.stopPropagation()}">
-        <div class="icon-container">
-          <div class="icon-row">
-            <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
-              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-              ></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
-            </button>
-            <button
-              class="icon-button"
-              @touchstart="${this.handleSettingsIconTouchStart}"
-              @touchend="${this.handleSettingsIconTouchEnd}"
-              @touchcancel="${this.handleSettingsIconTouchEnd}"
-            >
-              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+  // Class mapping helper
+  classMap(classes) {
+    return Object.entries(classes)
+      .filter(([key, value]) => Boolean(value))
+      .map(([key]) => key)
+      .join(' ');
   }
 
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
       <div
-        class="brightness-card show"
-        style="transition: ${this.brightnessCardTransition};"
+        class="brightness-card ${this.classMap({
+          'show': this.isBrightnessCardVisible,
+          'transitioning': this.isBrightnessCardTransitioning
+        })}"
         @click="${(e) => e.stopPropagation()}"
       >
         <div class="brightness-control">
@@ -233,6 +170,50 @@ export class Controls extends LitElement {
           </div>
           <span class="brightness-value">${brightnessDisplayValue}</span>
         </div>
+      </div>
+    `;
+  }
+
+  render() {
+    return html`
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? html`
+          <div 
+            class="overlay ${this.classMap({
+              'show': this.isOverlayVisible,
+              'transitioning': this.isOverlayTransitioning
+            })}"
+            @click="${(e) => e.stopPropagation()}"
+          >
+            <div class="icon-container">
+              <div class="icon-row">
+                <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
+                  <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+                </button>
+                <button class="icon-button">
+                  <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
+                </button>
+                <button class="icon-button">
+                  <iconify-icon
+                    icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+                  ></iconify-icon>
+                </button>
+                <button class="icon-button">
+                  <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
+                </button>
+                <button
+                  class="icon-button"
+                  @touchstart="${this.handleSettingsIconTouchStart}"
+                  @touchend="${this.handleSettingsIconTouchEnd}"
+                  @touchcancel="${this.handleSettingsIconTouchEnd}"
+                >
+                  <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
       </div>
     `;
   }
