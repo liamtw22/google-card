@@ -693,7 +693,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     const rect = container.getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
     this.updateBrightnessValue(25.5 * newValue);
   }
-  async updateBrightnessValue(value) {
+  updateBrightnessValue(value) {
     this.dispatchEvent(new CustomEvent("brightnessChange", {
       detail: Math.max(1, Math.min(255, Math.round(value))),
       bubbles: !0,
@@ -724,83 +724,82 @@ customElements.define("google-controls", class Controls extends LitElement {
   classMap(classes) {
     return Object.entries(classes).filter((([_, value]) => Boolean(value))).map((([className]) => className)).join(" ");
   }
-  render() {
+  renderBrightnessCard() {
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
     return html`
-      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
-        ${this.showOverlay ? html`
-              <div
-                class="overlay ${this.classMap({
-      show: this.isOverlayVisible,
-      transitioning: this.isOverlayTransitioning
-    })}"
-                @click="${e => e.stopPropagation()}"
-              >
-                <div class="icon-container">
-                  <div class="icon-row">
-                    <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
-                      <iconify-icon
-                        icon="material-symbols-light:sunny-outline-rounded"
-                      ></iconify-icon>
-                    </button>
-                    <button class="icon-button">
-                      <iconify-icon
-                        icon="material-symbols-light:volume-up-outline-rounded"
-                      ></iconify-icon>
-                    </button>
-                    <button class="icon-button">
-                      <iconify-icon
-                        icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-                      ></iconify-icon>
-                    </button>
-                    <button class="icon-button">
-                      <iconify-icon
-                        icon="material-symbols-light:alarm-add-outline-rounded"
-                      ></iconify-icon>
-                    </button>
-                    <button
-                      class="icon-button"
-                      @touchstart="${this.handleSettingsIconTouchStart}"
-                      @touchend="${this.handleSettingsIconTouchEnd}"
-                      @touchcancel="${this.handleSettingsIconTouchEnd}"
-                    >
-                      <iconify-icon
-                        icon="material-symbols-light:settings-outline-rounded"
-                      ></iconify-icon>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ` : ""}
-        ${this.showBrightnessCard ? html`
-              <div
-                class="brightness-card ${this.classMap({
+      <div
+        class="brightness-card ${this.classMap({
       show: this.isBrightnessCardVisible,
       transitioning: this.isBrightnessCardTransitioning
     })}"
-                @click="${e => e.stopPropagation()}"
-              >
-                <div class="brightness-control">
-                  <div class="brightness-dots-container">
-                    <div
-                      class="brightness-dots"
-                      @click="${this.handleBrightnessChange}"
-                      @mousedown="${this.handleBrightnessDrag}"
-                      @mousemove="${e => 1 === e.buttons && this.handleBrightnessDrag(e)}"
-                      @touchstart="${this.handleBrightnessDrag}"
-                      @touchmove="${this.handleBrightnessDrag}"
-                    >
-                      ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
-                          <div
-                            class="brightness-dot ${value <= this.getBrightnessDisplayValue() ? "active" : ""}"
-                            data-value="${value}"
-                          ></div>
-                        `))}
-                    </div>
-                  </div>
-                  <span class="brightness-value">${this.getBrightnessDisplayValue()}</span>
-                </div>
-              </div>
-            ` : ""}
+        @click="${e => e.stopPropagation()}"
+      >
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div
+              class="brightness-dots"
+              @click="${this.handleBrightnessChange}"
+              @mousedown="${this.handleBrightnessDrag}"
+              @mousemove="${e => 1 === e.buttons && this.handleBrightnessDrag(e)}"
+              @touchstart="${this.handleBrightnessDrag}"
+              @touchmove="${this.handleBrightnessDrag}"
+            >
+              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
+                  <div
+                    class="brightness-dot ${value <= brightnessDisplayValue ? "active" : ""}"
+                    data-value="${value}"
+                  ></div>
+                `))}
+            </div>
+          </div>
+          <span class="brightness-value">${brightnessDisplayValue}</span>
+        </div>
+      </div>
+    `;
+  }
+  renderOverlay() {
+    return html`
+      <div
+        class="overlay ${this.classMap({
+      show: this.isOverlayVisible,
+      transitioning: this.isOverlayTransitioning
+    })}"
+        @click="${e => e.stopPropagation()}"
+      >
+        <div class="icon-container">
+          <div class="icon-row">
+            <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+              ></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
+            </button>
+            <button
+              class="icon-button"
+              @touchstart="${this.handleSettingsIconTouchStart}"
+              @touchend="${this.handleSettingsIconTouchEnd}"
+              @touchcancel="${this.handleSettingsIconTouchEnd}"
+            >
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  render() {
+    return html`
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? this.renderOverlay() : ""}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
       </div>
     `;
   }
