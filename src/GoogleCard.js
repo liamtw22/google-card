@@ -135,6 +135,7 @@ export class GoogleCard extends LitElement {
     this.touchStartX = 0;
     this.touchStartTime = 0;
     this.overlayDismissTimer = null;
+    this.brightnessCardDismissTimer = null;
     this.brightnessStabilizeTimer = null;
     this.timeUpdateInterval = null;
     this.debugTouchInfo = {
@@ -196,6 +197,7 @@ export class GoogleCard extends LitElement {
 
   clearAllTimers() {
     if (this.overlayDismissTimer) clearTimeout(this.overlayDismissTimer);
+    if (this.brightnessCardDismissTimer) clearTimeout(this.brightnessCardDismissTimer);
     if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
     if (this.timeUpdateInterval) clearInterval(this.timeUpdateInterval);
   }
@@ -307,6 +309,15 @@ export class GoogleCard extends LitElement {
     }, 10000);
   }
 
+  startBrightnessCardDismissTimer() {
+    if (this.brightnessCardDismissTimer) {
+      clearTimeout(this.brightnessCardDismissTimer);
+    }
+    this.brightnessCardDismissTimer = setTimeout(() => {
+      this.dismissBrightnessCard();
+    }, 10000);
+  }
+
   dismissOverlay() {
     if (this.isOverlayTransitioning) return;
     
@@ -333,6 +344,10 @@ export class GoogleCard extends LitElement {
     this.isBrightnessCardTransitioning = true;
     this.isBrightnessCardVisible = false;
     
+    if (this.brightnessCardDismissTimer) {
+      clearTimeout(this.brightnessCardDismissTimer);
+    }
+
     requestAnimationFrame(() => {
       this.requestUpdate();
       setTimeout(() => {
@@ -392,17 +407,6 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  updateNightMode() {
-    if (!this.hass?.states['sensor.liam_room_display_light_sensor']) return;
-
-    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
-    const shouldBeInNightMode = parseInt(lightSensor.state) === 0;
-
-    if (shouldBeInNightMode !== this.isInNightMode) {
-      this.handleNightModeTransition(shouldBeInNightMode);
-    }
-  }
-
   async handleNightModeTransition(newNightMode) {
     if (newNightMode) {
       await this.enterNightMode();
@@ -439,41 +443,25 @@ export class GoogleCard extends LitElement {
     });
   }
 
-  handleOverlayToggle = (event) => {
-    const shouldShow = event.detail;
-    
-    if (shouldShow && !this.showOverlay) {
-      this.showOverlay = true;
-      this.isOverlayTransitioning = true;
-      
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.isOverlayVisible = true;
-          this.requestUpdate();
-          setTimeout(() => {
-            this.isOverlayTransitioning = false;
-            this.requestUpdate();
-          }, 300);
-        });
-      });
-      
-      this.startOverlayDismissTimer();
-    } else if (!shouldShow && this.showOverlay) {
-      this.dismissOverlay();
-    }
-  }
-
   handleBrightnessCardToggle = (event) => {
     const shouldShow = event.detail;
     
     if (shouldShow && !this.showBrightnessCard) {
-      this.showBrightnessCard = true;
-      this.isBrightnessCardTransitioning = true;
-      
+      // Immediately hide controls overlay
       requestAnimationFrame(() => {
+        this.isOverlayVisible = false;
+        this.showOverlay = false;
+        this.isOverlayTransitioning = false;
+
+        // Then smoothly show the brightness card
+        this.showBrightnessCard = true;
+        this.isBrightnessCardTransitioning = true;
+        
         requestAnimationFrame(() => {
           this.isBrightnessCardVisible = true;
+          this.startBrightnessCardDismissTimer();
           this.requestUpdate();
+          
           setTimeout(() => {
             this.isBrightnessCardTransitioning = false;
             this.requestUpdate();
@@ -487,6 +475,8 @@ export class GoogleCard extends LitElement {
 
   handleBrightnessChange = async (event) => {
     await this.updateBrightnessValue(event.detail);
+    // Reset dismiss timer when user interacts with brightness
+    this.startBrightnessCardDismissTimer();
   }
 
   handleDebugToggle = () => {
@@ -497,6 +487,17 @@ export class GoogleCard extends LitElement {
   handleNightModeExit = () => {
     this.isNightMode = false;
     this.requestUpdate();
+  }
+
+  updateNightMode() {
+    if (!this.hass?.states['sensor.liam_room_display_light_sensor']) return;
+
+    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+    const shouldBeInNightMode = parseInt(lightSensor.state) === 0;
+
+    if (shouldBeInNightMode !== this.isInNightMode) {
+      this.handleNightModeTransition(shouldBeInNightMode);
+    }
   }
 
   updated(changedProperties) {
@@ -521,6 +522,9 @@ export class GoogleCard extends LitElement {
         <div>Overlay Shown: ${this.showOverlay}</div>
         <div>Overlay Visible: ${this.isOverlayVisible}</div>
         <div>Overlay Transitioning: ${this.isOverlayTransitioning}</div>
+        <div>Brightness Card Shown: ${this.showBrightnessCard}</div>
+        <div>Brightness Card Visible: ${this.isBrightnessCardVisible}</div>
+        <div>Brightness Card Transitioning: ${this.isBrightnessCardTransitioning}</div>
       </div>
     `;
   }
