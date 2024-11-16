@@ -328,6 +328,8 @@ const controlsStyles = css`
     --brightness-dot-size: 12px;
     --brightness-value-size: 40px;
     --border-radius: 20px;
+    --background-blur: 10px;
+    --background-opacity: 0.95;
   }
 
   .controls-container {
@@ -346,7 +348,9 @@ const controlsStyles = css`
     left: 0;
     width: 100%;
     height: var(--overlay-height);
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, var(--background-opacity));
+    -webkit-backdrop-filter: blur(var(--background-blur));
+    backdrop-filter: blur(var(--background-blur));
     color: #333;
     box-sizing: border-box;
     transform: translateY(calc(100% + 20px));
@@ -426,7 +430,9 @@ const controlsStyles = css`
     left: 20px;
     right: 20px;
     height: var(--brightness-card-height);
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, var(--background-opacity));
+    -webkit-backdrop-filter: blur(var(--background-blur));
+    backdrop-filter: blur(var(--background-blur));
     border-radius: var(--border-radius);
     padding: 40px 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -512,6 +518,41 @@ const controlsStyles = css`
     pointer-events: none;
   }
 
+  @media (prefers-color-scheme: dark) {
+    .overlay,
+    .brightness-card {
+      background-color: rgba(32, 33, 36, var(--background-opacity));
+    }
+
+    .icon-button {
+      color: #fff;
+    }
+
+    .icon-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .icon-button:active {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .brightness-dot {
+      background-color: #5f6368;
+    }
+
+    .brightness-dot.active {
+      background-color: #fff;
+    }
+
+    .brightness-value {
+      color: #fff;
+    }
+
+    iconify-icon {
+      color: #fff;
+    }
+  }
+
   @supports (-webkit-touch-callout: none) {
     .controls-container {
       padding-bottom: env(safe-area-inset-bottom, 0);
@@ -544,39 +585,30 @@ const controlsStyles = css`
     }
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-reduced-motion: reduce) {
+    *,
     .overlay,
-    .brightness-card {
-      background-color: rgba(32, 33, 36, 0.95);
-      color: #fff;
+    .brightness-card,
+    .overlay.transitioning,
+    .brightness-card.transitioning {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
     }
+  }
 
-    .icon-button {
-      color: #fff;
-    }
-
-    .icon-button:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
+  @media (forced-colors: active) {
+    .icon-button:hover,
     .icon-button:active {
-      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid ButtonText;
     }
 
     .brightness-dot {
-      background-color: #5f6368;
+      border: 1px solid ButtonText;
     }
 
     .brightness-dot.active {
-      background-color: #fff;
-    }
-
-    .brightness-value {
-      color: #fff;
-    }
-
-    iconify-icon {
-      color: #fff;
+      background-color: ButtonText;
     }
   }
 
@@ -594,35 +626,6 @@ const controlsStyles = css`
 
   .icon-button:active {
     animation: button-press 0.2s ease;
-  }
-
-  /* High contrast mode support */
-  @media (forced-colors: active) {
-    .icon-button:hover,
-    .icon-button:active {
-      border: 1px solid ButtonText;
-    }
-
-    .brightness-dot {
-      border: 1px solid ButtonText;
-    }
-
-    .brightness-dot.active {
-      background-color: ButtonText;
-    }
-  }
-
-  /* Reduced motion preferences */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    .overlay,
-    .brightness-card,
-    .overlay.transitioning,
-    .brightness-card.transitioning {
-      transition-duration: 0.01ms !important;
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-    }
   }
 `;
 
