@@ -1046,34 +1046,44 @@ class GoogleCard extends LitElement {
       touchStartY: {
         type: Number
       },
-      overlayDismissTimer: {
-        type: Object
-      },
-      brightnessStabilizeTimer: {
-        type: Object
-      },
-      brightnessUpdateTimer: {
-        type: Object
-      },
-      longPressTimer: {
+      debugTouchInfo: {
         type: Object
       }
     };
   }
   static get styles() {
-    return [ sharedStyles ];
+    return [ sharedStyles, css`
+        .touch-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+        }
+
+        .content-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+      ` ];
   }
   constructor() {
-    super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this), 
-    this.handleTouchStart = this.handleTouchStart.bind(this), this.handleTouchMove = this.handleTouchMove.bind(this), 
-    this.handleTouchEnd = this.handleTouchEnd.bind(this);
+    super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isNightMode = !1, this.showBrightnessCard = !1, 
     this.brightnessCardTransition = "none", this.brightness = DEFAULT_CONFIG.brightness || 128, 
     this.visualBrightness = this.brightness, this.previousBrightness = this.brightness, 
     this.isInNightMode = !1, this.isAdjustingBrightness = !1, this.lastBrightnessUpdateTime = 0, 
-    this.touchStartY = 0, this.updateScreenSize(), this.updateTime(), this.startTimeUpdates();
+    this.touchStartY = 0, this.debugTouchInfo = {
+      touchStartY: 0,
+      currentY: 0,
+      deltaY: 0,
+      lastSwipeDirection: "none",
+      swipeCount: 0
+    }, this.updateScreenSize(), this.updateTime(), this.startTimeUpdates();
   }
   setConfig(config) {
     if (!config.image_url) throw new Error("You need to define an image_url");
@@ -1084,33 +1094,31 @@ class GoogleCard extends LitElement {
     }, this.showDebugInfo = this.config.show_debug;
   }
   firstUpdated() {
-    super.firstUpdated(), this.setupEventListeners(), window.addEventListener("resize", this.boundUpdateScreenSize);
-  }
-  setupEventListeners() {
-    this.addEventListener("touchstart", this.handleTouchStart, {
+    super.firstUpdated();
+    const touchContainer = this.shadowRoot.querySelector(".touch-container");
+    touchContainer && (touchContainer.addEventListener("touchstart", this.handleTouchStart.bind(this), {
       passive: !0
-    }), this.addEventListener("touchmove", this.handleTouchMove, {
+    }), touchContainer.addEventListener("touchmove", this.handleTouchMove.bind(this), {
       passive: !1
-    }), this.addEventListener("touchend", this.handleTouchEnd, {
+    }), touchContainer.addEventListener("touchend", this.handleTouchEnd.bind(this), {
       passive: !0
-    }), this.addEventListener("overlayToggle", this.handleOverlayToggle), this.addEventListener("brightnessCardToggle", this.handleBrightnessCardToggle), 
+    })), this.addEventListener("overlayToggle", this.handleOverlayToggle), this.addEventListener("brightnessCardToggle", this.handleBrightnessCardToggle), 
     this.addEventListener("brightnessChange", this.handleBrightnessChange), this.addEventListener("debugToggle", this.handleDebugToggle), 
-    this.addEventListener("nightModeExit", (() => {
-      this.isNightMode = !1, this.requestUpdate();
-    }));
+    this.addEventListener("nightModeExit", this.handleNightModeExit), window.addEventListener("resize", this.boundUpdateScreenSize);
   }
   connectedCallback() {
     super.connectedCallback(), this.updateNightMode();
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearTimers(), this.cleanupEventListeners();
-  }
-  cleanupEventListeners() {
-    window.removeEventListener("resize", this.boundUpdateScreenSize), this.removeEventListener("touchstart", this.handleTouchStart), 
-    this.removeEventListener("touchmove", this.handleTouchMove), this.removeEventListener("touchend", this.handleTouchEnd), 
+    super.disconnectedCallback();
+    const touchContainer = this.shadowRoot.querySelector(".touch-container");
+    touchContainer && (touchContainer.removeEventListener("touchstart", this.handleTouchStart.bind(this)), 
+    touchContainer.removeEventListener("touchmove", this.handleTouchMove.bind(this)), 
+    touchContainer.removeEventListener("touchend", this.handleTouchEnd.bind(this))), 
     this.removeEventListener("overlayToggle", this.handleOverlayToggle), this.removeEventListener("brightnessCardToggle", this.handleBrightnessCardToggle), 
     this.removeEventListener("brightnessChange", this.handleBrightnessChange), this.removeEventListener("debugToggle", this.handleDebugToggle), 
-    this.removeEventListener("nightModeExit", this.handleNightModeExit);
+    this.removeEventListener("nightModeExit", this.handleNightModeExit), window.removeEventListener("resize", this.boundUpdateScreenSize), 
+    this.clearTimers();
   }
   clearTimers() {
     this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
@@ -1118,20 +1126,41 @@ class GoogleCard extends LitElement {
     this.longPressTimer && clearTimeout(this.longPressTimer);
   }
   handleTouchStart(event) {
-    1 === event.touches.length && (this.touchStartY = event.touches[0].clientY);
+    console.log("Touch Start"), 1 === event.touches.length && (this.touchStartY = event.touches[0].clientY, 
+    this.debugTouchInfo = {
+      ...this.debugTouchInfo,
+      touchStartY: this.touchStartY,
+      currentY: this.touchStartY,
+      deltaY: 0
+    }, this.requestUpdate());
   }
   handleTouchMove(event) {
+    if (console.log("Touch Move"), 1 === event.touches.length) {
+      const currentY = event.touches[0].clientY, deltaY = this.touchStartY - currentY;
+      this.debugTouchInfo = {
+        ...this.debugTouchInfo,
+        currentY: currentY,
+        deltaY: deltaY
+      }, this.requestUpdate();
+    }
     (this.showBrightnessCard || this.showOverlay) && event.preventDefault();
   }
   handleTouchEnd(event) {
-    if (1 === event.changedTouches.length) {
+    if (console.log("Touch End"), 1 === event.changedTouches.length) {
       const deltaY = this.touchStartY - event.changedTouches[0].clientY;
-      Math.abs(deltaY) > 50 && (deltaY > 0 && !this.showBrightnessCard ? (this.showOverlay = !0, 
+      Math.abs(deltaY) > 50 && (console.log("Swipe detected:", deltaY > 0 ? "up" : "down"), 
+      this.debugTouchInfo = {
+        ...this.debugTouchInfo,
+        lastSwipeDirection: deltaY > 0 ? "up" : "down",
+        swipeCount: this.debugTouchInfo.swipeCount + 1,
+        deltaY: deltaY
+      }, deltaY > 0 && !this.showBrightnessCard ? (console.log("Showing overlay"), this.showOverlay = !0, 
       this.requestUpdate(), this.dispatchEvent(new CustomEvent("overlayToggle", {
         detail: !0,
         bubbles: !0,
         composed: !0
-      })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay()));
+      })), this.startOverlayDismissTimer()) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay())), 
+      this.requestUpdate();
     }
   }
   handleOverlayToggle=event => {
@@ -1247,6 +1276,32 @@ class GoogleCard extends LitElement {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
     }
   }
+  renderSwipeDebugOverlay() {
+    return html`
+      <div
+        style="
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 9999;
+        pointer-events: none;
+      "
+      >
+        <div>Start Y: ${this.debugTouchInfo.touchStartY.toFixed(1)}</div>
+        <div>Current Y: ${this.debugTouchInfo.currentY.toFixed(1)}</div>
+        <div>Delta Y: ${this.debugTouchInfo.deltaY.toFixed(1)}</div>
+        <div>Last Swipe: ${this.debugTouchInfo.lastSwipeDirection}</div>
+        <div>Swipe Count: ${this.debugTouchInfo.swipeCount}</div>
+        <div>Overlay Shown: ${this.showOverlay}</div>
+      </div>
+    `;
+  }
   renderDebugInfo() {
     return html`
       <div class="debug-info">
@@ -1269,33 +1324,38 @@ class GoogleCard extends LitElement {
     `;
   }
   render() {
-    return this.isNightMode ? html` <night-mode .currentTime=${this.currentTime} .hass=${this.hass}></night-mode> ` : html`
+    const mainContent = this.isNightMode ? html` <night-mode .currentTime=${this.currentTime} .hass=${this.hass}></night-mode> ` : html`
+          <background-rotator
+            .hass=${this.hass}
+            .config=${this.config}
+            .screenWidth=${this.screenWidth}
+            .screenHeight=${this.screenHeight}
+            .showDebugInfo=${this.showDebugInfo}
+          ></background-rotator>
+
+          <weather-clock .hass=${this.hass}></weather-clock>
+
+          <google-controls
+            .hass=${this.hass}
+            .showOverlay=${this.showOverlay}
+            .showBrightnessCard=${this.showBrightnessCard}
+            .brightnessCardTransition=${this.brightnessCardTransition}
+            .brightness=${this.brightness}
+            .visualBrightness=${this.visualBrightness}
+            .isAdjustingBrightness=${this.isAdjustingBrightness}
+          ></google-controls>
+        `;
+    return html`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
       />
-
-      <background-rotator
-        .hass=${this.hass}
-        .config=${this.config}
-        .screenWidth=${this.screenWidth}
-        ..screenHeight=${this.screenHeight}
-        .showDebugInfo=${this.showDebugInfo}
-      ></background-rotator>
-
-      <weather-clock .hass=${this.hass}></weather-clock>
-
-      <google-controls
-        .hass=${this.hass}
-        .showOverlay=${this.showOverlay}
-        .showBrightnessCard=${this.showBrightnessCard}
-        .brightnessCardTransition=${this.brightnessCardTransition}
-        .brightness=${this.brightness}
-        .visualBrightness=${this.visualBrightness}
-        .isAdjustingBrightness=${this.isAdjustingBrightness}
-      ></google-controls>
-
-      ${this.showDebugInfo ? this.renderDebugInfo() : ""}
+      <div class="touch-container">
+        <div class="content-wrapper">
+          ${mainContent} ${this.renderSwipeDebugOverlay()}
+          ${this.showDebugInfo ? this.renderDebugInfo() : ""}
+        </div>
+      </div>
     `;
   }
 }
