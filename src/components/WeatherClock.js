@@ -263,6 +263,10 @@ export class WeatherClock extends LitElement {
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
       />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
       <div class="weather-component">
         <div class="left-column">
           <div class="date">${this.date}</div>
