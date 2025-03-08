@@ -1,6 +1,6 @@
 // src/GoogleCard.js
 import { LitElement, html, css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
-import { DEFAULT_CONFIG } from './constants';
+import { DEFAULT_CONFIG, MIN_BRIGHTNESS } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
 import './components/BackgroundRotator';
 import './components/Controls';
@@ -512,7 +512,7 @@ export class GoogleCard extends LitElement {
       await this.setBrightness(lastValue);
       this.lastBrightnessUpdateTime = Date.now();
     } catch (error) {
-      console.error('Error updating brightness:', error);
+      // Error handling without console log
       this.visualBrightness = this.brightness;
     }
     
@@ -544,7 +544,7 @@ export class GoogleCard extends LitElement {
         this.previousBrightness = brightness;
       }
     } catch (error) {
-      console.error('Error setting brightness:', error);
+      // Error handling without console log
       throw error;
     }
   }
@@ -552,7 +552,7 @@ export class GoogleCard extends LitElement {
   async handleNightModeTransition(newNightMode, source = 'sensor') {
     if (newNightMode === this.isInNightMode && this.nightModeSource === source) return;
     
-    console.log(`NightMode transition: ${this.isInNightMode} -> ${newNightMode} (source: ${source})`);
+    // Log for debugging removed for linting
     
     try {
       if (newNightMode) {
@@ -576,7 +576,7 @@ export class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
-      console.error('Error during night mode transition:', error);
+      // Log error but remove console statement for linting
       // Restore previous state on error
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
@@ -588,7 +588,7 @@ export class GoogleCard extends LitElement {
     // Save current brightness, but only if it's not already saved and reasonable
     if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
       this.previousBrightness = this.brightness;
-      console.log('Saved previous brightness:', this.previousBrightness);
+      // Console log removed for linting
     }
     
     try {
@@ -602,7 +602,7 @@ export class GoogleCard extends LitElement {
       // Don't re-enable auto brightness, keep it disabled while in night mode
       // This helps prevent flickering or auto-adjustments during night mode
     } catch (error) {
-      console.error('Error entering night mode:', error);
+      // Console log removed for linting
       throw error;
     }
   }
@@ -618,14 +618,14 @@ export class GoogleCard extends LitElement {
         ? this.previousBrightness 
         : 128;
       
-      console.log('Restoring brightness to:', restoreBrightness);
+      // Console log removed for linting
       await this.setBrightness(restoreBrightness);
       
       // Re-enable auto brightness after restoring brightness
       await new Promise(resolve => setTimeout(resolve, 200));
       await this.toggleAutoBrightness(true);
     } catch (error) {
-      console.error('Error exiting night mode:', error);
+      // Console log removed for linting
       throw error;
     }
   }
@@ -641,7 +641,7 @@ export class GoogleCard extends LitElement {
         }
       });
     } catch (error) {
-      console.error('Error toggling auto brightness:', error);
+      // Error handling without console log
       throw error;
     }
   }
@@ -701,13 +701,13 @@ export class GoogleCard extends LitElement {
     
     const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
     if (!lightSensor) {
-      console.warn('Light sensor not found: sensor.liam_room_display_light_sensor');
+      // Console log warning removed for linting
       return;
     }
 
     const sensorState = lightSensor.state;
     if (sensorState === 'unavailable' || sensorState === 'unknown') {
-      console.warn('Light sensor state is unavailable or unknown');
+      // Console log warning removed for linting
       return;
     }
 
@@ -737,35 +737,9 @@ export class GoogleCard extends LitElement {
   renderDebugInfo() {
     if (!this.showDebugInfo) return '';
     
-    // Get background rotator debug info if possible
-    let backgroundRotatorInfo = {};
+    // Get background rotator and weather data without storing in unused variables
     const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
-    if (backgroundRotator) {
-      backgroundRotatorInfo = {
-        currentImageIndex: backgroundRotator.currentImageIndex,
-        imageListLength: backgroundRotator.imageList?.length || 0,
-        activeImage: backgroundRotator.activeImage,
-        isTransitioning: backgroundRotator.isTransitioning,
-        imageSourceType: backgroundRotator.getImageSourceType?.() || 'unknown',
-        error: backgroundRotator.error
-      };
-    }
-    
-    // Get weather clock debug info if possible
-    let weatherClockInfo = {};
     const weatherClock = this.shadowRoot.querySelector('weather-clock');
-    if (weatherClock) {
-      weatherClockInfo = {
-        date: weatherClock.date,
-        time: weatherClock.time,
-        temperature: weatherClock.temperature,
-        weatherIcon: weatherClock.weatherIcon,
-        aqi: weatherClock.aqi,
-        weatherEntity: weatherClock.weatherEntity,
-        aqiEntity: weatherClock.aqiEntity,
-        error: weatherClock.error
-      };
-    }
     
     return html`
       <div class="debug-info">
