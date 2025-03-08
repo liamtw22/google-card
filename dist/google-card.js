@@ -25,6 +25,20 @@ const DEFAULT_CONFIG = {
     font-family: 'Product Sans Regular', sans-serif;
     font-weight: 400;
   }
+
+  .error {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 90%;
+    word-wrap: break-word;
+  }
 `, backgroundRotatorStyles = css`
   .background-container {
     position: absolute;
@@ -113,6 +127,15 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       },
       isTransitioning: {
         type: Boolean
+      },
+      pendingImageUpdate: {
+        type: Boolean
+      },
+      imageUpdateRetries: {
+        type: Number
+      },
+      maxRetries: {
+        type: Number
       }
     };
   }
@@ -125,7 +148,8 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   initializeProperties() {
     this.currentImageIndex = -1, this.imageList = [], this.imageA = "", this.imageB = "", 
     this.activeImage = "A", this.preloadedImage = "", this.error = null, this.debugInfo = {}, 
-    this.isTransitioning = !1;
+    this.isTransitioning = !1, this.pendingImageUpdate = !1, this.imageUpdateRetries = 0, 
+    this.maxRetries = 3;
   }
   connectedCallback() {
     super.connectedCallback(), this.startImageRotation(), this.startImageListUpdates();
@@ -134,38 +158,53 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     super.disconnectedCallback(), this.clearTimers();
   }
   clearTimers() {
-    this.imageUpdateInterval && clearInterval(this.imageUpdateInterval), this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval);
+    this.imageUpdateInterval && clearInterval(this.imageUpdateInterval), this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval), 
+    this.pendingImageUpdateTimeout && clearTimeout(this.pendingImageUpdateTimeout);
   }
   startImageListUpdates() {
     this.updateImageList(), this.imageListUpdateInterval = setInterval((() => {
       this.updateImageList();
-    }), 1e3 * this.config.image_list_update_interval);
+    }), 1e3 * Math.max(60, this.config?.image_list_update_interval || 3600));
   }
   startImageRotation() {
-    this.updateImage(), this.imageUpdateInterval = setInterval((() => {
+    setTimeout((() => this.updateImage()), 500), this.imageUpdateInterval = setInterval((() => {
       this.updateImage();
-    }), 1e3 * this.config.display_time);
+    }), 1e3 * Math.max(5, this.config?.display_time || 15));
   }
   getImageSourceType() {
+    if (!this.config?.image_url) return "url";
     const {image_url: image_url} = this.config;
     return image_url.startsWith("media-source://") ? "media-source" : image_url.startsWith("https://api.unsplash") ? "unsplash-api" : image_url.startsWith("immich+") ? "immich-api" : image_url.includes("picsum.photos") ? "picsum" : "url";
   }
   getImageUrl() {
-    const timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3);
-    return this.config.image_url.replace(/\${width}/g, this.screenWidth).replace(/\${height}/g, this.screenHeight).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
+    if (!this.config?.image_url) return "";
+    const timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3), width = this.screenWidth || 1280, height = this.screenHeight || 720;
+    return this.config.image_url.replace(/\${width}/g, width).replace(/\${height}/g, height).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
   }
   async updateImageList() {
     if (!this.screenWidth || !this.screenHeight) return this.error = "Screen dimensions not set", 
     void this.requestUpdate();
     try {
       const newImageList = await this.fetchImageList();
-      this.imageList = "random" === this.config.image_order ? newImageList.sort((() => .5 - Math.random())) : newImageList.sort(), 
-      -1 === this.currentImageIndex && this.imageList.length > 0 && (this.imageA = await this.preloadImage(this.imageList[0]), 
-      this.currentImageIndex = 0), this.error = null, this.debugInfo.imageList = this.imageList;
+      if (!Array.isArray(newImageList) || 0 === newImageList.length) throw new Error("No valid images found");
+      if (this.imageList = "random" === this.config?.image_order ? this.shuffleArray([ ...newImageList ]) : [ ...newImageList ].sort(), 
+      -1 === this.currentImageIndex && this.imageList.length > 0) try {
+        this.imageA = await this.preloadImage(this.imageList[0]), this.currentImageIndex = 0, 
+        this.error = null;
+      } catch (error) {
+        this.error = `Error loading initial image: ${error.message}`;
+      }
+      this.debugInfo.imageList = this.imageList, this.requestUpdate();
     } catch (error) {
-      this.error = `Error updating image list: ${error.message}`;
+      this.error = `Error updating image list: ${error.message}`, this.requestUpdate();
     }
-    this.requestUpdate();
+  }
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [ array[j], array[i] ];
+    }
+    return array;
   }
   async fetchImageList() {
     switch (this.getImageSourceType()) {
@@ -178,62 +217,97 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
      case "immich-api":
       return this.getImagesFromImmichAPI();
 
+     case "picsum":
+      return Array.from({
+        length: 10
+      }, (() => this.getImageUrl()));
+
      default:
-      return [ this.getImageUrl() ];
+      {
+        const url = this.getImageUrl();
+        return url ? [ url ] : [];
+      }
     }
   }
   async getImagesFromMediaSource() {
+    if (!this.hass) return [ this.getImageUrl() ];
     try {
-      const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, "");
-      return (await this.hass.callWS({
+      const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, ""), result = await this.hass.callWS({
         type: "media_source/browse_media",
         media_content_id: mediaContentId
-      })).children.filter((child => "image" === child.media_class)).map((child => child.media_content_id));
+      });
+      if (!result || !Array.isArray(result.children)) throw new Error("Invalid response from media source");
+      return result.children.filter((child => "image" === child.media_class)).map((child => child.media_content_id));
     } catch (error) {
-      return console.error("Error fetching images from media source:", error), [ this.getImageUrl() ];
+      console.error("Error fetching images from media source:", error);
+      const fallback = this.getImageUrl();
+      return fallback ? [ fallback ] : [];
     }
   }
   async getImagesFromUnsplashAPI() {
     try {
       const response = await fetch(`${this.config.image_url}&count=30`);
-      return (await response.json()).map((image => image.urls.regular));
+      if (!response.ok) throw new Error(`Unsplash API returned status ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error("Invalid response from Unsplash API");
+      return data.map((image => image.urls.regular));
     } catch (error) {
-      return console.error("Error fetching images from Unsplash API:", error), [ this.getImageUrl() ];
+      console.error("Error fetching images from Unsplash API:", error);
+      const fallback = this.getImageUrl();
+      return fallback ? [ fallback ] : [];
     }
   }
   async getImagesFromImmichAPI() {
     try {
+      if (!this.config.immich_api_key) throw new Error("Immich API key not configured");
       const apiUrl = this.config.image_url.replace(/^immich\+/, ""), response = await fetch(`${apiUrl}/albums`, {
         headers: {
           "x-api-key": this.config.immich_api_key
         }
-      }), imagePromises = (await response.json()).map((async album => {
+      });
+      if (!response.ok) throw new Error(`Immich API returned status ${response.status}`);
+      const albums = await response.json();
+      if (!Array.isArray(albums)) throw new Error("Invalid response from Immich API");
+      const imagePromises = albums.map((async album => {
         const albumResponse = await fetch(`${apiUrl}/albums/${album.id}`, {
           headers: {
             "x-api-key": this.config.immich_api_key
           }
         });
-        return (await albumResponse.json()).assets.filter((asset => "IMAGE" === asset.type)).map((asset => `${apiUrl}/assets/${asset.id}/original`));
+        if (!albumResponse.ok) throw new Error(`Immich API album fetch returned status ${albumResponse.status}`);
+        const albumData = await albumResponse.json();
+        return albumData && Array.isArray(albumData.assets) ? albumData.assets.filter((asset => "IMAGE" === asset.type)).map((asset => `${apiUrl}/assets/${asset.id}/original`)) : [];
       }));
       return (await Promise.all(imagePromises)).flat();
     } catch (error) {
-      return console.error("Error fetching images from Immich API:", error), [ this.getImageUrl() ];
+      console.error("Error fetching images from Immich API:", error);
+      const fallback = this.getImageUrl();
+      return fallback ? [ fallback ] : [];
     }
   }
   async preloadImage(url) {
+    if (!url) throw new Error("Invalid image URL");
     return new Promise(((resolve, reject) => {
-      const img = new Image;
-      img.onload = () => resolve(url), img.onerror = () => reject(new Error(`Failed to load image: ${url}`)), 
-      img.src = url;
+      const img = new Image, timeout = setTimeout((() => {
+        reject(new Error(`Image load timeout: ${url}`));
+      }), 3e4);
+      img.onload = () => {
+        clearTimeout(timeout), resolve(url);
+      }, img.onerror = () => {
+        clearTimeout(timeout), reject(new Error(`Failed to load image: ${url}`));
+      }, img.src = url;
     }));
   }
   async preloadNextImage() {
-    if (0 === this.imageList.length) return;
-    const nextImageToPreload = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
-    try {
-      this.preloadedImage = await this.preloadImage(nextImageToPreload);
+    if (0 !== this.imageList.length) try {
+      const nextImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
+      let nextImageToPreload;
+      nextImageToPreload = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[nextImageIndex], 
+      this.preloadedImage = await this.preloadImage(nextImageToPreload), this.debugInfo.preloadedImage = this.preloadedImage, 
+      this.requestUpdate();
     } catch (error) {
-      console.error("Error preloading next image:", error), this.preloadedImage = "";
+      console.error("Error preloading next image:", error), this.preloadedImage = "", 
+      this.debugInfo.preloadError = error.message, this.requestUpdate();
     }
   }
   async getNextImage() {
@@ -242,24 +316,30 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     try {
       return this.preloadedImage ? (newImage = this.preloadedImage, this.preloadedImage = "") : ("picsum" === this.getImageSourceType() ? newImage = this.getImageUrl() : (this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length, 
       newImage = this.imageList[this.currentImageIndex]), newImage = await this.preloadImage(newImage)), 
-      newImage;
+      this.imageUpdateRetries = 0, newImage;
     } catch (error) {
-      return console.error("Error getting next image:", error), null;
+      return console.error("Error getting next image:", error), this.imageUpdateRetries++, 
+      this.imageUpdateRetries > this.maxRetries ? (this.imageUpdateRetries = 0, this.currentImageIndex = -1, 
+      null) : (setTimeout((() => this.updateImage()), 2e3), null);
     }
   }
   async updateImage() {
-    if (!this.isTransitioning && 0 !== this.imageList.length) try {
+    if (!this.isTransitioning && !this.pendingImageUpdate && 0 !== this.imageList.length) try {
+      this.pendingImageUpdate = !0;
       const newImage = await this.getNextImage();
-      newImage && (await this.transitionToNewImage(newImage), this.preloadNextImage());
+      newImage && (await this.transitionToNewImage(newImage), setTimeout((() => this.preloadNextImage()), 1e3 * this.config?.crossfade_time + 50));
     } catch (error) {
       console.error("Error updating image:", error);
+    } finally {
+      this.pendingImageUpdate = !1;
     }
   }
   async transitionToNewImage(newImage) {
     this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = newImage : this.imageA = newImage, 
     this.updateDebugInfo(), this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 50))), 
-    this.activeImage = "A" === this.activeImage ? "B" : "A", this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 1e3 * this.config.crossfade_time + 50))), 
-    this.isTransitioning = !1;
+    this.activeImage = "A" === this.activeImage ? "B" : "A", this.requestUpdate();
+    const transitionTime = 1e3 * (this.config?.crossfade_time || 3) + 50;
+    await new Promise((resolve => setTimeout(resolve, transitionTime))), this.isTransitioning = !1;
   }
   updateDebugInfo() {
     this.debugInfo = {
@@ -270,24 +350,30 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       imageList: this.imageList,
       currentImageIndex: this.currentImageIndex,
       config: this.config,
-      error: this.error
+      error: this.error,
+      isTransitioning: this.isTransitioning,
+      pendingImageUpdate: this.pendingImageUpdate,
+      imageUpdateRetries: this.imageUpdateRetries
     };
   }
+  updated(changedProperties) {
+    changedProperties.has("config") && this.config && this.style.setProperty("--crossfade-time", `${this.config.crossfade_time || 3}s`);
+  }
   render() {
-    const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0;
+    const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0, imageFit = this.config?.image_fit || "contain";
     return html`
       <div class="background-container">
         <div
           class="background-image"
           style="background-image: url('${this.imageA}'); 
                  opacity: ${imageAOpacity};
-                 background-size: ${this.config.image_fit || "contain"};"
+                 background-size: ${imageFit};"
         ></div>
         <div
           class="background-image"
           style="background-image: url('${this.imageB}'); 
                  opacity: ${imageBOpacity};
-                 background-size: ${this.config.image_fit || "contain"};"
+                 background-size: ${imageFit};"
         ></div>
       </div>
       ${this.error ? html`<div class="error">${this.error}</div>` : ""}
@@ -301,15 +387,19 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
         <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
         <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
         <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
+        <p><strong>Source Type:</strong> ${this.getImageSourceType()}</p>
         <p><strong>Image A:</strong> ${this.imageA}</p>
         <p><strong>Image B:</strong> ${this.imageB}</p>
         <p><strong>Active Image:</strong> ${this.activeImage}</p>
         <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
         <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
         <p><strong>Current Image Index:</strong> ${this.currentImageIndex}</p>
+        <p><strong>Image List Length:</strong> ${this.imageList?.length || 0}</p>
         <p><strong>Error:</strong> ${this.error}</p>
         <h3>Image List:</h3>
-        <pre>${JSON.stringify(this.imageList, null, 2)}</pre>
+        <pre>
+${JSON.stringify(this.imageList?.slice(0, 5), null, 2)}${this.imageList?.length > 5 ? "..." : ""}</pre
+        >
         <h3>Config:</h3>
         <pre>${JSON.stringify(this.config, null, 2)}</pre>
       </div>
@@ -664,6 +754,9 @@ customElements.define("google-controls", class Controls extends LitElement {
       },
       longPressTimer: {
         type: Object
+      },
+      isDraggingBrightness: {
+        type: Boolean
       }
     };
   }
@@ -671,16 +764,23 @@ customElements.define("google-controls", class Controls extends LitElement {
     return [ controlsStyles, sharedStyles ];
   }
   constructor() {
-    super(), this.initializeProperties();
+    super(), this.initializeProperties(), this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
+    this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this), this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), 
+    this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
+    this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
   initializeProperties() {
     this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
     this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.longPressTimer = null;
+    this.longPressTimer = null, this.isDraggingBrightness = !1;
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer);
+    super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer), 
+    this.removeBrightnessDragListeners();
+  }
+  updated(changedProperties) {
+    changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness);
   }
   handleBrightnessChange(e) {
     e.stopPropagation();
@@ -689,15 +789,31 @@ customElements.define("google-controls", class Controls extends LitElement {
     const newBrightness = parseInt(clickedDot.dataset.value);
     this.updateBrightnessValue(25.5 * newBrightness);
   }
+  handleBrightnessDragStart(e) {
+    e.stopPropagation(), this.isDraggingBrightness = !0, document.addEventListener("mousemove", this.handleBrightnessDrag), 
+    document.addEventListener("mouseup", this.handleBrightnessDragEnd), document.addEventListener("touchmove", this.handleBrightnessDrag, {
+      passive: !1
+    }), document.addEventListener("touchend", this.handleBrightnessDragEnd), this.handleBrightnessDrag(e);
+  }
   handleBrightnessDrag(e) {
-    e.stopPropagation();
+    if (e.preventDefault(), e.stopPropagation(), !this.isDraggingBrightness) return;
     const container = this.shadowRoot.querySelector(".brightness-dots");
     if (!container) return;
-    const rect = container.getBoundingClientRect(), x = e.type.includes("touch") ? e.touches[0].clientX : e.clientX, relativeX = Math.max(0, Math.min(x - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10);
-    this.updateBrightnessValue(25.5 * newValue);
+    const rect = container.getBoundingClientRect(), clientX = e.type.includes("touch") ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
+    if (void 0 === clientX) return;
+    const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10), cappedValue = Math.max(1, Math.min(10, newValue));
+    this.updateBrightnessValue(25.5 * cappedValue);
+  }
+  handleBrightnessDragEnd(e) {
+    e && (e.preventDefault(), e.stopPropagation()), this.isDraggingBrightness = !1, 
+    this.removeBrightnessDragListeners();
+  }
+  removeBrightnessDragListeners() {
+    document.removeEventListener("mousemove", this.handleBrightnessDrag), document.removeEventListener("mouseup", this.handleBrightnessDragEnd), 
+    document.removeEventListener("touchmove", this.handleBrightnessDrag), document.removeEventListener("touchend", this.handleBrightnessDragEnd);
   }
   updateBrightnessValue(value) {
-    this.dispatchEvent(new CustomEvent("brightnessChange", {
+    this.visualBrightness = value, this.dispatchEvent(new CustomEvent("brightnessChange", {
       detail: Math.max(1, Math.min(255, Math.round(value))),
       bubbles: !0,
       composed: !0
@@ -713,17 +829,25 @@ customElements.define("google-controls", class Controls extends LitElement {
       composed: !0
     }));
   }
-  handleSettingsIconTouchStart=e => {
-    e.stopPropagation(), this.longPressTimer = setTimeout((() => {
+  handleSettingsIconTouchStart(e) {
+    e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer), this.longPressTimer = setTimeout((() => {
       this.dispatchEvent(new CustomEvent("debugToggle", {
         bubbles: !0,
         composed: !0
-      }));
+      })), this.longPressTimer = null;
     }), 1e3);
-  };
-  handleSettingsIconTouchEnd=e => {
-    e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer);
-  };
+  }
+  handleSettingsIconTouchEnd(e) {
+    e.stopPropagation(), this.longPressTimer && (clearTimeout(this.longPressTimer), 
+    this.longPressTimer = null);
+  }
+  handleOverlayToggle(shouldShow) {
+    this.dispatchEvent(new CustomEvent("overlayToggle", {
+      detail: shouldShow,
+      bubbles: !0,
+      composed: !0
+    }));
+  }
   classMap(classes) {
     return Object.entries(classes).filter((([_, value]) => Boolean(value))).map((([className]) => className)).join(" ");
   }
@@ -742,10 +866,8 @@ customElements.define("google-controls", class Controls extends LitElement {
             <div
               class="brightness-dots"
               @click="${this.handleBrightnessChange}"
-              @mousedown="${this.handleBrightnessDrag}"
-              @mousemove="${e => 1 === e.buttons && this.handleBrightnessDrag(e)}"
-              @touchstart="${this.handleBrightnessDrag}"
-              @touchmove="${this.handleBrightnessDrag}"
+              @mousedown="${this.handleBrightnessDragStart}"
+              @touchstart="${this.handleBrightnessDragStart}"
             >
               ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
                   <div
@@ -790,6 +912,9 @@ customElements.define("google-controls", class Controls extends LitElement {
               @touchstart="${this.handleSettingsIconTouchStart}"
               @touchend="${this.handleSettingsIconTouchEnd}"
               @touchcancel="${this.handleSettingsIconTouchEnd}"
+              @mousedown="${this.handleSettingsIconTouchStart}"
+              @mouseup="${this.handleSettingsIconTouchEnd}"
+              @mouseleave="${this.handleSettingsIconTouchEnd}"
             >
               <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
@@ -828,6 +953,19 @@ const nightModeStyles = css`
     font-weight: 400;
     font-family: 'Product Sans Regular', sans-serif;
   }
+
+  .error {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    max-width: 80%;
+    z-index: 10;
+  }
 `;
 
 customElements.define("night-mode", class NightMode extends LitElement {
@@ -847,6 +985,15 @@ customElements.define("night-mode", class NightMode extends LitElement {
       },
       previousBrightness: {
         type: Number
+      },
+      isTransitioning: {
+        type: Boolean
+      },
+      error: {
+        type: String
+      },
+      sensorCheckedTime: {
+        type: Number
       }
     };
   }
@@ -858,13 +1005,18 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
   initializeProperties() {
     this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1, 
-    this.timeUpdateInterval = null;
+    this.timeUpdateInterval = null, this.sensorCheckInterval = null, this.isTransitioning = !1, 
+    this.error = null, this.sensorCheckedTime = 0;
   }
   connectedCallback() {
-    super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.enterNightMode();
+    super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
+    this.sensorCheckInterval = setInterval((() => {
+      this.checkLightSensor();
+    }), 3e4);
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval);
+    super.disconnectedCallback(), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), 
+    this.sensorCheckInterval && clearInterval(this.sensorCheckInterval);
   }
   startTimeUpdates() {
     this.timeUpdateInterval = setInterval((() => {
@@ -880,40 +1032,53 @@ customElements.define("night-mode", class NightMode extends LitElement {
     }).replace(/\s?[AP]M/, "");
   }
   async enterNightMode() {
-    if (!this.isInNightMode) try {
-      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
-      await this.setBrightness(1), await new Promise((resolve => setTimeout(resolve, 100))), 
-      await this.toggleAutoBrightness(!0), this.isInNightMode = !0, this.requestUpdate();
-    } catch (error) {
-      console.error("Error entering night mode:", error);
+    if (!this.isInNightMode || this.isTransitioning) {
+      this.isTransitioning = !0;
+      try {
+        this.brightness > 1 && (this.previousBrightness = this.brightness), await this.toggleAutoBrightness(!1), 
+        await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
+        await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0), 
+        this.isInNightMode = !0, this.error = null;
+      } catch (error) {
+        console.error("Error entering night mode:", error), this.error = `Error entering night mode: ${error.message}`;
+      } finally {
+        this.isTransitioning = !1, this.requestUpdate();
+      }
     }
   }
   async exitNightMode() {
-    if (this.isInNightMode) try {
-      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
-      await this.setBrightness(this.previousBrightness), this.isInNightMode = !1, this.requestUpdate(), 
-      this.dispatchEvent(new CustomEvent("nightModeExit", {
-        bubbles: !0,
-        composed: !0
-      }));
-    } catch (error) {
-      console.error("Error exiting night mode:", error);
+    if (this.isInNightMode && !this.isTransitioning) {
+      this.isTransitioning = !0;
+      try {
+        await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100)));
+        const targetBrightness = this.previousBrightness > 1 ? this.previousBrightness : 128;
+        await this.setBrightness(targetBrightness), this.isInNightMode = !1, this.error = null, 
+        this.dispatchEvent(new CustomEvent("nightModeExit", {
+          bubbles: !0,
+          composed: !0
+        }));
+      } catch (error) {
+        console.error("Error exiting night mode:", error), this.error = `Error exiting night mode: ${error.message}`;
+      } finally {
+        this.isTransitioning = !1, this.requestUpdate();
+      }
     }
   }
   async setBrightness(value) {
     if (this.hass) try {
+      const brightness = Math.max(1, Math.min(255, Math.round(value)));
       await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
         message: "command_screen_brightness_level",
         data: {
-          command: value
+          command: brightness
         }
       }), await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
         message: "command_update_sensors"
-      }), await new Promise((resolve => setTimeout(resolve, 500))), this.brightness = value, 
+      }), await new Promise((resolve => setTimeout(resolve, 500))), this.brightness = brightness, 
       this.requestUpdate();
     } catch (error) {
-      console.error("Error setting brightness:", error);
-    }
+      throw console.error("Error setting brightness:", error), error;
+    } else console.warn("Home Assistant not available");
   }
   async toggleAutoBrightness(enabled) {
     if (this.hass) try {
@@ -924,17 +1089,24 @@ customElements.define("night-mode", class NightMode extends LitElement {
         }
       });
     } catch (error) {
-      console.error("Error toggling auto brightness:", error);
-    }
+      throw console.error("Error toggling auto brightness:", error), error;
+    } else console.warn("Home Assistant not available");
   }
   updated(changedProperties) {
-    changedProperties.has("hass") && this.checkLightSensor();
+    if (changedProperties.has("hass") && this.hass) {
+      Date.now() - this.sensorCheckedTime > 5e3 && this.checkLightSensor();
+    }
   }
   checkLightSensor() {
-    if (!this.hass?.states["sensor.liam_room_display_light_sensor"]) return;
-    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"], shouldBeInNightMode = 0 === parseInt(lightSensor.state);
-    shouldBeInNightMode && !this.isInNightMode ? (this.previousBrightness = this.brightness, 
-    this.enterNightMode()) : !shouldBeInNightMode && this.isInNightMode && this.exitNightMode();
+    if (!this.hass) return;
+    this.sensorCheckedTime = Date.now();
+    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"];
+    if (lightSensor) if ("unavailable" !== lightSensor.state && "unknown" !== lightSensor.state) try {
+      const shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+      shouldBeInNightMode && !this.isInNightMode ? this.enterNightMode() : !shouldBeInNightMode && this.isInNightMode && this.exitNightMode();
+    } catch (error) {
+      console.error("Error parsing light sensor value:", error);
+    } else console.warn("Light sensor is unavailable or in unknown state"); else console.warn("Light sensor not found");
   }
   render() {
     return html`
@@ -944,6 +1116,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
       />
       <div class="night-mode">
         <div class="night-time">${this.currentTime}</div>
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
       </div>
     `;
   }
@@ -973,6 +1146,8 @@ const weatherClockStyles = css`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    margin-left: auto;
+    margin-right: 40px;
   }
 
   .date {
@@ -1019,6 +1194,16 @@ const weatherClockStyles = css`
     min-width: 60px;
     text-align: center;
   }
+
+  .error {
+    color: #ff4d4d;
+    margin-top: 10px;
+    font-size: 14px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-shadow: none;
+  }
 `;
 
 customElements.define("weather-clock", class WeatherClock extends LitElement {
@@ -1041,6 +1226,15 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       },
       aqi: {
         type: String
+      },
+      weatherEntity: {
+        type: String
+      },
+      aqiEntity: {
+        type: String
+      },
+      error: {
+        type: String
       }
     };
   }
@@ -1051,18 +1245,20 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     super(), this.resetProperties(), this.updateTimer = null;
   }
   resetProperties() {
-    this.date = "", this.time = "", this.temperature = "", this.weatherIcon = "", this.aqi = "";
+    this.date = "", this.time = "", this.temperature = "--°", this.weatherIcon = "not-available", 
+    this.aqi = "--", this.weatherEntity = "weather.forecast_home", this.aqiEntity = "sensor.air_quality_index", 
+    this.error = null;
   }
   connectedCallback() {
-    super.connectedCallback(), this.updateWeather(), this.scheduleUpdate();
+    super.connectedCallback(), this.updateWeather(), this.scheduleNextMinuteUpdate();
   }
   disconnectedCallback() {
     super.disconnectedCallback(), this.updateTimer && clearTimeout(this.updateTimer);
   }
-  scheduleUpdate() {
-    const now = new Date, delay = 1e3 * (60 - now.getSeconds()) - now.getMilliseconds();
+  scheduleNextMinuteUpdate() {
+    const now = new Date, delay = 1e3 * (60 - now.getSeconds()) + (1e3 - now.getMilliseconds());
     this.updateTimer = setTimeout((() => {
-      this.updateWeather(), this.scheduleUpdate();
+      this.updateWeather(), this.scheduleNextMinuteUpdate();
     }), delay);
   }
   updateWeather() {
@@ -1080,11 +1276,51 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       hour12: !0
     }).replace(/\s?[AP]M/, "");
   }
+  updated(changedProperties) {
+    changedProperties.has("hass") && this.hass && this.updateWeatherData();
+  }
+  findWeatherEntity() {
+    if (!this.hass) return null;
+    if (this.weatherEntity && this.hass.states[this.weatherEntity]) return this.weatherEntity;
+    if (this.hass.states["weather.64_west_glen_ave"]) return this.weatherEntity = "weather.64_west_glen_ave", 
+    this.weatherEntity;
+    for (const entityId in this.hass.states) if (entityId.startsWith("weather.")) return this.weatherEntity = entityId, 
+    entityId;
+    return null;
+  }
+  findAqiEntity() {
+    if (!this.hass) return null;
+    if (this.aqiEntity && this.hass.states[this.aqiEntity]) return this.aqiEntity;
+    if (this.hass.states["sensor.ridgewood_air_quality_index"]) return this.aqiEntity = "sensor.ridgewood_air_quality_index", 
+    this.aqiEntity;
+    const possibleNames = [ "air_quality_index", "aqi", "pm25", "pm2_5", "air_quality" ];
+    for (const entityId in this.hass.states) if (entityId.startsWith("sensor.")) {
+      const name = entityId.replace("sensor.", "").toLowerCase();
+      if (possibleNames.some((term => name.includes(term)))) return this.aqiEntity = entityId, 
+      entityId;
+    }
+    return null;
+  }
   updateWeatherData() {
-    if (!this.hass) return;
-    const weatherEntity = this.hass.states["weather.64_west_glen_ave"], aqiEntity = this.hass.states["sensor.ridgewood_air_quality_index"];
-    weatherEntity && (this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`, 
-    this.weatherIcon = this.getWeatherIcon(weatherEntity.state)), aqiEntity && (this.aqi = aqiEntity.state);
+    if (this.hass) {
+      try {
+        const weatherEntityId = this.findWeatherEntity(), aqiEntityId = this.findAqiEntity();
+        if (weatherEntityId) {
+          const weatherEntity = this.hass.states[weatherEntityId];
+          weatherEntity && weatherEntity.attributes && void 0 !== weatherEntity.attributes.temperature ? (this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`, 
+          this.weatherIcon = this.getWeatherIcon(weatherEntity.state)) : (this.temperature = "--°", 
+          this.weatherIcon = "not-available");
+        } else this.temperature = "--°", this.weatherIcon = "not-available";
+        if (aqiEntityId) {
+          const aqiEntity = this.hass.states[aqiEntityId];
+          aqiEntity && aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state ? this.aqi = aqiEntity.state : this.aqi = "--";
+        } else this.aqi = "--";
+        this.error = null;
+      } catch (error) {
+        console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
+      }
+      this.requestUpdate();
+    }
   }
   getWeatherIcon(state) {
     return {
@@ -1102,11 +1338,25 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       sunny: "clear-day",
       windy: "wind",
       "windy-variant": "wind",
-      exceptional: "not-available"
-    }[state] || "not-available-fill";
+      exceptional: "not-available",
+      overcast: "overcast-day",
+      "partly-cloudy": "partly-cloudy-day",
+      "partly-cloudy-night": "partly-cloudy-night",
+      clear: "clear-day",
+      thunderstorm: "thunderstorms",
+      storm: "thunderstorms",
+      rain: "rain",
+      snow: "snow",
+      mist: "fog",
+      dust: "dust",
+      smoke: "smoke",
+      drizzle: "drizzle",
+      "light-rain": "drizzle"
+    }[state] || "not-available";
   }
   getAqiColor(aqi) {
-    return aqi <= 50 ? "#68a03a" : aqi <= 100 ? "#f9bf33" : aqi <= 150 ? "#f47c06" : aqi <= 200 ? "#c43828" : aqi <= 300 ? "#ab1457" : "#83104c";
+    const aqiNum = parseInt(aqi);
+    return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
   }
   render() {
     return html`
@@ -1125,13 +1375,15 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
               src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
               class="weather-icon"
               alt="Weather icon"
+              onerror="this.src='https://basmilius.github.io/weather-icons/production/fill/all/not-available.svg'"
             />
             <span class="temperature">${this.temperature}</span>
           </div>
-          <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
+          <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
             ${this.aqi} AQI
           </div>
         </div>
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
       </div>
     `;
   }
