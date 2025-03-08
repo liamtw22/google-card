@@ -15,4 +15,18 @@ export const sharedStyles = css`
     font-family: 'Product Sans Regular', sans-serif;
     font-weight: 400;
   }
+
+  .error {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 90%;
+    word-wrap: break-word;
+  }
 `;
