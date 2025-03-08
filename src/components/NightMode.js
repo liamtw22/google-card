@@ -94,7 +94,7 @@ export class NightMode extends LitElement {
       // Store current brightness before entering night mode
       if (this.brightness > MIN_BRIGHTNESS) {
         this.previousBrightness = this.brightness;
-        console.log('NightMode saved previous brightness:', this.previousBrightness);
+        // Console log removed for linting
       }
       
       // Disable auto brightness first
@@ -109,7 +109,7 @@ export class NightMode extends LitElement {
       this.isInNightMode = true;
       this.error = null;
     } catch (error) {
-      console.error('Error entering night mode:', error);
+      // Console log removed for linting
       this.error = `Error entering night mode: ${error.message}`;
     } finally {
       this.isTransitioning = false;
@@ -131,7 +131,7 @@ export class NightMode extends LitElement {
         ? this.previousBrightness 
         : 128; // Default to middle brightness if no previous value
       
-      console.log('NightMode restoring brightness to:', targetBrightness);
+      // Console log removed for linting
       await this.setBrightness(targetBrightness);
       
       this.isInNightMode = false;
@@ -143,7 +143,7 @@ export class NightMode extends LitElement {
         composed: true,
       }));
     } catch (error) {
-      console.error('Error exiting night mode:', error);
+      // Console log removed for linting
       this.error = `Error exiting night mode: ${error.message}`;
     } finally {
       this.isTransitioning = false;
@@ -153,7 +153,7 @@ export class NightMode extends LitElement {
 
   async setBrightness(value) {
     if (!this.hass) {
-      console.warn('Home Assistant not available');
+      // Console log warning removed for linting
       return;
     }
 
@@ -176,14 +176,14 @@ export class NightMode extends LitElement {
       this.brightness = brightness;
       this.requestUpdate();
     } catch (error) {
-      console.error('Error setting brightness:', error);
+      // Console log removed for linting
       throw error;
     }
   }
 
   async toggleAutoBrightness(enabled) {
     if (!this.hass) {
-      console.warn('Home Assistant not available');
+      // Console log warning removed for linting
       return;
     }
 
@@ -195,7 +195,7 @@ export class NightMode extends LitElement {
         },
       });
     } catch (error) {
-      console.error('Error toggling auto brightness:', error);
+      // Console log removed for linting
       throw error;
     }
   }
@@ -218,12 +218,12 @@ export class NightMode extends LitElement {
     const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
     
     if (!lightSensor) {
-      console.warn('Light sensor not found');
+      // Console log warning removed for linting
       return;
     }
     
     if (lightSensor.state === 'unavailable' || lightSensor.state === 'unknown') {
-      console.warn('Light sensor is unavailable or in unknown state');
+      // Console log warning removed for linting
       return;
     }
 
@@ -246,7 +246,7 @@ export class NightMode extends LitElement {
         this.nightModeSource = null;
       }
     } catch (error) {
-      console.error('Error parsing light sensor value:', error);
+      // Console log removed for linting
     }
   }
 
