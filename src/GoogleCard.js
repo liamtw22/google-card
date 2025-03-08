@@ -33,6 +33,8 @@ export class GoogleCard extends LitElement {
       touchStartTime: { type: Number },
       touchStartX: { type: Number },
       debugTouchInfo: { type: Object },
+      brightnessUpdateQueue: { type: Array },
+      isProcessingBrightnessUpdate: { type: Boolean },
     };
   }
 
@@ -114,6 +116,8 @@ export class GoogleCard extends LitElement {
     super();
     this.initializeProperties();
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    this.brightnessUpdateQueue = [];
+    this.isProcessingBrightnessUpdate = false;
   }
 
   initializeProperties() {
@@ -162,12 +166,25 @@ export class GoogleCard extends LitElement {
     };
 
     this.showDebugInfo = this.config.show_debug;
+    
+    // Set CSS variables based on config
+    this.updateCssVariables();
+  }
+  
+  updateCssVariables() {
+    if (!this.config) return;
+    
+    // Set crossfade time variable for background transitions
+    this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
+    
+    // Any other global CSS variables can be set here
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.startTimeUpdates();
-    this.updateNightMode();
+    // Delay initial night mode check to ensure hass is available
+    setTimeout(() => this.updateNightMode(), 1000);
     window.addEventListener('resize', this.boundUpdateScreenSize);
   }
 
@@ -250,6 +267,7 @@ export class GoogleCard extends LitElement {
         deltaY,
       };
       
+      // Prevent default scroll behavior only when showing UI overlays
       if (this.showBrightnessCard || this.showOverlay) {
         event.preventDefault();
       }
@@ -261,10 +279,12 @@ export class GoogleCard extends LitElement {
   handleTouchEnd(event) {
     if (event.changedTouches.length === 1) {
       const deltaY = this.touchStartY - event.changedTouches[0].clientY;
+      const deltaX = this.touchStartX - event.changedTouches[0].clientX;
       const deltaTime = Date.now() - this.touchStartTime;
       const velocity = Math.abs(deltaY) / deltaTime;
       
-      if (Math.abs(deltaY) > 50 && velocity > 0.2) {
+      // Ensure we're detecting a vertical swipe, not a horizontal one
+      if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocity > 0.2) {
         this.debugTouchInfo = {
           ...this.debugTouchInfo,
           lastSwipeDirection: deltaY > 0 ? 'up' : 'down',
@@ -273,20 +293,8 @@ export class GoogleCard extends LitElement {
         };
 
         if (deltaY > 0 && !this.showBrightnessCard && !this.showOverlay) {
-          this.showOverlay = true;
-          this.isOverlayTransitioning = true;
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              this.isOverlayVisible = true;
-              this.startOverlayDismissTimer();
-              this.requestUpdate();
-
-              setTimeout(() => {
-                this.isOverlayTransitioning = false;
-                this.requestUpdate();
-              }, 300);
-            });
-          });
+          // Swipe up - show overlay
+          this.handleOverlayToggle(true);
         } else if (deltaY < 0) {
           if (this.showBrightnessCard) {
             this.dismissBrightnessCard();
@@ -297,6 +305,29 @@ export class GoogleCard extends LitElement {
       }
       
       this.requestUpdate();
+    }
+  }
+
+  handleOverlayToggle(shouldShow = true) {
+    if (shouldShow && !this.showOverlay) {
+      this.showOverlay = true;
+      this.isOverlayTransitioning = true;
+      
+      // Use requestAnimationFrame for smoother animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.isOverlayVisible = true;
+          this.startOverlayDismissTimer();
+          this.requestUpdate();
+
+          setTimeout(() => {
+            this.isOverlayTransitioning = false;
+            this.requestUpdate();
+          }, 300);
+        });
+      });
+    } else if (!shouldShow && this.showOverlay) {
+      this.dismissOverlay();
     }
   }
 
@@ -358,29 +389,56 @@ export class GoogleCard extends LitElement {
     });
   }
 
+  // Implement a queue-based approach to prevent rapid brightness updates
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = true;
     this.visualBrightness = Math.max(1, Math.min(255, Math.round(value)));
     
+    // Add to update queue
+    this.brightnessUpdateQueue.push(value);
+    
+    // Start processing if not already in progress
+    if (!this.isProcessingBrightnessUpdate) {
+      this.processBrightnessUpdateQueue();
+    }
+    
     if (this.brightnessStabilizeTimer) {
       clearTimeout(this.brightnessStabilizeTimer);
     }
+    
+    this.brightnessStabilizeTimer = setTimeout(() => {
+      this.isAdjustingBrightness = false;
+      this.requestUpdate();
+    }, 2000);
+  }
 
+  async processBrightnessUpdateQueue() {
+    if (this.brightnessUpdateQueue.length === 0) {
+      this.isProcessingBrightnessUpdate = false;
+      return;
+    }
+    
+    this.isProcessingBrightnessUpdate = true;
+    
+    // Take the last value in the queue to skip intermediate values
+    const lastValue = this.brightnessUpdateQueue[this.brightnessUpdateQueue.length - 1];
+    this.brightnessUpdateQueue = [];
+    
     try {
-      await this.setBrightness(value);
+      await this.setBrightness(lastValue);
       this.lastBrightnessUpdateTime = Date.now();
-      
-      this.brightnessStabilizeTimer = setTimeout(() => {
-        this.isAdjustingBrightness = false;
-        this.requestUpdate();
-      }, 2000);
     } catch (error) {
       console.error('Error updating brightness:', error);
       this.visualBrightness = this.brightness;
     }
+    
+    // Process remaining updates after a short delay to prevent rapid updates
+    setTimeout(() => this.processBrightnessUpdateQueue(), 250);
   }
 
   async setBrightness(value) {
+    if (!this.hass) return;
+    
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
     
     try {
@@ -408,65 +466,96 @@ export class GoogleCard extends LitElement {
   }
 
   async handleNightModeTransition(newNightMode) {
-    if (newNightMode) {
-      await this.enterNightMode();
-    } else {
-      await this.exitNightMode();
-    }
+    if (newNightMode === this.isInNightMode) return;
     
-    this.isInNightMode = newNightMode;
-    this.isNightMode = newNightMode;
-    this.requestUpdate();
+    try {
+      if (newNightMode) {
+        await this.enterNightMode();
+      } else {
+        await this.exitNightMode();
+      }
+      
+      this.isInNightMode = newNightMode;
+      this.isNightMode = newNightMode;
+      this.requestUpdate();
+    } catch (error) {
+      console.error('Error during night mode transition:', error);
+      // Restore previous state on error
+      this.isInNightMode = !newNightMode;
+      this.isNightMode = !newNightMode;
+      this.requestUpdate();
+    }
   }
 
   async enterNightMode() {
     this.previousBrightness = this.brightness;
-    await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await this.setBrightness(1);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await this.toggleAutoBrightness(true);
+    try {
+      await this.toggleAutoBrightness(false);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.setBrightness(1);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.toggleAutoBrightness(true);
+    } catch (error) {
+      console.error('Error entering night mode:', error);
+      throw error;
+    }
   }
 
   async exitNightMode() {
-    await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await this.setBrightness(this.previousBrightness);
+    try {
+      await this.toggleAutoBrightness(false);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.setBrightness(this.previousBrightness || 128);
+    } catch (error) {
+      console.error('Error exiting night mode:', error);
+      throw error;
+    }
   }
 
   async toggleAutoBrightness(enabled) {
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_auto_screen_brightness',
-      data: {
-        command: enabled ? 'turn_on' : 'turn_off'
-      }
-    });
+    if (!this.hass) return;
+    
+    try {
+      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+        message: 'command_auto_screen_brightness',
+        data: {
+          command: enabled ? 'turn_on' : 'turn_off'
+        }
+      });
+    } catch (error) {
+      console.error('Error toggling auto brightness:', error);
+      throw error;
+    }
   }
 
   handleBrightnessCardToggle = (event) => {
     const shouldShow = event.detail;
     
     if (shouldShow && !this.showBrightnessCard) {
-      // Immediately hide controls overlay
-      requestAnimationFrame(() => {
+      // Hide overlay first if showing
+      if (this.showOverlay) {
         this.isOverlayVisible = false;
         this.showOverlay = false;
         this.isOverlayTransitioning = false;
-
-        // Then smoothly show the brightness card
-        this.showBrightnessCard = true;
-        this.isBrightnessCardTransitioning = true;
         
-        requestAnimationFrame(() => {
-          this.isBrightnessCardVisible = true;
-          this.startBrightnessCardDismissTimer();
+        if (this.overlayDismissTimer) {
+          clearTimeout(this.overlayDismissTimer);
+        }
+      }
+
+      // Then show brightness card
+      this.showBrightnessCard = true;
+      this.isBrightnessCardTransitioning = true;
+      
+      requestAnimationFrame(() => {
+        this.isBrightnessCardVisible = true;
+        this.startBrightnessCardDismissTimer();
+        this.requestUpdate();
+        
+        setTimeout(() => {
+          this.isBrightnessCardTransitioning = false;
           this.requestUpdate();
-          
-          setTimeout(() => {
-            this.isBrightnessCardTransitioning = false;
-            this.requestUpdate();
-          }, 300);
-        });
+        }, 300);
       });
     } else if (!shouldShow && this.showBrightnessCard) {
       this.dismissBrightnessCard();
@@ -490,18 +579,28 @@ export class GoogleCard extends LitElement {
   }
 
   updateNightMode() {
-    if (!this.hass?.states['sensor.liam_room_display_light_sensor']) return;
-
+    if (!this.hass) return;
+    
     const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
-    const shouldBeInNightMode = parseInt(lightSensor.state) === 0;
+    if (!lightSensor) {
+      console.warn('Light sensor not found: sensor.liam_room_display_light_sensor');
+      return;
+    }
 
+    const sensorState = lightSensor.state;
+    if (sensorState === 'unavailable' || sensorState === 'unknown') {
+      console.warn('Light sensor state is unavailable or unknown');
+      return;
+    }
+
+    const shouldBeInNightMode = parseInt(sensorState) === 0;
     if (shouldBeInNightMode !== this.isInNightMode) {
       this.handleNightModeTransition(shouldBeInNightMode);
     }
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('hass') && !this.isAdjustingBrightness) {
+    if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
@@ -560,6 +659,10 @@ export class GoogleCard extends LitElement {
       <night-mode 
         .currentTime=${this.currentTime}
         .hass=${this.hass}
+        .brightness=${this.brightness}
+        .previousBrightness=${this.previousBrightness}
+        .isInNightMode=${this.isInNightMode}
+        @nightModeExit=${this.handleNightModeExit}
       ></night-mode>
     ` : html`
       <background-rotator
@@ -589,15 +692,24 @@ export class GoogleCard extends LitElement {
         @brightnessCardToggle=${this.handleBrightnessCardToggle}
         @brightnessChange=${this.handleBrightnessChange}
         @debugToggle=${this.handleDebugToggle}
-        @nightModeExit=${this.handleNightModeExit}
       ></google-controls>
     `;
 
     return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
-        rel="stylesheet"
-      />
+      <!-- Import all required fonts -->
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet">
+      
+      <!-- Fallback font style for Product Sans -->
+      <style>
+        @font-face {
+          font-family: 'Product Sans Regular';
+          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
+          font-weight: 400;
+          font-style: normal;
+        }
+      </style>
+      
       <div class="touch-container">
         <div class="content-wrapper">
           ${mainContent}
