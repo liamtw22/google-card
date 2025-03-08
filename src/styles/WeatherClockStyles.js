@@ -25,6 +25,8 @@ export const weatherClockStyles = css`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    margin-left: auto;
+    margin-right: 40px;
   }
 
   .date {
@@ -70,5 +72,15 @@ export const weatherClockStyles = css`
     align-self: flex-end;
     min-width: 60px;
     text-align: center;
+  }
+
+  .error {
+    color: #ff4d4d;
+    margin-top: 10px;
+    font-size: 14px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-shadow: none;
   }
 `;
