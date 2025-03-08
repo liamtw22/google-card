@@ -157,28 +157,24 @@ export class NightMode extends LitElement {
       return;
     }
 
-    try {
-      const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
+    // Remove try/catch that just rethrows
+    const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
       
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_screen_brightness_level',
-        data: {
-          command: brightness,
-        },
-      });
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_screen_brightness_level',
+      data: {
+        command: brightness,
+      },
+    });
 
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors',
-      });
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_update_sensors',
+    });
 
-      await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
+    await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
 
-      this.brightness = brightness;
-      this.requestUpdate();
-    } catch (error) {
-      // Console log removed for linting
-      throw error;
-    }
+    this.brightness = brightness;
+    this.requestUpdate();
   }
 
   async toggleAutoBrightness(enabled) {
@@ -187,17 +183,13 @@ export class NightMode extends LitElement {
       return;
     }
 
-    try {
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_auto_screen_brightness',
-        data: {
-          command: enabled ? 'turn_on' : 'turn_off',
-        },
-      });
-    } catch (error) {
-      // Console log removed for linting
-      throw error;
-    }
+    // Remove try/catch that just rethrows
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_auto_screen_brightness',
+      data: {
+        command: enabled ? 'turn_on' : 'turn_off',
+      },
+    });
   }
 
   updated(changedProperties) {
