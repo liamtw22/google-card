@@ -1114,6 +1114,10 @@ customElements.define("night-mode", class NightMode extends LitElement {
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
       />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
       <div class="night-mode">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ""}
