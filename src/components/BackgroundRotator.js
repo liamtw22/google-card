@@ -186,7 +186,6 @@ export class BackgroundRotator extends LitElement {
       }
     }
   }
-  }
 
   async getImagesFromMediaSource() {
     if (!this.hass) {
@@ -442,10 +441,16 @@ export class BackgroundRotator extends LitElement {
     };
   }
 
+  updated(changedProperties) {
+    if (changedProperties.has('config') && this.config) {
+      // Update CSS variables when config changes
+      this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
+    }
+  }
+
   render() {
     const imageAOpacity = this.activeImage === 'A' ? 1 : 0;
     const imageBOpacity = this.activeImage === 'B' ? 1 : 0;
-    const transitionDuration = `${this.config?.crossfade_time || 3}s`;
     const imageFit = this.config?.image_fit || 'contain';
 
     return html`
@@ -454,14 +459,12 @@ export class BackgroundRotator extends LitElement {
           class="background-image"
           style="background-image: url('${this.imageA}'); 
                  opacity: ${imageAOpacity};
-                 transition-duration: ${transitionDuration};
                  background-size: ${imageFit};"
         ></div>
         <div
           class="background-image"
           style="background-image: url('${this.imageB}'); 
                  opacity: ${imageBOpacity};
-                 transition-duration: ${transitionDuration};
                  background-size: ${imageFit};"
         ></div>
       </div>
