@@ -1468,6 +1468,12 @@ class GoogleCard extends LitElement {
       },
       debugTouchInfo: {
         type: Object
+      },
+      brightnessUpdateQueue: {
+        type: Array
+      },
+      isProcessingBrightnessUpdate: {
+        type: Boolean
       }
     };
   }
@@ -1542,7 +1548,8 @@ class GoogleCard extends LitElement {
       ` ];
   }
   constructor() {
-    super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
+    super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this), 
+    this.brightnessUpdateQueue = [], this.isProcessingBrightnessUpdate = !1;
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
@@ -1566,10 +1573,14 @@ class GoogleCard extends LitElement {
       ...DEFAULT_CONFIG,
       ...config,
       sensor_update_delay: config.sensor_update_delay || DEFAULT_CONFIG.sensor_update_delay
-    }, this.showDebugInfo = this.config.show_debug;
+    }, this.showDebugInfo = this.config.show_debug, this.updateCssVariables();
+  }
+  updateCssVariables() {
+    this.config && this.style.setProperty("--crossfade-time", `${this.config.crossfade_time || 3}s`);
   }
   connectedCallback() {
-    super.connectedCallback(), this.startTimeUpdates(), this.updateNightMode(), window.addEventListener("resize", this.boundUpdateScreenSize);
+    super.connectedCallback(), this.startTimeUpdates(), setTimeout((() => this.updateNightMode()), 1e3), 
+    window.addEventListener("resize", this.boundUpdateScreenSize);
   }
   disconnectedCallback() {
     super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize);
@@ -1631,23 +1642,26 @@ class GoogleCard extends LitElement {
   }
   handleTouchEnd(event) {
     if (1 === event.changedTouches.length) {
-      const deltaY = this.touchStartY - event.changedTouches[0].clientY, deltaTime = Date.now() - this.touchStartTime, velocity = Math.abs(deltaY) / deltaTime;
-      Math.abs(deltaY) > 50 && velocity > .2 && (this.debugTouchInfo = {
+      const deltaY = this.touchStartY - event.changedTouches[0].clientY, deltaX = this.touchStartX - event.changedTouches[0].clientX, deltaTime = Date.now() - this.touchStartTime, velocity = Math.abs(deltaY) / deltaTime;
+      Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocity > .2 && (this.debugTouchInfo = {
         ...this.debugTouchInfo,
         lastSwipeDirection: deltaY > 0 ? "up" : "down",
         swipeCount: this.debugTouchInfo.swipeCount + 1,
         deltaY: deltaY
-      }, deltaY > 0 && !this.showBrightnessCard && !this.showOverlay ? (this.showOverlay = !0, 
-      this.isOverlayTransitioning = !0, requestAnimationFrame((() => {
-        requestAnimationFrame((() => {
-          this.isOverlayVisible = !0, this.startOverlayDismissTimer(), this.requestUpdate(), 
-          setTimeout((() => {
-            this.isOverlayTransitioning = !1, this.requestUpdate();
-          }), 300);
-        }));
-      }))) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay())), 
+      }, deltaY > 0 && !this.showBrightnessCard && !this.showOverlay ? this.handleOverlayToggle(!0) : deltaY < 0 && (this.showBrightnessCard ? this.dismissBrightnessCard() : this.showOverlay && this.dismissOverlay())), 
       this.requestUpdate();
     }
+  }
+  handleOverlayToggle(shouldShow = !0) {
+    shouldShow && !this.showOverlay ? (this.showOverlay = !0, this.isOverlayTransitioning = !0, 
+    requestAnimationFrame((() => {
+      requestAnimationFrame((() => {
+        this.isOverlayVisible = !0, this.startOverlayDismissTimer(), this.requestUpdate(), 
+        setTimeout((() => {
+          this.isOverlayTransitioning = !1, this.requestUpdate();
+        }), 300);
+      }));
+    }))) : !shouldShow && this.showOverlay && this.dismissOverlay();
   }
   startOverlayDismissTimer() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.overlayDismissTimer = setTimeout((() => {
@@ -1679,16 +1693,25 @@ class GoogleCard extends LitElement {
   }
   async updateBrightnessValue(value) {
     this.isAdjustingBrightness = !0, this.visualBrightness = Math.max(1, Math.min(255, Math.round(value))), 
-    this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer);
+    this.brightnessUpdateQueue.push(value), this.isProcessingBrightnessUpdate || this.processBrightnessUpdateQueue(), 
+    this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), this.brightnessStabilizeTimer = setTimeout((() => {
+      this.isAdjustingBrightness = !1, this.requestUpdate();
+    }), 2e3);
+  }
+  async processBrightnessUpdateQueue() {
+    if (0 === this.brightnessUpdateQueue.length) return void (this.isProcessingBrightnessUpdate = !1);
+    this.isProcessingBrightnessUpdate = !0;
+    const lastValue = this.brightnessUpdateQueue[this.brightnessUpdateQueue.length - 1];
+    this.brightnessUpdateQueue = [];
     try {
-      await this.setBrightness(value), this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer = setTimeout((() => {
-        this.isAdjustingBrightness = !1, this.requestUpdate();
-      }), 2e3);
+      await this.setBrightness(lastValue), this.lastBrightnessUpdateTime = Date.now();
     } catch (error) {
       console.error("Error updating brightness:", error), this.visualBrightness = this.brightness;
     }
+    setTimeout((() => this.processBrightnessUpdateQueue()), 250);
   }
   async setBrightness(value) {
+    if (!this.hass) return;
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
     try {
       await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
@@ -1705,37 +1728,54 @@ class GoogleCard extends LitElement {
     }
   }
   async handleNightModeTransition(newNightMode) {
-    newNightMode ? await this.enterNightMode() : await this.exitNightMode(), this.isInNightMode = newNightMode, 
-    this.isNightMode = newNightMode, this.requestUpdate();
+    if (newNightMode !== this.isInNightMode) try {
+      newNightMode ? await this.enterNightMode() : await this.exitNightMode(), this.isInNightMode = newNightMode, 
+      this.isNightMode = newNightMode, this.requestUpdate();
+    } catch (error) {
+      console.error("Error during night mode transition:", error), this.isInNightMode = !newNightMode, 
+      this.isNightMode = !newNightMode, this.requestUpdate();
+    }
   }
   async enterNightMode() {
-    this.previousBrightness = this.brightness, await this.toggleAutoBrightness(!1), 
-    await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
-    await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0);
+    this.previousBrightness = this.brightness;
+    try {
+      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
+      await this.setBrightness(1), await new Promise((resolve => setTimeout(resolve, 100))), 
+      await this.toggleAutoBrightness(!0);
+    } catch (error) {
+      throw console.error("Error entering night mode:", error), error;
+    }
   }
   async exitNightMode() {
-    await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
-    await this.setBrightness(this.previousBrightness);
+    try {
+      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100))), 
+      await this.setBrightness(this.previousBrightness || 128);
+    } catch (error) {
+      throw console.error("Error exiting night mode:", error), error;
+    }
   }
   async toggleAutoBrightness(enabled) {
-    await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
-      message: "command_auto_screen_brightness",
-      data: {
-        command: enabled ? "turn_on" : "turn_off"
-      }
-    });
+    if (this.hass) try {
+      await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
+        message: "command_auto_screen_brightness",
+        data: {
+          command: enabled ? "turn_on" : "turn_off"
+        }
+      });
+    } catch (error) {
+      throw console.error("Error toggling auto brightness:", error), error;
+    }
   }
   handleBrightnessCardToggle=event => {
     const shouldShow = event.detail;
-    shouldShow && !this.showBrightnessCard ? requestAnimationFrame((() => {
-      this.isOverlayVisible = !1, this.showOverlay = !1, this.isOverlayTransitioning = !1, 
-      this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, requestAnimationFrame((() => {
-        this.isBrightnessCardVisible = !0, this.startBrightnessCardDismissTimer(), this.requestUpdate(), 
-        setTimeout((() => {
-          this.isBrightnessCardTransitioning = !1, this.requestUpdate();
-        }), 300);
-      }));
-    })) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
+    shouldShow && !this.showBrightnessCard ? (this.showOverlay && (this.isOverlayVisible = !1, 
+    this.showOverlay = !1, this.isOverlayTransitioning = !1, this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer)), 
+    this.showBrightnessCard = !0, this.isBrightnessCardTransitioning = !0, requestAnimationFrame((() => {
+      this.isBrightnessCardVisible = !0, this.startBrightnessCardDismissTimer(), this.requestUpdate(), 
+      setTimeout((() => {
+        this.isBrightnessCardTransitioning = !1, this.requestUpdate();
+      }), 300);
+    }))) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
   };
   handleBrightnessChange=async event => {
     await this.updateBrightnessValue(event.detail), this.startBrightnessCardDismissTimer();
@@ -1747,12 +1787,16 @@ class GoogleCard extends LitElement {
     this.isNightMode = !1, this.requestUpdate();
   };
   updateNightMode() {
-    if (!this.hass?.states["sensor.liam_room_display_light_sensor"]) return;
-    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"], shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+    if (!this.hass) return;
+    const lightSensor = this.hass.states["sensor.liam_room_display_light_sensor"];
+    if (!lightSensor) return void console.warn("Light sensor not found: sensor.liam_room_display_light_sensor");
+    const sensorState = lightSensor.state;
+    if ("unavailable" === sensorState || "unknown" === sensorState) return void console.warn("Light sensor state is unavailable or unknown");
+    const shouldBeInNightMode = 0 === parseInt(sensorState);
     shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode);
   }
   updated(changedProperties) {
-    if (changedProperties.has("hass") && !this.isAdjustingBrightness) {
+    if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
     }
   }
@@ -1801,7 +1845,16 @@ class GoogleCard extends LitElement {
     `;
   }
   render() {
-    const mainContent = this.isNightMode ? html` <night-mode .currentTime=${this.currentTime} .hass=${this.hass}></night-mode> ` : html`
+    const mainContent = this.isNightMode ? html`
+          <night-mode
+            .currentTime=${this.currentTime}
+            .hass=${this.hass}
+            .brightness=${this.brightness}
+            .previousBrightness=${this.previousBrightness}
+            .isInNightMode=${this.isInNightMode}
+            @nightModeExit=${this.handleNightModeExit}
+          ></night-mode>
+        ` : html`
           <background-rotator
             .hass=${this.hass}
             .config=${this.config}
@@ -1827,14 +1880,31 @@ class GoogleCard extends LitElement {
             @brightnessCardToggle=${this.handleBrightnessCardToggle}
             @brightnessChange=${this.handleBrightnessChange}
             @debugToggle=${this.handleDebugToggle}
-            @nightModeExit=${this.handleNightModeExit}
           ></google-controls>
         `;
     return html`
+      <!-- Import all required fonts -->
       <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
       />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
+
+      <!-- Fallback font style for Product Sans -->
+      <style>
+        @font-face {
+          font-family: 'Product Sans Regular';
+          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'),
+            url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2)
+              format('woff2');
+          font-weight: 400;
+          font-style: normal;
+        }
+      </style>
+
       <div class="touch-container">
         <div class="content-wrapper">
           ${mainContent} ${this.renderSwipeDebugOverlay()}
