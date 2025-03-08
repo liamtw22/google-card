@@ -167,19 +167,25 @@ export class BackgroundRotator extends LitElement {
   async fetchImageList() {
     const sourceType = this.getImageSourceType();
     switch (sourceType) {
-      case 'media-source':
+      case 'media-source': {
         return this.getImagesFromMediaSource();
-      case 'unsplash-api':
+      }
+      case 'unsplash-api': {
         return this.getImagesFromUnsplashAPI();
-      case 'immich-api':
+      }
+      case 'immich-api': {
         return this.getImagesFromImmichAPI();
-      case 'picsum':
+      }
+      case 'picsum': {
         // For Picsum, we'll return multiple URLs to allow rotation
         return Array.from({ length: 10 }, () => this.getImageUrl());
-      default:
+      }
+      default: {
         const url = this.getImageUrl();
         return url ? [url] : [];
+      }
     }
+  }
   }
 
   async getImagesFromMediaSource() {
