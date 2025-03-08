@@ -12,6 +12,9 @@ export class WeatherClock extends LitElement {
       temperature: { type: String },
       weatherIcon: { type: String },
       aqi: { type: String },
+      weatherEntity: { type: String },
+      aqiEntity: { type: String },
+      error: { type: String },
     };
   }
 
@@ -28,15 +31,18 @@ export class WeatherClock extends LitElement {
   resetProperties() {
     this.date = '';
     this.time = '';
-    this.temperature = '';
-    this.weatherIcon = '';
-    this.aqi = '';
+    this.temperature = '--°';
+    this.weatherIcon = 'not-available';
+    this.aqi = '--';
+    this.weatherEntity = 'weather.forecast_home';  // Default weather entity
+    this.aqiEntity = 'sensor.air_quality_index';   // Default AQI entity
+    this.error = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.updateWeather();
-    this.scheduleUpdate();
+    this.scheduleNextMinuteUpdate();
   }
 
   disconnectedCallback() {
@@ -46,12 +52,14 @@ export class WeatherClock extends LitElement {
     }
   }
 
-  scheduleUpdate() {
+  scheduleNextMinuteUpdate() {
     const now = new Date();
-    const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    // Calculate milliseconds until the start of the next minute
+    const delay = (60 - now.getSeconds()) * 1000 + (1000 - now.getMilliseconds());
+    
     this.updateTimer = setTimeout(() => {
       this.updateWeather();
-      this.scheduleUpdate();
+      this.scheduleNextMinuteUpdate();
     }, delay);
   }
 
@@ -78,50 +86,175 @@ export class WeatherClock extends LitElement {
       .replace(/\s?[AP]M/, '');
   }
 
+  updated(changedProperties) {
+    if (changedProperties.has('hass') && this.hass) {
+      this.updateWeatherData();
+    }
+  }
+
+  /**
+   * Find the first available weather entity
+   * @returns {string|null} Entity ID or null if none found
+   */
+  findWeatherEntity() {
+    if (!this.hass) return null;
+    
+    // Try to find configured entity
+    if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
+      return this.weatherEntity;
+    }
+    
+    // Try to find the "64_west_glen_ave" entity specifically
+    if (this.hass.states['weather.64_west_glen_ave']) {
+      this.weatherEntity = 'weather.64_west_glen_ave';
+      return this.weatherEntity;
+    }
+    
+    // Find any weather entity
+    for (const entityId in this.hass.states) {
+      if (entityId.startsWith('weather.')) {
+        this.weatherEntity = entityId;
+        return entityId;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Find the first available AQI entity
+   * @returns {string|null} Entity ID or null if none found
+   */
+  findAqiEntity() {
+    if (!this.hass) return null;
+    
+    // Try to find configured entity
+    if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+      return this.aqiEntity;
+    }
+    
+    // Try to find the "ridgewood_air_quality_index" entity specifically
+    if (this.hass.states['sensor.ridgewood_air_quality_index']) {
+      this.aqiEntity = 'sensor.ridgewood_air_quality_index';
+      return this.aqiEntity;
+    }
+    
+    // Find any AQI-related entity
+    const possibleNames = [
+      'air_quality_index',
+      'aqi',
+      'pm25',
+      'pm2_5',
+      'air_quality'
+    ];
+    
+    for (const entityId in this.hass.states) {
+      if (entityId.startsWith('sensor.')) {
+        const name = entityId.replace('sensor.', '').toLowerCase();
+        if (possibleNames.some(term => name.includes(term))) {
+          this.aqiEntity = entityId;
+          return entityId;
+        }
+      }
+    }
+    
+    return null;
+  }
+
   updateWeatherData() {
     if (!this.hass) return;
 
-    const weatherEntity = this.hass.states['weather.64_west_glen_ave'];
-    const aqiEntity = this.hass.states['sensor.ridgewood_air_quality_index'];
-
-    if (weatherEntity) {
-      this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
-      this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
+    try {
+      const weatherEntityId = this.findWeatherEntity();
+      const aqiEntityId = this.findAqiEntity();
+      
+      // Update temperature and weather state
+      if (weatherEntityId) {
+        const weatherEntity = this.hass.states[weatherEntityId];
+        if (weatherEntity && weatherEntity.attributes && typeof weatherEntity.attributes.temperature !== 'undefined') {
+          this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
+          this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
+        } else {
+          this.temperature = '--°';
+          this.weatherIcon = 'not-available';
+        }
+      } else {
+        this.temperature = '--°';
+        this.weatherIcon = 'not-available';
+      }
+      
+      // Update AQI
+      if (aqiEntityId) {
+        const aqiEntity = this.hass.states[aqiEntityId];
+        if (aqiEntity && aqiEntity.state && aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
+          this.aqi = aqiEntity.state;
+        } else {
+          this.aqi = '--';
+        }
+      } else {
+        this.aqi = '--';
+      }
+      
+      this.error = null;
+    } catch (error) {
+      console.error('Error updating weather data:', error);
+      this.error = `Error: ${error.message}`;
     }
-
-    if (aqiEntity) {
-      this.aqi = aqiEntity.state;
-    }
+    
+    this.requestUpdate();
   }
 
   getWeatherIcon(state) {
+    // Comprehensive weather icon mapping
     const iconMapping = {
       'clear-night': 'clear-night',
-      cloudy: 'cloudy',
-      fog: 'fog',
-      hail: 'hail',
-      lightning: 'thunderstorms',
+      'cloudy': 'cloudy',
+      'fog': 'fog',
+      'hail': 'hail',
+      'lightning': 'thunderstorms',
       'lightning-rainy': 'thunderstorms-rain',
-      partlycloudy: 'partly-cloudy-day',
-      pouring: 'rain',
-      rainy: 'drizzle',
-      snowy: 'snow',
+      'partlycloudy': 'partly-cloudy-day',
+      'pouring': 'rain',
+      'rainy': 'drizzle',
+      'snowy': 'snow',
       'snowy-rainy': 'sleet',
-      sunny: 'clear-day',
-      windy: 'wind',
+      'sunny': 'clear-day',
+      'windy': 'wind',
       'windy-variant': 'wind',
-      exceptional: 'not-available',
+      'exceptional': 'not-available',
+      // Add fallbacks for other possible weather states
+      'overcast': 'overcast-day',
+      'partly-cloudy': 'partly-cloudy-day',
+      'partly-cloudy-night': 'partly-cloudy-night',
+      'clear': 'clear-day',
+      'thunderstorm': 'thunderstorms',
+      'storm': 'thunderstorms',
+      'rain': 'rain',
+      'snow': 'snow',
+      'mist': 'fog',
+      'dust': 'dust',
+      'smoke': 'smoke',
+      'drizzle': 'drizzle',
+      'light-rain': 'drizzle'
     };
-    return iconMapping[state] || 'not-available-fill';
+    
+    // Return the mapped icon or a fallback
+    return iconMapping[state] || 'not-available';
   }
 
   getAqiColor(aqi) {
-    if (aqi <= 50) return '#68a03a';
-    if (aqi <= 100) return '#f9bf33';
-    if (aqi <= 150) return '#f47c06';
-    if (aqi <= 200) return '#c43828';
-    if (aqi <= 300) return '#ab1457';
-    return '#83104c';
+    const aqiNum = parseInt(aqi);
+    
+    // Handle non-numeric AQI
+    if (isNaN(aqiNum)) return '#999999';
+    
+    // Standard EPA AQI color scale
+    if (aqiNum <= 50) return '#68a03a';     // Good - Green
+    if (aqiNum <= 100) return '#f9bf33';    // Moderate - Yellow
+    if (aqiNum <= 150) return '#f47c06';    // Unhealthy for Sensitive Groups - Orange
+    if (aqiNum <= 200) return '#c43828';    // Unhealthy - Red
+    if (aqiNum <= 300) return '#ab1457';    // Very Unhealthy - Purple
+    return '#83104c';                       // Hazardous - Maroon
   }
 
   render() {
@@ -138,17 +271,18 @@ export class WeatherClock extends LitElement {
         <div class="right-column">
           <div class="weather-info">
             <img
-              src="https://basmilius.github.io/weather-icons/production/fill/all/${this
-                .weatherIcon}.svg"
+              src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
               class="weather-icon"
               alt="Weather icon"
+              onerror="this.src='https://basmilius.github.io/weather-icons/production/fill/all/not-available.svg'"
             />
             <span class="temperature">${this.temperature}</span>
           </div>
-          <div class="aqi" style="background-color: ${this.getAqiColor(parseInt(this.aqi))}">
+          <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
             ${this.aqi} AQI
           </div>
         </div>
+        ${this.error ? html`<div class="error">${this.error}</div>` : ''}
       </div>
     `;
   }
