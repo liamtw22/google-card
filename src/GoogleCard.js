@@ -525,27 +525,23 @@ export class GoogleCard extends LitElement {
     
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
     
-    try {
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_screen_brightness_level',
-        data: {
-          command: brightness
-        }
-      });
-
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_update_sensors'
-      });
-
-      await new Promise(resolve => setTimeout(resolve, this.config.sensor_update_delay));
-      
-      this.brightness = brightness;
-      if (!this.isNightMode) {
-        this.previousBrightness = brightness;
+    // No need for try/catch if we're just rethrowing
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_screen_brightness_level',
+      data: {
+        command: brightness
       }
-    } catch (error) {
-      // Error handling without console log
-      throw error;
+    });
+
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_update_sensors'
+    });
+
+    await new Promise(resolve => setTimeout(resolve, this.config.sensor_update_delay));
+    
+    this.brightness = brightness;
+    if (!this.isNightMode) {
+      this.previousBrightness = brightness;
     }
   }
 
@@ -591,59 +587,47 @@ export class GoogleCard extends LitElement {
       // Console log removed for linting
     }
     
-    try {
-      // Disable auto brightness first
-      await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Set to minimum brightness
-      await this.setBrightness(MIN_BRIGHTNESS);
-      
-      // Don't re-enable auto brightness, keep it disabled while in night mode
-      // This helps prevent flickering or auto-adjustments during night mode
-    } catch (error) {
-      // Console log removed for linting
-      throw error;
-    }
+    // No try/catch needed if just rethrowing
+    // Disable auto brightness first
+    await this.toggleAutoBrightness(false);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Set to minimum brightness
+    await this.setBrightness(MIN_BRIGHTNESS);
+    
+    // Don't re-enable auto brightness, keep it disabled while in night mode
+    // This helps prevent flickering or auto-adjustments during night mode
   }
 
   async exitNightMode() {
-    try {
-      // Ensure auto-brightness is disabled
-      await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Restore previous brightness or use a reasonable default
-      const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
-        ? this.previousBrightness 
-        : 128;
-      
-      // Console log removed for linting
-      await this.setBrightness(restoreBrightness);
-      
-      // Re-enable auto brightness after restoring brightness
-      await new Promise(resolve => setTimeout(resolve, 200));
-      await this.toggleAutoBrightness(true);
-    } catch (error) {
-      // Console log removed for linting
-      throw error;
-    }
+    // No try/catch needed if just rethrowing
+    // Ensure auto-brightness is disabled
+    await this.toggleAutoBrightness(false);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Restore previous brightness or use a reasonable default
+    const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+      ? this.previousBrightness 
+      : 128;
+    
+    // Console log removed for linting
+    await this.setBrightness(restoreBrightness);
+    
+    // Re-enable auto brightness after restoring brightness
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await this.toggleAutoBrightness(true);
   }
 
   async toggleAutoBrightness(enabled) {
     if (!this.hass) return;
     
-    try {
-      await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-        message: 'command_auto_screen_brightness',
-        data: {
-          command: enabled ? 'turn_on' : 'turn_off'
-        }
-      });
-    } catch (error) {
-      // Error handling without console log
-      throw error;
-    }
+    // No try/catch needed if just rethrowing
+    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+      message: 'command_auto_screen_brightness',
+      data: {
+        command: enabled ? 'turn_on' : 'turn_off'
+      }
+    });
   }
 
   handleBrightnessCardToggle = (event) => {
@@ -737,9 +721,9 @@ export class GoogleCard extends LitElement {
   renderDebugInfo() {
     if (!this.showDebugInfo) return '';
     
-    // Get background rotator and weather data without storing in unused variables
-    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
-    const weatherClock = this.shadowRoot.querySelector('weather-clock');
+    // Add underscore prefix to indicate intentionally unused variables
+    const _backgroundRotator = this.shadowRoot.querySelector('background-rotator');
+    const _weatherClock = this.shadowRoot.querySelector('weather-clock');
     
     return html`
       <div class="debug-info">
