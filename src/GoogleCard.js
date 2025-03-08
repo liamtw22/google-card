@@ -73,40 +73,91 @@ export class GoogleCard extends LitElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.8);
+          background: rgba(0, 0, 0, 0.9);
           color: white;
           padding: 20px;
           border-radius: 10px;
           font-family: monospace;
           font-size: 12px;
-          max-width: 80%;
+          width: 90%;
+          max-width: 600px;
           max-height: 80%;
           overflow: auto;
           z-index: 9999;
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         .debug-info h2 {
           margin-top: 0;
+          margin-bottom: 15px;
           color: #fff;
+          text-align: center;
+          border-bottom: 1px solid #444;
+          padding-bottom: 10px;
+        }
+        
+        .debug-info h3 {
+          margin-top: 15px;
+          margin-bottom: 10px;
+          color: #76d275;
+          border-bottom: 1px dotted #444;
+          padding-bottom: 5px;
+        }
+        
+        .debug-info h4 {
+          margin-top: 15px;
+          margin-bottom: 5px;
+          color: #80deea;
+        }
+
+        .debug-info p {
+          margin: 5px 0;
+          line-height: 1.3;
+        }
+
+        .debug-info button {
+          background: #333;
+          color: white;
+          border: 1px solid #555;
+          border-radius: 5px;
+          padding: 5px 10px;
+          margin: 0 2px;
+          cursor: pointer;
+          font-family: monospace;
+          font-size: 12px;
+          transition: background 0.2s;
+        }
+        
+        .debug-info button:hover {
+          background: #444;
+        }
+        
+        .debug-info button:active {
+          background: #222;
         }
 
         .debug-info pre {
           white-space: pre-wrap;
           word-wrap: break-word;
-        }
-
-        .swipe-debug-overlay {
-          position: fixed;
-          top: 10px;
-          left: 10px;
-          background: rgba(0, 0, 0, 0.7);
-          color: white;
+          background: rgba(0, 0, 0, 0.3);
           padding: 10px;
           border-radius: 5px;
-          font-family: monospace;
-          font-size: 12px;
-          z-index: 9999;
-          pointer-events: none;
+          font-size: 11px;
+          margin: 5px 0;
+        }
+        
+        .debug-info ul {
+          margin: 5px 0;
+          padding-left: 20px;
+        }
+        
+        .debug-info li {
+          margin: 3px 0;
+        }
+        
+        /* Style for strong tags */
+        .debug-info strong {
+          color: #ffab40;
         }
       `
     ];
@@ -118,6 +169,7 @@ export class GoogleCard extends LitElement {
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
     this.brightnessUpdateQueue = [];
     this.isProcessingBrightnessUpdate = false;
+    this.debugActiveTab = 'main'; // For the tabbed debug view
   }
 
   initializeProperties() {
@@ -142,6 +194,7 @@ export class GoogleCard extends LitElement {
     this.brightnessCardDismissTimer = null;
     this.brightnessStabilizeTimer = null;
     this.timeUpdateInterval = null;
+    this.nightModeSource = null; // Can be 'sensor' or 'manual'
     this.debugTouchInfo = {
       touchStartY: 0,
       currentY: 0,
@@ -281,16 +334,47 @@ export class GoogleCard extends LitElement {
       const deltaY = this.touchStartY - event.changedTouches[0].clientY;
       const deltaX = this.touchStartX - event.changedTouches[0].clientX;
       const deltaTime = Date.now() - this.touchStartTime;
-      const velocity = Math.abs(deltaY) / deltaTime;
+      const velocityY = Math.abs(deltaY) / deltaTime;
+      const velocityX = Math.abs(deltaX) / deltaTime;
       
-      // Ensure we're detecting a vertical swipe, not a horizontal one
-      if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocity > 0.2) {
-        this.debugTouchInfo = {
-          ...this.debugTouchInfo,
-          lastSwipeDirection: deltaY > 0 ? 'up' : 'down',
-          swipeCount: this.debugTouchInfo.swipeCount + 1,
-          deltaY,
-        };
+      this.debugTouchInfo = {
+        ...this.debugTouchInfo,
+        deltaY,
+        deltaX,
+        velocityY: velocityY.toFixed(2),
+        velocityX: velocityX.toFixed(2),
+        screenWidth: window.innerWidth,
+        touchStartX: this.touchStartX,
+        swipeCount: this.debugTouchInfo.swipeCount + 1,
+      };
+      
+      // If in manually activated night mode, any touch/tap should exit night mode
+      if (this.isNightMode && this.nightModeSource === 'manual') {
+        // Only minor movements should count as taps, not full swipes
+        if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) {
+          this.debugTouchInfo.lastSwipeDirection = 'tap';
+          this.handleNightModeTransition(false);
+          return;
+        }
+      }
+      
+      // Check for horizontal swipe from left to right (for night mode toggle)
+      if (Math.abs(deltaX) > Math.abs(deltaY) && 
+          Math.abs(deltaX) > 50 && 
+          velocityX > 0.2 && 
+          this.touchStartX < window.innerWidth * 0.2 && // Started from the left edge (20% of screen)
+          deltaX < 0) { // Left to right swipe (negative deltaX)
+        
+        this.debugTouchInfo.lastSwipeDirection = 'right-edge';
+        
+        // Toggle night mode with manual source
+        if (!this.isNightMode) {
+          this.handleNightModeTransition(true, 'manual');
+        }
+      }
+      // Check for vertical swipe
+      else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocityY > 0.2) {
+        this.debugTouchInfo.lastSwipeDirection = deltaY > 0 ? 'up' : 'down';
 
         if (deltaY > 0 && !this.showBrightnessCard && !this.showOverlay) {
           // Swipe up - show overlay
@@ -465,18 +549,31 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  async handleNightModeTransition(newNightMode) {
-    if (newNightMode === this.isInNightMode) return;
+  async handleNightModeTransition(newNightMode, source = 'sensor') {
+    if (newNightMode === this.isInNightMode && this.nightModeSource === source) return;
+    
+    console.log(`NightMode transition: ${this.isInNightMode} -> ${newNightMode} (source: ${source})`);
     
     try {
       if (newNightMode) {
         await this.enterNightMode();
+        this.nightModeSource = source;
       } else {
         await this.exitNightMode();
+        this.nightModeSource = null;
       }
       
       this.isInNightMode = newNightMode;
       this.isNightMode = newNightMode;
+      
+      // Update the night-mode component if it exists
+      const nightModeComponent = this.shadowRoot.querySelector('night-mode');
+      if (nightModeComponent) {
+        nightModeComponent.isInNightMode = newNightMode;
+        nightModeComponent.previousBrightness = this.previousBrightness;
+        nightModeComponent.nightModeSource = this.nightModeSource;
+      }
+      
       this.requestUpdate();
     } catch (error) {
       console.error('Error during night mode transition:', error);
@@ -488,13 +585,22 @@ export class GoogleCard extends LitElement {
   }
 
   async enterNightMode() {
-    this.previousBrightness = this.brightness;
+    // Save current brightness, but only if it's not already saved and reasonable
+    if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
+      this.previousBrightness = this.brightness;
+      console.log('Saved previous brightness:', this.previousBrightness);
+    }
+    
     try {
+      // Disable auto brightness first
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await this.setBrightness(1);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await this.toggleAutoBrightness(true);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Set to minimum brightness
+      await this.setBrightness(MIN_BRIGHTNESS);
+      
+      // Don't re-enable auto brightness, keep it disabled while in night mode
+      // This helps prevent flickering or auto-adjustments during night mode
     } catch (error) {
       console.error('Error entering night mode:', error);
       throw error;
@@ -503,9 +609,21 @@ export class GoogleCard extends LitElement {
 
   async exitNightMode() {
     try {
+      // Ensure auto-brightness is disabled
       await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await this.setBrightness(this.previousBrightness || 128);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Restore previous brightness or use a reasonable default
+      const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+        ? this.previousBrightness 
+        : 128;
+      
+      console.log('Restoring brightness to:', restoreBrightness);
+      await this.setBrightness(restoreBrightness);
+      
+      // Re-enable auto brightness after restoring brightness
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await this.toggleAutoBrightness(true);
     } catch (error) {
       console.error('Error exiting night mode:', error);
       throw error;
@@ -594,8 +712,16 @@ export class GoogleCard extends LitElement {
     }
 
     const shouldBeInNightMode = parseInt(sensorState) === 0;
+    
+    // If night mode was manually activated, don't let sensor readings deactivate it
+    if (this.isInNightMode && this.nightModeSource === 'manual') {
+      // Keep night mode on regardless of sensor
+      return;
+    }
+    
+    // Otherwise, follow sensor readings for automatic night mode
     if (shouldBeInNightMode !== this.isInNightMode) {
-      this.handleNightModeTransition(shouldBeInNightMode);
+      this.handleNightModeTransition(shouldBeInNightMode, 'sensor');
     }
   }
 
@@ -608,49 +734,209 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  renderSwipeDebugOverlay() {
-    if (!this.showDebugInfo) return '';
-
-    return html`
-      <div class="swipe-debug-overlay">
-        <div>Start Y: ${this.debugTouchInfo.touchStartY.toFixed(1)}</div>
-        <div>Current Y: ${this.debugTouchInfo.currentY.toFixed(1)}</div>
-        <div>Delta Y: ${this.debugTouchInfo.deltaY.toFixed(1)}</div>
-        <div>Last Swipe: ${this.debugTouchInfo.lastSwipeDirection}</div>
-        <div>Swipe Count: ${this.debugTouchInfo.swipeCount}</div>
-        <div>Overlay Shown: ${this.showOverlay}</div>
-        <div>Overlay Visible: ${this.isOverlayVisible}</div>
-        <div>Overlay Transitioning: ${this.isOverlayTransitioning}</div>
-        <div>Brightness Card Shown: ${this.showBrightnessCard}</div>
-        <div>Brightness Card Visible: ${this.isBrightnessCardVisible}</div>
-        <div>Brightness Card Transitioning: ${this.isBrightnessCardTransitioning}</div>
-      </div>
-    `;
-  }
-
   renderDebugInfo() {
+    if (!this.showDebugInfo) return '';
+    
+    // Get background rotator debug info if possible
+    let backgroundRotatorInfo = {};
+    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
+    if (backgroundRotator) {
+      backgroundRotatorInfo = {
+        currentImageIndex: backgroundRotator.currentImageIndex,
+        imageListLength: backgroundRotator.imageList?.length || 0,
+        activeImage: backgroundRotator.activeImage,
+        isTransitioning: backgroundRotator.isTransitioning,
+        imageSourceType: backgroundRotator.getImageSourceType?.() || 'unknown',
+        error: backgroundRotator.error
+      };
+    }
+    
+    // Get weather clock debug info if possible
+    let weatherClockInfo = {};
+    const weatherClock = this.shadowRoot.querySelector('weather-clock');
+    if (weatherClock) {
+      weatherClockInfo = {
+        date: weatherClock.date,
+        time: weatherClock.time,
+        temperature: weatherClock.temperature,
+        weatherIcon: weatherClock.weatherIcon,
+        aqi: weatherClock.aqi,
+        weatherEntity: weatherClock.weatherEntity,
+        aqiEntity: weatherClock.aqiEntity,
+        error: weatherClock.error
+      };
+    }
+    
     return html`
       <div class="debug-info">
         <h2>Google Card Debug Info</h2>
-        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
-        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
-        <p><strong>Night Mode:</strong> ${this.isNightMode}</p>
-        <p><strong>Show Overlay:</strong> ${this.showOverlay}</p>
-        <p><strong>Overlay Visible:</strong> ${this.isOverlayVisible}</p>
-        <p><strong>Overlay Transitioning:</strong> ${this.isOverlayTransitioning}</p>
-        <p><strong>Show Brightness Card:</strong> ${this.showBrightnessCard}</p>
-        <p><strong>Brightness Card Visible:</strong> ${this.isBrightnessCardVisible}</p>
-        <p><strong>Brightness Card Transitioning:</strong> ${this.isBrightnessCardTransitioning}</p>
-        <p><strong>Current Brightness:</strong> ${this.brightness}</p>
-        <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
-        <p><strong>Previous Brightness:</strong> ${this.previousBrightness}</p>
-        <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness}</p>
-        <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
-        <h3>Touch Info:</h3>
-        <pre>${JSON.stringify(this.debugTouchInfo, null, 2)}</pre>
-        <h3>Config:</h3>
-        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+        <div style="display: flex; justify-content: space-between;">
+          <button @click="${() => this.handleDebugTabClick('main')}">Main</button>
+          <button @click="${() => this.handleDebugTabClick('touch')}">Touch</button>
+          <button @click="${() => this.handleDebugTabClick('background')}">Background</button>
+          <button @click="${() => this.handleDebugTabClick('weather')}">Weather</button>
+          <button @click="${() => this.handleDebugTabClick('config')}">Config</button>
+        </div>
+        <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+          ${this.renderDebugTab()}
+        </div>
       </div>
+    `;
+  }
+  
+  handleDebugTabClick(tab) {
+    this.debugActiveTab = tab;
+    this.requestUpdate();
+  }
+  
+  renderDebugTab() {
+    if (!this.debugActiveTab) {
+      this.debugActiveTab = 'main';
+    }
+    
+    switch (this.debugActiveTab) {
+      case 'main':
+        return this.renderMainDebugInfo();
+      case 'touch':
+        return this.renderTouchDebugInfo();
+      case 'background':
+        return this.renderBackgroundDebugInfo();
+      case 'weather':
+        return this.renderWeatherDebugInfo();
+      case 'config':
+        return this.renderConfigDebugInfo();
+      default:
+        return this.renderMainDebugInfo();
+    }
+  }
+  
+  renderMainDebugInfo() {
+    return html`
+      <h3>Main Information</h3>
+      <p><strong>Screen Width:</strong> ${this.screenWidth}px</p>
+      <p><strong>Screen Height:</strong> ${this.screenHeight}px</p>
+      <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}</p>
+      
+      <h4>Night Mode:</h4>
+      <p><strong>Night Mode:</strong> ${this.isNightMode ? 'Active' : 'Inactive'}</p>
+      <p><strong>Is In Night Mode:</strong> ${this.isInNightMode ? 'Yes' : 'No'}</p>
+      <p><strong>Night Mode Source:</strong> ${this.nightModeSource || 'None'}</p>
+      <p><small>${this.nightModeSource === 'sensor' ? 
+        'Sensor-activated night mode will turn off when room brightens' : 
+        this.nightModeSource === 'manual' ? 
+        'Manually-activated night mode will turn off when screen is tapped' : 
+        ''}</small></p>
+      
+      <h4>Brightness:</h4>
+      <p><strong>Current Brightness:</strong> ${this.brightness}</p>
+      <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
+      <p><strong>Previous Brightness:</strong> ${this.previousBrightness}</p>
+      <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness ? 'Yes' : 'No'}</p>
+      <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
+      
+      <h4>UI States:</h4>
+      <p><strong>Show Overlay:</strong> ${this.showOverlay ? 'Yes' : 'No'}</p>
+      <p><strong>Overlay Visible:</strong> ${this.isOverlayVisible ? 'Yes' : 'No'}</p>
+      <p><strong>Overlay Transitioning:</strong> ${this.isOverlayTransitioning ? 'Yes' : 'No'}</p>
+      <p><strong>Show Brightness Card:</strong> ${this.showBrightnessCard ? 'Yes' : 'No'}</p>
+      <p><strong>Brightness Card Visible:</strong> ${this.isBrightnessCardVisible ? 'Yes' : 'No'}</p>
+      <p><strong>Brightness Card Transitioning:</strong> ${this.isBrightnessCardTransitioning ? 'Yes' : 'No'}</p>
+    `;
+  }
+  
+  renderTouchDebugInfo() {
+    return html`
+      <h3>Touch Information</h3>
+      <p><strong>Last Swipe Direction:</strong> ${this.debugTouchInfo.lastSwipeDirection || 'None'}</p>
+      <p><strong>Swipe Count:</strong> ${this.debugTouchInfo.swipeCount || 0}</p>
+      <p><strong>Touch Start X:</strong> ${this.debugTouchInfo.touchStartX?.toFixed(1) || 0}px</p>
+      <p><strong>Touch Start Y:</strong> ${this.debugTouchInfo.touchStartY?.toFixed(1) || 0}px</p>
+      <p><strong>Current Y:</strong> ${this.debugTouchInfo.currentY?.toFixed(1) || 0}px</p>
+      <p><strong>Delta X:</strong> ${this.debugTouchInfo.deltaX?.toFixed(1) || 0}px</p>
+      <p><strong>Delta Y:</strong> ${this.debugTouchInfo.deltaY?.toFixed(1) || 0}px</p>
+      <p><strong>Velocity X:</strong> ${this.debugTouchInfo.velocityX || 0}px/ms</p>
+      <p><strong>Velocity Y:</strong> ${this.debugTouchInfo.velocityY || 0}px/ms</p>
+      <p><strong>Gesture Instructions:</strong></p>
+      <ul>
+        <li>Swipe up from bottom: Show overlay controls</li>
+        <li>Swipe down: Dismiss overlay/controls</li>
+        <li>Swipe right from left edge: Activate manual night mode</li>
+        <li>Tap screen: Turn off manual night mode</li>
+      </ul>
+      
+      <h4>Night Mode Behavior:</h4>
+      <ul>
+        <li><strong>Manual Night Mode:</strong> Activated by swiping from left edge. Can only be dismissed by tapping screen. Ignores room brightness.</li>
+        <li><strong>Sensor Night Mode:</strong> Activated when room is dark. Automatically deactivates when room brightens.</li>
+      </ul>
+    `;
+  }
+  
+  renderBackgroundDebugInfo() {
+    // Get background rotator debug info if possible
+    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
+    let imageA = 'Not available';
+    let imageB = 'Not available';
+    let imageList = [];
+    
+    if (backgroundRotator) {
+      imageA = backgroundRotator.imageA;
+      imageB = backgroundRotator.imageB;
+      imageList = backgroundRotator.imageList || [];
+    }
+    
+    return html`
+      <h3>Background Information</h3>
+      <p><strong>Current Image Index:</strong> ${backgroundRotator?.currentImageIndex || -1}</p>
+      <p><strong>Image List Length:</strong> ${imageList.length}</p>
+      <p><strong>Active Image:</strong> ${backgroundRotator?.activeImage || 'None'}</p>
+      <p><strong>Is Transitioning:</strong> ${backgroundRotator?.isTransitioning ? 'Yes' : 'No'}</p>
+      <p><strong>Source Type:</strong> ${backgroundRotator?.getImageSourceType?.() || 'unknown'}</p>
+      <p><strong>Error:</strong> ${backgroundRotator?.error || 'None'}</p>
+      
+      <h4>Image A:</h4>
+      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">${imageA}</div>
+      
+      <h4>Image B:</h4>
+      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">${imageB}</div>
+      
+      <h4>Image List (first 3):</h4>
+      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">
+        ${imageList.slice(0, 3).map(url => html`<div>${url}</div>`)}
+        ${imageList.length > 3 ? html`<div>...and ${imageList.length - 3} more</div>` : ''}
+      </div>
+    `;
+  }
+  
+  renderWeatherDebugInfo() {
+    // Get weather clock debug info if possible
+    const weatherClock = this.shadowRoot.querySelector('weather-clock');
+    
+    return html`
+      <h3>Weather Information</h3>
+      <p><strong>Date:</strong> ${weatherClock?.date || 'N/A'}</p>
+      <p><strong>Time:</strong> ${weatherClock?.time || 'N/A'}</p>
+      <p><strong>Temperature:</strong> ${weatherClock?.temperature || 'N/A'}</p>
+      <p><strong>Weather Icon:</strong> ${weatherClock?.weatherIcon || 'N/A'}</p>
+      <p><strong>AQI:</strong> ${weatherClock?.aqi || 'N/A'}</p>
+      <p><strong>Weather Entity:</strong> ${weatherClock?.weatherEntity || 'N/A'}</p>
+      <p><strong>AQI Entity:</strong> ${weatherClock?.aqiEntity || 'N/A'}</p>
+      <p><strong>Error:</strong> ${weatherClock?.error || 'None'}</p>
+      
+      <div style="margin-top: 15px;">
+        <h4>Light Sensor:</h4>
+        <p>The Google Card uses the light sensor to determine night mode.</p>
+        <p><strong>Sensor Entity:</strong> sensor.liam_room_display_light_sensor</p>
+        <p><strong>Current Value:</strong> ${this.hass?.states['sensor.liam_room_display_light_sensor']?.state || 'N/A'}</p>
+        <p><small>Night mode activates when sensor value is 0</small></p>
+      </div>
+    `;
+  }
+  
+  renderConfigDebugInfo() {
+    return html`
+      <h3>Configuration</h3>
+      <pre style="font-size: 11px; overflow: auto; max-height: 300px;">${JSON.stringify(this.config, null, 2)}</pre>
     `;
   }
 
@@ -662,6 +948,7 @@ export class GoogleCard extends LitElement {
         .brightness=${this.brightness}
         .previousBrightness=${this.previousBrightness}
         .isInNightMode=${this.isInNightMode}
+        .nightModeSource=${this.nightModeSource}
         @nightModeExit=${this.handleNightModeExit}
       ></night-mode>
     ` : html`
@@ -670,7 +957,7 @@ export class GoogleCard extends LitElement {
         .config=${this.config}
         .screenWidth=${this.screenWidth}
         .screenHeight=${this.screenHeight}
-        .showDebugInfo=${this.showDebugInfo}
+        .showDebugInfo=${false} <!-- Never show component's own debug, we use consolidated view -->
       ></background-rotator>
 
       <weather-clock 
@@ -713,7 +1000,6 @@ export class GoogleCard extends LitElement {
       <div class="touch-container">
         <div class="content-wrapper">
           ${mainContent}
-          ${this.renderSwipeDebugOverlay()}
           ${this.showDebugInfo ? this.renderDebugInfo() : ''}
         </div>
       </div>
