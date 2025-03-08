@@ -21,4 +21,17 @@ export const nightModeStyles = css`
     font-weight: 400;
     font-family: 'Product Sans Regular', sans-serif;
   }
+  
+  .error {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    max-width: 80%;
+    z-index: 10;
+  }
 `;
