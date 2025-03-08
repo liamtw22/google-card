@@ -19,6 +19,7 @@ export class NightMode extends LitElement {
       isTransitioning: { type: Boolean },
       error: { type: String },
       sensorCheckedTime: { type: Number },
+      nightModeSource: { type: String },
     };
   }
 
@@ -41,6 +42,7 @@ export class NightMode extends LitElement {
     this.isTransitioning = false;
     this.error = null;
     this.sensorCheckedTime = 0;
+    this.nightModeSource = null; // Can be 'sensor' or 'manual'
   }
 
   connectedCallback() {
@@ -87,19 +89,23 @@ export class NightMode extends LitElement {
   async enterNightMode() {
     if (this.isInNightMode && !this.isTransitioning) return;
     this.isTransitioning = true;
-
+    
     try {
       // Store current brightness before entering night mode
       if (this.brightness > MIN_BRIGHTNESS) {
         this.previousBrightness = this.brightness;
+        console.log('NightMode saved previous brightness:', this.previousBrightness);
       }
       
+      // Disable auto brightness first
       await this.toggleAutoBrightness(false);
       await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      
+      // Set to minimum brightness
       await this.setBrightness(MIN_BRIGHTNESS);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
-      await this.toggleAutoBrightness(true);
-
+      
+      // Don't re-enable auto brightness, to avoid possible conflicts
+      
       this.isInNightMode = true;
       this.error = null;
     } catch (error) {
@@ -116,16 +122,18 @@ export class NightMode extends LitElement {
     this.isTransitioning = true;
 
     try {
+      // Ensure auto-brightness is disabled
       await this.toggleAutoBrightness(false);
       await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
       
-      // Use previous brightness or a reasonable default
-      const targetBrightness = this.previousBrightness > MIN_BRIGHTNESS 
+      // Restore previous brightness or use a reasonable default
+      const targetBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
         ? this.previousBrightness 
         : 128; // Default to middle brightness if no previous value
       
+      console.log('NightMode restoring brightness to:', targetBrightness);
       await this.setBrightness(targetBrightness);
-
+      
       this.isInNightMode = false;
       this.error = null;
       
@@ -223,10 +231,19 @@ export class NightMode extends LitElement {
       const lightLevel = parseInt(lightSensor.state);
       const shouldBeInNightMode = lightLevel === 0;
 
+      // If night mode was manually activated, don't let sensor readings deactivate it
+      if (this.isInNightMode && this.nightModeSource === 'manual') {
+        // Keep night mode on regardless of sensor
+        return;
+      }
+      
+      // For sensor-based night mode, follow the sensor readings
       if (shouldBeInNightMode && !this.isInNightMode) {
         this.enterNightMode();
-      } else if (!shouldBeInNightMode && this.isInNightMode) {
+        this.nightModeSource = 'sensor';
+      } else if (!shouldBeInNightMode && this.isInNightMode && this.nightModeSource === 'sensor') {
         this.exitNightMode();
+        this.nightModeSource = null;
       }
     } catch (error) {
       console.error('Error parsing light sensor value:', error);
@@ -243,11 +260,26 @@ export class NightMode extends LitElement {
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
       />
-      <div class="night-mode">
+      <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+        
+        ${this.nightModeSource === 'manual' ? html`
+          <div class="tap-hint">Tap anywhere to exit night mode</div>
+        ` : ''}
       </div>
     `;
+  }
+  
+  handleNightModeTap() {
+    // Only respond to taps when in manual night mode
+    if (this.isInNightMode && this.nightModeSource === 'manual') {
+      this.exitNightMode();
+      this.dispatchEvent(new CustomEvent('nightModeExit', {
+        bubbles: true,
+        composed: true,
+      }));
+    }
   }
 }
 
