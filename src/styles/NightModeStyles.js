@@ -10,9 +10,11 @@ export const nightModeStyles = css`
     height: 100%;
     background-color: black;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 5;
+    cursor: pointer;
   }
 
   .night-time {
@@ -33,5 +35,24 @@ export const nightModeStyles = css`
     font-size: 14px;
     max-width: 80%;
     z-index: 10;
+  }
+  
+  .tap-hint {
+    position: fixed;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    text-align: center;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 300;
+    animation: pulse 3s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+    100% { opacity: 0.3; }
   }
 `;
