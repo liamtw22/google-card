@@ -22,7 +22,8 @@ export class Controls extends LitElement {
       brightness: { type: Number },
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
-      longPressTimer: { type: Object }
+      longPressTimer: { type: Object },
+      isDraggingBrightness: { type: Boolean }
     };
   }
 
@@ -33,6 +34,14 @@ export class Controls extends LitElement {
   constructor() {
     super();
     this.initializeProperties();
+    
+    // Bind methods to preserve 'this' context
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this);
+    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this);
+    this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this);
+    this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
 
   initializeProperties() {
@@ -46,11 +55,20 @@ export class Controls extends LitElement {
     this.visualBrightness = 128;
     this.isAdjustingBrightness = false;
     this.longPressTimer = null;
+    this.isDraggingBrightness = false;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
+    this.removeBrightnessDragListeners();
+  }
+
+  updated(changedProperties) {
+    // Update visualBrightness when brightness changes from external sources
+    if (changedProperties.has('brightness') && !this.isAdjustingBrightness) {
+      this.visualBrightness = this.brightness;
+    }
   }
 
   handleBrightnessChange(e) {
@@ -62,19 +80,63 @@ export class Controls extends LitElement {
     this.updateBrightnessValue(newBrightness * 25.5);
   }
 
-  handleBrightnessDrag(e) {
+  handleBrightnessDragStart(e) {
     e.stopPropagation();
+    this.isDraggingBrightness = true;
+    
+    // Add global event listeners for mousemove and mouseup/touchend
+    document.addEventListener('mousemove', this.handleBrightnessDrag);
+    document.addEventListener('mouseup', this.handleBrightnessDragEnd);
+    document.addEventListener('touchmove', this.handleBrightnessDrag, { passive: false });
+    document.addEventListener('touchend', this.handleBrightnessDragEnd);
+    
+    // Process the first drag event
+    this.handleBrightnessDrag(e);
+  }
+
+  handleBrightnessDrag(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!this.isDraggingBrightness) return;
+    
     const container = this.shadowRoot.querySelector('.brightness-dots');
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const relativeX = Math.max(0, Math.min(x - rect.left, rect.width));
+    const clientX = e.type.includes('touch') 
+      ? (e.touches[0]?.clientX || e.changedTouches[0]?.clientX) 
+      : e.clientX;
+      
+    if (clientX === undefined) return;
+    
+    const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const newValue = Math.round((relativeX / rect.width) * 10);
-    this.updateBrightnessValue(newValue * 25.5);
+    
+    // Limit to range 1-10
+    const cappedValue = Math.max(1, Math.min(10, newValue));
+    this.updateBrightnessValue(cappedValue * 25.5);
+  }
+
+  handleBrightnessDragEnd(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    this.isDraggingBrightness = false;
+    this.removeBrightnessDragListeners();
+  }
+
+  removeBrightnessDragListeners() {
+    document.removeEventListener('mousemove', this.handleBrightnessDrag);
+    document.removeEventListener('mouseup', this.handleBrightnessDragEnd);
+    document.removeEventListener('touchmove', this.handleBrightnessDrag);
+    document.removeEventListener('touchend', this.handleBrightnessDragEnd);
   }
 
   updateBrightnessValue(value) {
+    this.visualBrightness = value;
     this.dispatchEvent(new CustomEvent('brightnessChange', {
       detail: Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value))),
       bubbles: true,
@@ -98,21 +160,37 @@ export class Controls extends LitElement {
     }));
   }
 
-  handleSettingsIconTouchStart = (e) => {
+  handleSettingsIconTouchStart(e) {
     e.stopPropagation();
+    // Clear any existing timer
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+    }
+    
+    // Set new timer for long press
     this.longPressTimer = setTimeout(() => {
       this.dispatchEvent(new CustomEvent('debugToggle', {
         bubbles: true,
         composed: true,
       }));
+      this.longPressTimer = null;
     }, LONG_PRESS_TIMEOUT);
   }
 
-  handleSettingsIconTouchEnd = (e) => {
+  handleSettingsIconTouchEnd(e) {
     e.stopPropagation();
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
     }
+  }
+
+  handleOverlayToggle(shouldShow) {
+    this.dispatchEvent(new CustomEvent('overlayToggle', {
+      detail: shouldShow,
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   classMap(classes) {
@@ -138,10 +216,8 @@ export class Controls extends LitElement {
             <div
               class="brightness-dots"
               @click="${this.handleBrightnessChange}"
-              @mousedown="${this.handleBrightnessDrag}"
-              @mousemove="${(e) => e.buttons === 1 && this.handleBrightnessDrag(e)}"
-              @touchstart="${this.handleBrightnessDrag}"
-              @touchmove="${this.handleBrightnessDrag}"
+              @mousedown="${this.handleBrightnessDragStart}"
+              @touchstart="${this.handleBrightnessDragStart}"
             >
               ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
                 (value) => html`
@@ -189,6 +265,9 @@ export class Controls extends LitElement {
               @touchstart="${this.handleSettingsIconTouchStart}"
               @touchend="${this.handleSettingsIconTouchEnd}"
               @touchcancel="${this.handleSettingsIconTouchEnd}"
+              @mousedown="${this.handleSettingsIconTouchStart}"
+              @mouseup="${this.handleSettingsIconTouchEnd}"
+              @mouseleave="${this.handleSettingsIconTouchEnd}"
             >
               <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
