@@ -8,6 +8,12 @@ export const sharedStyles = css`
     --theme-transition: background-color 0.3s ease, color 0.3s ease;
     --theme-background: #ffffff;
     --theme-text: #333333;
+    --overlay-background: rgba(255, 255, 255, 0.95);
+    --control-text-color: #333;
+    --brightness-dot-color: #d1d1d1;
+    --brightness-dot-active: #333;
+    --background-blur: 10px;
+    
     display: block;
     position: fixed;
     top: 0;
@@ -20,14 +26,13 @@ export const sharedStyles = css`
     transition: var(--theme-transition);
   }
 
-  :host([data-theme="dark"]) {
+  html[data-theme="dark"], :host([data-theme="dark"]) {
     --theme-background: #121212;
     --theme-text: #ffffff;
-  }
-
-  html[data-theme="dark"] {
-    --theme-background: #121212;
-    --theme-text: #ffffff;
+    --overlay-background: rgba(32, 33, 36, 0.95);
+    --control-text-color: #fff;
+    --brightness-dot-color: #5f6368;
+    --brightness-dot-active: #fff;
   }
 
   .error {
