@@ -94,7 +94,6 @@ export class NightMode extends LitElement {
       // Store current brightness before entering night mode
       if (this.brightness > MIN_BRIGHTNESS) {
         this.previousBrightness = this.brightness;
-        // Console log removed for linting
       }
       
       // Disable auto brightness first
@@ -104,12 +103,13 @@ export class NightMode extends LitElement {
       // Set to minimum brightness
       await this.setBrightness(MIN_BRIGHTNESS);
       
-      // Don't re-enable auto brightness, to avoid possible conflicts
+      // Enable auto brightness for night mode
+      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      await this.toggleAutoBrightness(true);
       
       this.isInNightMode = true;
       this.error = null;
     } catch (error) {
-      // Console log removed for linting
       this.error = `Error entering night mode: ${error.message}`;
     } finally {
       this.isTransitioning = false;
@@ -131,8 +131,9 @@ export class NightMode extends LitElement {
         ? this.previousBrightness 
         : 128; // Default to middle brightness if no previous value
       
-      // Console log removed for linting
       await this.setBrightness(targetBrightness);
+      
+      // Keep auto brightness disabled after exiting
       
       this.isInNightMode = false;
       this.error = null;
@@ -143,7 +144,6 @@ export class NightMode extends LitElement {
         composed: true,
       }));
     } catch (error) {
-      // Console log removed for linting
       this.error = `Error exiting night mode: ${error.message}`;
     } finally {
       this.isTransitioning = false;
@@ -153,11 +153,9 @@ export class NightMode extends LitElement {
 
   async setBrightness(value) {
     if (!this.hass) {
-      // Console log warning removed for linting
       return;
     }
 
-    // Remove try/catch that just rethrows
     const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
       
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
@@ -179,11 +177,9 @@ export class NightMode extends LitElement {
 
   async toggleAutoBrightness(enabled) {
     if (!this.hass) {
-      // Console log warning removed for linting
       return;
     }
 
-    // Remove try/catch that just rethrows
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_auto_screen_brightness',
       data: {
@@ -210,12 +206,10 @@ export class NightMode extends LitElement {
     const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
     
     if (!lightSensor) {
-      // Console log warning removed for linting
       return;
     }
     
     if (lightSensor.state === 'unavailable' || lightSensor.state === 'unknown') {
-      // Console log warning removed for linting
       return;
     }
 
@@ -238,7 +232,7 @@ export class NightMode extends LitElement {
         this.nightModeSource = null;
       }
     } catch (error) {
-      // Console log removed for linting
+      // Handle error silently
     }
   }
 
