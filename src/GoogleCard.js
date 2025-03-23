@@ -35,6 +35,7 @@ export class GoogleCard extends LitElement {
       debugTouchInfo: { type: Object },
       brightnessUpdateQueue: { type: Array },
       isProcessingBrightnessUpdate: { type: Boolean },
+      isDarkMode: { type: Boolean },
     };
   }
 
@@ -170,6 +171,11 @@ export class GoogleCard extends LitElement {
     this.brightnessUpdateQueue = [];
     this.isProcessingBrightnessUpdate = false;
     this.debugActiveTab = 'main'; // For the tabbed debug view
+    
+    // Add theme detection
+    this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    this.boundHandleThemeChange = this.handleThemeChange.bind(this);
   }
 
   initializeProperties() {
@@ -230,7 +236,52 @@ export class GoogleCard extends LitElement {
     // Set crossfade time variable for background transitions
     this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
     
-    // Any other global CSS variables can be set here
+    // Add theme-specific variables
+    this.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
+    this.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
+    this.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
+    
+    // Force update CSS variables on document level (for global theme)
+    document.documentElement.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
+    document.documentElement.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
+    document.documentElement.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
+  }
+
+  handleThemeChange(e) {
+    const newIsDarkMode = e.matches;
+    if (this.isDarkMode !== newIsDarkMode) {
+      this.isDarkMode = newIsDarkMode;
+      this.requestUpdate();
+      
+      // Force update on CSS variables
+      this.updateCssVariables();
+      
+      // Force a refresh of key components
+      this.refreshComponents();
+    }
+  }
+
+  refreshComponents() {
+    // Remove and re-add key components to force refresh
+    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
+    const weatherClock = this.shadowRoot.querySelector('weather-clock');
+    const controls = this.shadowRoot.querySelector('google-controls');
+    
+    if (backgroundRotator) {
+      backgroundRotator.requestUpdate();
+      backgroundRotator.updateCssVariables?.();
+    }
+    
+    if (weatherClock) {
+      weatherClock.requestUpdate();
+    }
+    
+    if (controls) {
+      controls.requestUpdate();
+    }
+    
+    // Apply theme to document
+    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
   }
 
   connectedCallback() {
@@ -239,12 +290,21 @@ export class GoogleCard extends LitElement {
     // Delay initial night mode check to ensure hass is available
     setTimeout(() => this.updateNightMode(), 1000);
     window.addEventListener('resize', this.boundUpdateScreenSize);
+    
+    // Add theme change detection
+    this.themeMediaQuery.addEventListener('change', this.boundHandleThemeChange);
+    
+    // Apply current theme on initial load
+    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearAllTimers();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
+    
+    // Remove theme change listener
+    this.themeMediaQuery.removeEventListener('change', this.boundHandleThemeChange);
     
     const touchContainer = this.shadowRoot?.querySelector('.touch-container');
     if (touchContainer) {
@@ -525,7 +585,6 @@ export class GoogleCard extends LitElement {
     
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
     
-    // No need for try/catch if we're just rethrowing
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_screen_brightness_level',
       data: {
@@ -547,8 +606,6 @@ export class GoogleCard extends LitElement {
 
   async handleNightModeTransition(newNightMode, source = 'sensor') {
     if (newNightMode === this.isInNightMode && this.nightModeSource === source) return;
-    
-    // Log for debugging removed for linting
     
     try {
       if (newNightMode) {
@@ -572,7 +629,6 @@ export class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
-      // Log error but remove console statement for linting
       // Restore previous state on error
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
@@ -584,44 +640,48 @@ export class GoogleCard extends LitElement {
     // Save current brightness, but only if it's not already saved and reasonable
     if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
       this.previousBrightness = this.brightness;
-      // Console log removed for linting
     }
     
-    // No try/catch needed if just rethrowing
-    // Disable auto brightness first
-    await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Set to minimum brightness
-    await this.setBrightness(MIN_BRIGHTNESS);
-    
-    // Don't re-enable auto brightness, keep it disabled while in night mode
-    // This helps prevent flickering or auto-adjustments during night mode
+    try {
+      // First disable auto brightness
+      await this.toggleAutoBrightness(false);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Set to minimum brightness
+      await this.setBrightness(MIN_BRIGHTNESS);
+      
+      // Then enable auto brightness for night mode
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await this.toggleAutoBrightness(true);
+    } catch (error) {
+      console.error("Error entering night mode:", error);
+      throw error;
+    }
   }
 
   async exitNightMode() {
-    // No try/catch needed if just rethrowing
-    // Ensure auto-brightness is disabled
-    await this.toggleAutoBrightness(false);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Restore previous brightness or use a reasonable default
-    const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
-      ? this.previousBrightness 
-      : 128;
-    
-    // Console log removed for linting
-    await this.setBrightness(restoreBrightness);
-    
-    // Re-enable auto brightness after restoring brightness
-    await new Promise(resolve => setTimeout(resolve, 200));
-    await this.toggleAutoBrightness(true);
+    try {
+      // First disable auto brightness
+      await this.toggleAutoBrightness(false);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Restore previous brightness or use a reasonable default
+      const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+        ? this.previousBrightness 
+        : 128;
+      
+      await this.setBrightness(restoreBrightness);
+      
+      // Keep auto brightness disabled after exiting night mode
+    } catch (error) {
+      console.error("Error exiting night mode:", error);
+      throw error;
+    }
   }
 
   async toggleAutoBrightness(enabled) {
     if (!this.hass) return;
     
-    // No try/catch needed if just rethrowing
     await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
       message: 'command_auto_screen_brightness',
       data: {
@@ -685,13 +745,11 @@ export class GoogleCard extends LitElement {
     
     const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
     if (!lightSensor) {
-      // Console log warning removed for linting
       return;
     }
 
     const sensorState = lightSensor.state;
     if (sensorState === 'unavailable' || sensorState === 'unknown') {
-      // Console log warning removed for linting
       return;
     }
 
@@ -774,6 +832,7 @@ export class GoogleCard extends LitElement {
       <p><strong>Screen Width:</strong> ${this.screenWidth}px</p>
       <p><strong>Screen Height:</strong> ${this.screenHeight}px</p>
       <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}</p>
+      <p><strong>Dark Mode:</strong> ${this.isDarkMode ? 'Enabled' : 'Disabled'}</p>
       
       <h4>Night Mode:</h4>
       <p><strong>Night Mode:</strong> ${this.isNightMode ? 'Active' : 'Inactive'}</p>
