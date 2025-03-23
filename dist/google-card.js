@@ -1,6 +1,6 @@
-import { LitElement as LitElement$1, html as html$1, css as css$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
+import { css, LitElement as LitElement$1, html as html$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
 
-import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { css as css$1, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
@@ -55,7 +55,7 @@ const DEFAULT_CONFIG = {
     max-width: 90%;
     word-wrap: break-word;
   }
-`, backgroundRotatorStyles = css`
+`, backgroundRotatorStyles = css$1`
   .background-container {
     position: absolute;
     top: 0;
@@ -423,7 +423,7 @@ ${JSON.stringify(this.imageList?.slice(0, 5), null, 2)}${this.imageList?.length 
   }
 });
 
-const controlsStyles = css`
+const controlsStyles = css$1`
   :host {
     --control-z-index: 1000;
     --overlay-transition-duration: 0.3s;
@@ -931,7 +931,7 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
 });
 
-const nightModeStyles = css`
+const nightModeStyles = css$1`
   .night-mode {
     position: absolute;
     top: 0;
@@ -1157,7 +1157,7 @@ customElements.define("night-mode", class NightMode extends LitElement$1 {
   }
 });
 
-const weatherClockStyles = css`
+const weatherClockStyles = css$1`
   .weather-component {
     position: fixed;
     bottom: 30px;
@@ -1518,7 +1518,7 @@ class GoogleCard extends LitElement$1 {
     };
   }
   static get styles() {
-    return [ sharedStyles, css$1`
+    return [ sharedStyles, css`
         :host {
           display: block;
           width: 100%;
