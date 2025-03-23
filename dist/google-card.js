@@ -12,7 +12,16 @@ const DEFAULT_CONFIG = {
   image_list_update_interval: 3600,
   image_order: "sorted",
   show_debug: !1,
-  sensor_update_delay: 500
+  sensor_update_delay: 500,
+  device_name: "mobile_app_liam_s_room_display",
+  show_date: !0,
+  show_time: !0,
+  show_weather: !0,
+  show_aqi: !0,
+  weather_entity: "weather.forecast_home",
+  aqi_entity: "sensor.air_quality_index",
+  light_sensor_entity: "sensor.liam_room_display_light_sensor",
+  brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
 }, sharedStyles = css`
   :host {
     --crossfade-time: 3s;
