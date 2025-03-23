@@ -15,6 +15,9 @@ const DEFAULT_CONFIG = {
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease;
+    --theme-background: #ffffff;
+    --theme-text: #333333;
     display: block;
     position: fixed;
     top: 0;
@@ -24,6 +27,17 @@ const DEFAULT_CONFIG = {
     z-index: 1;
     font-family: 'Product Sans Regular', sans-serif;
     font-weight: 400;
+    transition: var(--theme-transition);
+  }
+
+  :host([data-theme='dark']) {
+    --theme-background: #121212;
+    --theme-text: #ffffff;
+  }
+
+  html[data-theme='dark'] {
+    --theme-background: #121212;
+    --theme-text: #ffffff;
   }
 
   .error {
@@ -420,6 +434,18 @@ const controlsStyles = css`
     --border-radius: 20px;
     --background-blur: 10px;
     --background-opacity: 0.95;
+    --overlay-background: rgba(255, 255, 255, var(--background-opacity));
+    --control-text-color: #333;
+    --brightness-dot-color: #d1d1d1;
+    --brightness-dot-active: #333;
+  }
+
+  html[data-theme='dark'],
+  :host([data-theme='dark']) {
+    --overlay-background: rgba(32, 33, 36, var(--background-opacity));
+    --control-text-color: #fff;
+    --brightness-dot-color: #5f6368;
+    --brightness-dot-active: #fff;
   }
 
   .controls-container {
@@ -438,10 +464,10 @@ const controlsStyles = css`
     left: 0;
     width: 100%;
     height: var(--overlay-height);
-    background-color: rgba(255, 255, 255, var(--background-opacity));
+    background-color: var(--overlay-background);
     -webkit-backdrop-filter: blur(var(--background-blur));
     backdrop-filter: blur(var(--background-blur));
-    color: #333;
+    color: var(--control-text-color);
     box-sizing: border-box;
     transform: translateY(calc(100% + 20px));
     opacity: 0;
@@ -490,7 +516,7 @@ const controlsStyles = css`
     background: none;
     border: none;
     cursor: pointer;
-    color: #333;
+    color: var(--control-text-color);
     padding: 10px;
     border-radius: 50%;
     transition: background-color 0.2s ease, transform 0.2s ease;
@@ -520,9 +546,10 @@ const controlsStyles = css`
     left: 20px;
     right: 20px;
     height: var(--brightness-card-height);
-    background-color: rgba(255, 255, 255, var(--background-opacity));
+    background-color: var(--overlay-background);
     -webkit-backdrop-filter: blur(var(--background-blur));
     backdrop-filter: blur(var(--background-blur));
+    color: var(--control-text-color);
     border-radius: var(--border-radius);
     padding: 40px 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -574,7 +601,7 @@ const controlsStyles = css`
     width: var(--brightness-dot-size);
     height: var(--brightness-dot-size);
     border-radius: 50%;
-    background-color: #d1d1d1;
+    background-color: var(--brightness-dot-color);
     transition: background-color 0.2s ease, transform 0.2s ease;
     cursor: pointer;
     pointer-events: auto;
@@ -585,14 +612,14 @@ const controlsStyles = css`
   }
 
   .brightness-dot.active {
-    background-color: #333;
+    background-color: var(--brightness-dot-active);
   }
 
   .brightness-value {
     min-width: 60px;
     text-align: right;
     font-size: var(--brightness-value-size);
-    color: #333;
+    color: var(--control-text-color);
     font-weight: 300;
     margin-right: 20px;
     pointer-events: none;
@@ -604,45 +631,11 @@ const controlsStyles = css`
     width: var(--icon-size);
     height: var(--icon-size);
     display: block;
-    color: #333;
+    color: var(--control-text-color);
     pointer-events: none;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .overlay,
-    .brightness-card {
-      background-color: rgba(32, 33, 36, var(--background-opacity));
-    }
-
-    .icon-button {
-      color: #fff;
-    }
-
-    .icon-button:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .icon-button:active {
-      background-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .brightness-dot {
-      background-color: #5f6368;
-    }
-
-    .brightness-dot.active {
-      background-color: #fff;
-    }
-
-    .brightness-value {
-      color: #fff;
-    }
-
-    iconify-icon {
-      color: #fff;
-    }
-  }
-
+  /* iOS specific adjustments */
   @supports (-webkit-touch-callout: none) {
     .controls-container {
       padding-bottom: env(safe-area-inset-bottom, 0);
@@ -659,6 +652,7 @@ const controlsStyles = css`
     }
   }
 
+  /* PWA standalone mode adjustments */
   @media (display-mode: standalone) {
     .controls-container {
       padding-bottom: env(safe-area-inset-bottom, 0);
@@ -675,6 +669,7 @@ const controlsStyles = css`
     }
   }
 
+  /* Accessibility: reduce animation */
   @media (prefers-reduced-motion: reduce) {
     *,
     .overlay,
@@ -687,6 +682,7 @@ const controlsStyles = css`
     }
   }
 
+  /* High contrast mode */
   @media (forced-colors: active) {
     .icon-button:hover,
     .icon-button:active {
@@ -1205,6 +1201,7 @@ const weatherClockStyles = css`
     align-items: center;
     margin-top: 10px;
     font-weight: 500;
+    margin-right: 40px;
   }
 
   .weather-icon {
