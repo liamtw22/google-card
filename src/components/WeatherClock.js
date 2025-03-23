@@ -1,12 +1,12 @@
 // src/components/WeatherClock.js
-import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
-import { weatherClockStyles } from '../styles/WeatherClockStyles';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
 import { sharedStyles } from '../styles/SharedStyles';
 
 export class WeatherClock extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
+      config: { type: Object },
       date: { type: String },
       time: { type: String },
       temperature: { type: String },
@@ -19,24 +19,96 @@ export class WeatherClock extends LitElement {
   }
 
   static get styles() {
-    return [weatherClockStyles, sharedStyles];
+    return [
+      sharedStyles,
+      css`
+        .weather-component {
+          position: fixed;
+          bottom: 30px;
+          left: 40px;
+          display: flex;
+          justify-content: start;
+          align-items: center;
+          color: white;
+          font-family: 'Product Sans Regular', sans-serif;
+          width: 100%;
+          max-width: 400px;
+        }
+
+        .left-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .right-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          margin-left: auto;
+          margin-right: 40px;
+        }
+
+        .date {
+          font-size: 25px;
+          margin-bottom: 5px;
+          font-weight: 400;
+          margin-left: 20px; /* Added left padding */
+          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .time {
+          font-size: 90px;
+          line-height: 1;
+          font-weight: 500;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .weather-info {
+          display: flex;
+          align-items: center;
+          margin-top: 10px;
+          font-weight: 500;
+          margin-right: 40px;
+        }
+
+        .weather-icon {
+          width: 50px;
+          height: 50px;
+        }
+
+        .temperature {
+          font-size: 35px;
+          font-weight: 500;
+          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+          padding-top: 2px;
+        }
+
+        .aqi {
+          font-size: 20px;
+          padding: 7px 15px 5px 15px;
+          border-radius: 6px;
+          font-weight: 500;
+          margin-left: 30px;
+          align-self: flex-end;
+          min-width: 60px;
+          text-align: center;
+        }
+      `
+    ];
   }
 
   constructor() {
     super();
-    this.resetProperties();
-    this.updateTimer = null;
-  }
-
-  resetProperties() {
     this.date = '';
     this.time = '';
     this.temperature = '--°';
     this.weatherIcon = 'not-available';
     this.aqi = '--';
-    this.weatherEntity = 'weather.forecast_home';  // Default weather entity
-    this.aqiEntity = 'sensor.air_quality_index';   // Default AQI entity
+    this.weatherEntity = '';
+    this.aqiEntity = '';
     this.error = null;
+    this.updateTimer = null;
   }
 
   connectedCallback() {
@@ -90,87 +162,20 @@ export class WeatherClock extends LitElement {
     if (changedProperties.has('hass') && this.hass) {
       this.updateWeatherData();
     }
-  }
-
-  /**
-   * Find the first available weather entity
-   * @returns {string|null} Entity ID or null if none found
-   */
-  findWeatherEntity() {
-    if (!this.hass) return null;
     
-    // Try to find configured entity
-    if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
-      return this.weatherEntity;
+    if (changedProperties.has('config') && this.config) {
+      this.weatherEntity = this.config.weather_entity || 'weather.forecast_home';
+      this.aqiEntity = this.config.aqi_entity || 'sensor.air_quality_index';
     }
-    
-    // Try to find the "64_west_glen_ave" entity specifically
-    if (this.hass.states['weather.64_west_glen_ave']) {
-      this.weatherEntity = 'weather.64_west_glen_ave';
-      return this.weatherEntity;
-    }
-    
-    // Find any weather entity
-    for (const entityId in this.hass.states) {
-      if (entityId.startsWith('weather.')) {
-        this.weatherEntity = entityId;
-        return entityId;
-      }
-    }
-    
-    return null;
-  }
-
-  /**
-   * Find the first available AQI entity
-   * @returns {string|null} Entity ID or null if none found
-   */
-  findAqiEntity() {
-    if (!this.hass) return null;
-    
-    // Try to find configured entity
-    if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
-      return this.aqiEntity;
-    }
-    
-    // Try to find the "ridgewood_air_quality_index" entity specifically
-    if (this.hass.states['sensor.ridgewood_air_quality_index']) {
-      this.aqiEntity = 'sensor.ridgewood_air_quality_index';
-      return this.aqiEntity;
-    }
-    
-    // Find any AQI-related entity
-    const possibleNames = [
-      'air_quality_index',
-      'aqi',
-      'pm25',
-      'pm2_5',
-      'air_quality'
-    ];
-    
-    for (const entityId in this.hass.states) {
-      if (entityId.startsWith('sensor.')) {
-        const name = entityId.replace('sensor.', '').toLowerCase();
-        if (possibleNames.some(term => name.includes(term))) {
-          this.aqiEntity = entityId;
-          return entityId;
-        }
-      }
-    }
-    
-    return null;
   }
 
   updateWeatherData() {
     if (!this.hass) return;
 
     try {
-      const weatherEntityId = this.findWeatherEntity();
-      const aqiEntityId = this.findAqiEntity();
-      
       // Update temperature and weather state
-      if (weatherEntityId) {
-        const weatherEntity = this.hass.states[weatherEntityId];
+      if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
+        const weatherEntity = this.hass.states[this.weatherEntity];
         if (weatherEntity && weatherEntity.attributes && typeof weatherEntity.attributes.temperature !== 'undefined') {
           this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
           this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
@@ -184,8 +189,8 @@ export class WeatherClock extends LitElement {
       }
       
       // Update AQI
-      if (aqiEntityId) {
-        const aqiEntity = this.hass.states[aqiEntityId];
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
         if (aqiEntity && aqiEntity.state && aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
           this.aqi = aqiEntity.state;
         } else {
@@ -200,8 +205,6 @@ export class WeatherClock extends LitElement {
       console.error('Error updating weather data:', error);
       this.error = `Error: ${error.message}`;
     }
-    
-    this.requestUpdate();
   }
 
   getWeatherIcon(state) {
@@ -258,34 +261,26 @@ export class WeatherClock extends LitElement {
   }
 
   render() {
-    const hasValidAqi = this.aqi && this.aqi !== '--';
+    const hasValidAqi = this.aqi && this.aqi !== '--' && this.config.show_aqi !== false;
     
     return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
       <div class="weather-component">
         <div class="left-column">
-          <div class="date">${this.date}</div>
-          <div class="time">${this.time}</div>
+          ${this.config.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
+          ${this.config.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
         </div>
         <div class="right-column">
-          <div class="weather-info">
-            <img
-              src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
-              class="weather-icon"
-              alt="Weather icon"
-              onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
-            />
-            <span class="temperature">${this.temperature}</span>
-          </div>
+          ${this.config.show_weather !== false ? html`
+            <div class="weather-info">
+              <img
+                src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
+                class="weather-icon"
+                alt="Weather icon"
+                onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
+              />
+              <span class="temperature">${this.temperature}</span>
+            </div>
+          ` : ''}
           ${hasValidAqi ? html`
             <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
               ${this.aqi} AQI
