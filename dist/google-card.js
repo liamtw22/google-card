@@ -423,7 +423,7 @@ ${JSON.stringify(this.imageList?.slice(0, 5), null, 2)}${this.imageList?.length 
   }
 });
 
-const controlsStyles = css$1`
+const controlsStyles = css`
   :host {
     --control-z-index: 1000;
     --overlay-transition-duration: 0.3s;
