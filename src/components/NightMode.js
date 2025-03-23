@@ -1,48 +1,83 @@
 // src/components/NightMode.js
-import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
-import { nightModeStyles } from '../styles/NightModeStyles';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { NIGHT_MODE_TRANSITION_DELAY, MIN_BRIGHTNESS, DEFAULT_SENSOR_UPDATE_DELAY } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
-import {
-  NIGHT_MODE_TRANSITION_DELAY,
-  MIN_BRIGHTNESS,
-  DEFAULT_SENSOR_UPDATE_DELAY,
-} from '../constants';
 
 export class NightMode extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
+      config: { type: Object },
       currentTime: { type: String },
       brightness: { type: Number },
       isInNightMode: { type: Boolean },
       previousBrightness: { type: Number },
       isTransitioning: { type: Boolean },
       error: { type: String },
-      sensorCheckedTime: { type: Number },
       nightModeSource: { type: String },
     };
   }
 
   static get styles() {
-    return [sharedStyles, nightModeStyles];
+    return [
+      sharedStyles,
+      css`
+        .night-mode {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: black;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          z-index: 5;
+          cursor: pointer;
+        }
+
+        .night-time {
+          color: white;
+          font-size: 35vw;
+          font-weight: 400;
+          font-family: 'Product Sans Regular', sans-serif;
+        }
+        
+        .tap-hint {
+          position: fixed;
+          bottom: 40px;
+          left: 0;
+          right: 0;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 16px;
+          text-align: center;
+          font-family: 'Rubik', sans-serif;
+          font-weight: 300;
+          animation: pulse 3s infinite;
+        }
+        
+        @keyframes pulse {
+          0% { opacity: 0.3; }
+          50% { opacity: 0.7; }
+          100% { opacity: 0.3; }
+        }
+      `
+    ];
   }
 
   constructor() {
     super();
-    this.initializeProperties();
-  }
-
-  initializeProperties() {
     this.currentTime = '';
     this.brightness = MIN_BRIGHTNESS;
     this.isInNightMode = false;
     this.previousBrightness = MIN_BRIGHTNESS;
-    this.timeUpdateInterval = null;
-    this.sensorCheckInterval = null;
     this.isTransitioning = false;
     this.error = null;
-    this.sensorCheckedTime = 0;
     this.nightModeSource = null; // Can be 'sensor' or 'manual'
+    this.timeUpdateInterval = null;
+    this.sensorCheckInterval = null;
+    this.sensorCheckedTime = 0;
   }
 
   connectedCallback() {
@@ -50,7 +85,7 @@ export class NightMode extends LitElement {
     this.updateTime();
     this.startTimeUpdates();
     
-    // Only enter night mode automatically if it's confirmed via the light sensor
+    // Only enter night mode automatically if it's confirmed
     if (this.isInNightMode) {
       this.enterNightMode();
     }
@@ -152,35 +187,35 @@ export class NightMode extends LitElement {
   }
 
   async setBrightness(value) {
-    if (!this.hass) {
-      return;
-    }
+    if (!this.hass || !this.config) return;
 
     const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
+    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
       
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+    await this.hass.callService('notify', deviceName, {
       message: 'command_screen_brightness_level',
       data: {
         command: brightness,
       },
     });
 
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+    await this.hass.callService('notify', deviceName, {
       message: 'command_update_sensors',
     });
 
-    await new Promise(resolve => setTimeout(resolve, DEFAULT_SENSOR_UPDATE_DELAY));
+    await new Promise(resolve => setTimeout(resolve, 
+      this.config.sensor_update_delay || DEFAULT_SENSOR_UPDATE_DELAY));
 
     this.brightness = brightness;
     this.requestUpdate();
   }
 
   async toggleAutoBrightness(enabled) {
-    if (!this.hass) {
-      return;
-    }
+    if (!this.hass || !this.config) return;
+    
+    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
 
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+    await this.hass.callService('notify', deviceName, {
       message: 'command_auto_screen_brightness',
       data: {
         command: enabled ? 'turn_on' : 'turn_off',
@@ -200,10 +235,11 @@ export class NightMode extends LitElement {
   }
 
   checkLightSensor() {
-    if (!this.hass) return;
+    if (!this.hass || !this.config) return;
     this.sensorCheckedTime = Date.now();
 
-    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+    const lightSensor = this.hass.states[lightSensorEntity];
     
     if (!lightSensor) {
       return;
@@ -238,16 +274,6 @@ export class NightMode extends LitElement {
 
   render() {
     return html`
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ''}
