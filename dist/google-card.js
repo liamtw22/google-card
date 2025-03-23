@@ -993,7 +993,7 @@ const nightModeStyles = css`
   }
 `;
 
-customElements.define("night-mode", class NightMode extends LitElement {
+customElements.define("night-mode", class NightMode extends LitElement$1 {
   static get properties() {
     return {
       hass: {
@@ -1130,19 +1130,21 @@ customElements.define("night-mode", class NightMode extends LitElement {
     } catch (error) {}
   }
   render() {
-    return html`
+    return html$1`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <link
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
-        ${"manual" === this.nightModeSource ? html` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
+        ${this.error ? html$1`<div class="error">${this.error}</div>` : ""}
+        ${"manual" === this.nightModeSource ? html$1` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
       </div>
     `;
   }
