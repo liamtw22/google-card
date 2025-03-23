@@ -49,6 +49,7 @@ export const weatherClockStyles = css`
     align-items: center;
     margin-top: 10px;
     font-weight: 500;
+    margin-right: 40px;
   }
 
   .weather-icon {
