@@ -1157,7 +1157,7 @@ customElements.define("night-mode", class NightMode extends LitElement$1 {
   }
 });
 
-const weatherClockStyles = css$1`
+const weatherClockStyles = css`
   .weather-component {
     position: fixed;
     bottom: 30px;
