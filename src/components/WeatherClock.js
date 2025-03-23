@@ -1,5 +1,5 @@
 // src/components/WeatherClock.js
-import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
 import { weatherClockStyles } from '../styles/WeatherClockStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 
@@ -264,10 +264,12 @@ export class WeatherClock extends LitElement {
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <link
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <div class="weather-component">
         <div class="left-column">
@@ -280,7 +282,7 @@ export class WeatherClock extends LitElement {
               src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
               class="weather-icon"
               alt="Weather icon"
-              onerror="this.src='https://basmilius.github.io/weather-icons/production/fill/all/not-available.svg'"
+              onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
             />
             <span class="temperature">${this.temperature}</span>
           </div>
