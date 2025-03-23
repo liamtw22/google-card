@@ -1508,6 +1508,9 @@ class GoogleCard extends LitElement {
       },
       isProcessingBrightnessUpdate: {
         type: Boolean
+      },
+      isDarkMode: {
+        type: Boolean
       }
     };
   }
@@ -1634,7 +1637,9 @@ class GoogleCard extends LitElement {
   }
   constructor() {
     super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this), 
-    this.brightnessUpdateQueue = [], this.isProcessingBrightnessUpdate = !1, this.debugActiveTab = "main";
+    this.brightnessUpdateQueue = [], this.isProcessingBrightnessUpdate = !1, this.debugActiveTab = "main", 
+    this.isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches, this.themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)"), 
+    this.boundHandleThemeChange = this.handleThemeChange.bind(this);
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
@@ -1661,14 +1666,33 @@ class GoogleCard extends LitElement {
     }, this.showDebugInfo = this.config.show_debug, this.updateCssVariables();
   }
   updateCssVariables() {
-    this.config && this.style.setProperty("--crossfade-time", `${this.config.crossfade_time || 3}s`);
+    this.config && (this.style.setProperty("--crossfade-time", `${this.config.crossfade_time || 3}s`), 
+    this.style.setProperty("--theme-transition", "background-color 0.3s ease, color 0.3s ease"), 
+    this.style.setProperty("--theme-background", this.isDarkMode ? "#121212" : "#ffffff"), 
+    this.style.setProperty("--theme-text", this.isDarkMode ? "#ffffff" : "#333333"), 
+    document.documentElement.style.setProperty("--theme-transition", "background-color 0.3s ease, color 0.3s ease"), 
+    document.documentElement.style.setProperty("--theme-background", this.isDarkMode ? "#121212" : "#ffffff"), 
+    document.documentElement.style.setProperty("--theme-text", this.isDarkMode ? "#ffffff" : "#333333"));
+  }
+  handleThemeChange(e) {
+    const newIsDarkMode = e.matches;
+    this.isDarkMode !== newIsDarkMode && (this.isDarkMode = newIsDarkMode, this.requestUpdate(), 
+    this.updateCssVariables(), this.refreshComponents());
+  }
+  refreshComponents() {
+    const backgroundRotator = this.shadowRoot.querySelector("background-rotator"), weatherClock = this.shadowRoot.querySelector("weather-clock"), controls = this.shadowRoot.querySelector("google-controls");
+    backgroundRotator && (backgroundRotator.requestUpdate(), backgroundRotator.updateCssVariables?.()), 
+    weatherClock && weatherClock.requestUpdate(), controls && controls.requestUpdate(), 
+    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
   }
   connectedCallback() {
     super.connectedCallback(), this.startTimeUpdates(), setTimeout((() => this.updateNightMode()), 1e3), 
-    window.addEventListener("resize", this.boundUpdateScreenSize);
+    window.addEventListener("resize", this.boundUpdateScreenSize), this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), 
+    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize);
+    super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
+    this.themeMediaQuery.removeEventListener("change", this.boundHandleThemeChange);
     const touchContainer = this.shadowRoot?.querySelector(".touch-container");
     touchContainer && (touchContainer.removeEventListener("touchstart", this.handleTouchStart), 
     touchContainer.removeEventListener("touchmove", this.handleTouchMove), touchContainer.removeEventListener("touchend", this.handleTouchEnd));
@@ -1828,15 +1852,23 @@ class GoogleCard extends LitElement {
     }
   }
   async enterNightMode() {
-    !this.isInNightMode && this.brightness > 1 && (this.previousBrightness = this.brightness), 
-    await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 200))), 
-    await this.setBrightness(1);
+    !this.isInNightMode && this.brightness > 1 && (this.previousBrightness = this.brightness);
+    try {
+      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 200))), 
+      await this.setBrightness(1), await new Promise((resolve => setTimeout(resolve, 200))), 
+      await this.toggleAutoBrightness(!0);
+    } catch (error) {
+      throw console.error("Error entering night mode:", error), error;
+    }
   }
   async exitNightMode() {
-    await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 200)));
-    const restoreBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
-    await this.setBrightness(restoreBrightness), await new Promise((resolve => setTimeout(resolve, 200))), 
-    await this.toggleAutoBrightness(!0);
+    try {
+      await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 200)));
+      const restoreBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
+      await this.setBrightness(restoreBrightness);
+    } catch (error) {
+      throw console.error("Error exiting night mode:", error), error;
+    }
   }
   async toggleAutoBrightness(enabled) {
     this.hass && await this.hass.callService("notify", "mobile_app_liam_s_room_display", {
@@ -1926,6 +1958,7 @@ class GoogleCard extends LitElement {
       <p><strong>Screen Width:</strong> ${this.screenWidth}px</p>
       <p><strong>Screen Height:</strong> ${this.screenHeight}px</p>
       <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}</p>
+      <p><strong>Dark Mode:</strong> ${this.isDarkMode ? "Enabled" : "Disabled"}</p>
 
       <h4>Night Mode:</h4>
       <p><strong>Night Mode:</strong> ${this.isNightMode ? "Active" : "Inactive"}</p>
