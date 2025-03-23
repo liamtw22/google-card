@@ -1,8 +1,7 @@
 // src/components/BackgroundRotator.js
-import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
-import { backgroundRotatorStyles } from '../styles/BackgroundRotatorStyles';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { TRANSITION_BUFFER, IMAGE_SOURCE_TYPES } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
-import { TRANSITION_BUFFER } from '../constants';
 
 export class BackgroundRotator extends LitElement {
   static get properties() {
@@ -11,71 +10,67 @@ export class BackgroundRotator extends LitElement {
       config: { type: Object },
       screenWidth: { type: Number },
       screenHeight: { type: Number },
-      showDebugInfo: { type: Boolean },
       currentImageIndex: { type: Number },
       imageList: { type: Array },
       imageA: { type: String },
       imageB: { type: String },
       activeImage: { type: String },
-      preloadedImage: { type: String },
-      error: { type: String },
-      debugInfo: { type: Object },
       isTransitioning: { type: Boolean },
-      pendingImageUpdate: { type: Boolean },
-      imageUpdateRetries: { type: Number },
-      maxRetries: { type: Number },
+      error: { type: String },
     };
   }
 
   static get styles() {
-    return [backgroundRotatorStyles, sharedStyles];
+    return [
+      sharedStyles,
+      css`
+        .background-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: black;
+        }
+
+        .background-image {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: contain;
+          background-position: center;
+          background-repeat: no-repeat;
+          transition: opacity var(--crossfade-time) ease-in-out;
+        }
+      `
+    ];
   }
 
   constructor() {
     super();
-    this.initializeProperties();
-  }
-
-  initializeProperties() {
     this.currentImageIndex = -1;
     this.imageList = [];
     this.imageA = '';
     this.imageB = '';
     this.activeImage = 'A';
     this.preloadedImage = '';
-    this.error = null;
-    this.debugInfo = {};
     this.isTransitioning = false;
-    this.pendingImageUpdate = false;
-    this.imageUpdateRetries = 0;
-    this.maxRetries = 3;
+    this.error = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.startImageRotation();
-    this.startImageListUpdates();
+    this.updateImageList().then(() => {
+      this.startImageRotation();
+    });
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.clearTimers();
-  }
-
-  clearTimers() {
     if (this.imageUpdateInterval) clearInterval(this.imageUpdateInterval);
     if (this.imageListUpdateInterval) clearInterval(this.imageListUpdateInterval);
-    if (this.pendingImageUpdateTimeout) clearTimeout(this.pendingImageUpdateTimeout);
-  }
-
-  startImageListUpdates() {
-    // Immediate initial update
-    this.updateImageList();
-    
-    // Schedule periodic updates
-    this.imageListUpdateInterval = setInterval(() => {
-      this.updateImageList();
-    }, Math.max(60, this.config?.image_list_update_interval || 3600) * 1000);
   }
 
   startImageRotation() {
@@ -86,23 +81,26 @@ export class BackgroundRotator extends LitElement {
     this.imageUpdateInterval = setInterval(() => {
       this.updateImage();
     }, Math.max(5, this.config?.display_time || 15) * 1000);
+    
+    // Schedule periodic image list updates
+    this.imageListUpdateInterval = setInterval(() => {
+      this.updateImageList();
+    }, Math.max(60, this.config?.image_list_update_interval || 3600) * 1000);
   }
 
   getImageSourceType() {
-    if (!this.config?.image_url) return 'url';
+    if (!this.config?.image_url) return IMAGE_SOURCE_TYPES.URL;
     
     const { image_url } = this.config;
-    if (image_url.startsWith('media-source://')) return 'media-source';
-    if (image_url.startsWith('https://api.unsplash')) return 'unsplash-api';
-    if (image_url.startsWith('immich+')) return 'immich-api';
-    if (image_url.includes('picsum.photos')) return 'picsum';
-    return 'url';
+    if (image_url.startsWith('media-source://')) return IMAGE_SOURCE_TYPES.MEDIA_SOURCE;
+    if (image_url.startsWith('https://api.unsplash')) return IMAGE_SOURCE_TYPES.UNSPLASH_API;
+    if (image_url.startsWith('immich+')) return IMAGE_SOURCE_TYPES.IMMICH_API;
+    if (image_url.includes('picsum.photos')) return IMAGE_SOURCE_TYPES.PICSUM;
+    return IMAGE_SOURCE_TYPES.URL;
   }
 
   getImageUrl() {
-    if (!this.config?.image_url) {
-      return '';
-    }
+    if (!this.config?.image_url) return '';
     
     const timestamp_ms = Date.now();
     const timestamp = Math.floor(timestamp_ms / 1000);
@@ -147,15 +145,16 @@ export class BackgroundRotator extends LitElement {
         }
       }
 
-      this.debugInfo.imageList = this.imageList;
       this.requestUpdate();
+      return this.imageList;
     } catch (error) {
       this.error = `Error updating image list: ${error.message}`;
       this.requestUpdate();
+      return [];
     }
   }
 
-  // Fisher-Yates shuffle algorithm for better randomization
+  // Fisher-Yates shuffle algorithm
   shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -166,31 +165,25 @@ export class BackgroundRotator extends LitElement {
 
   async fetchImageList() {
     const sourceType = this.getImageSourceType();
+    
     switch (sourceType) {
-      case 'media-source': {
+      case IMAGE_SOURCE_TYPES.MEDIA_SOURCE:
         return this.getImagesFromMediaSource();
-      }
-      case 'unsplash-api': {
+      case IMAGE_SOURCE_TYPES.UNSPLASH_API:
         return this.getImagesFromUnsplashAPI();
-      }
-      case 'immich-api': {
+      case IMAGE_SOURCE_TYPES.IMMICH_API:
         return this.getImagesFromImmichAPI();
-      }
-      case 'picsum': {
-        // For Picsum, we'll return multiple URLs to allow rotation
+      case IMAGE_SOURCE_TYPES.PICSUM:
+        // For Picsum, return multiple URLs to allow rotation
         return Array.from({ length: 10 }, () => this.getImageUrl());
-      }
-      default: {
+      default:
         const url = this.getImageUrl();
         return url ? [url] : [];
-      }
     }
   }
 
   async getImagesFromMediaSource() {
-    if (!this.hass) {
-      return [this.getImageUrl()];
-    }
+    if (!this.hass) return [this.getImageUrl()];
     
     try {
       const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, '');
@@ -314,137 +307,50 @@ export class BackgroundRotator extends LitElement {
     });
   }
 
-  async preloadNextImage() {
-    if (this.imageList.length === 0) return;
+  async updateImage() {
+    // Skip if already transitioning or if image list is empty
+    if (this.isTransitioning || this.imageList.length === 0) return;
 
     try {
       const nextImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-      let nextImageToPreload;
+      let nextImage;
       
-      if (this.getImageSourceType() === 'picsum') {
-        nextImageToPreload = this.getImageUrl();
+      if (this.getImageSourceType() === IMAGE_SOURCE_TYPES.PICSUM) {
+        nextImage = this.getImageUrl();
       } else {
-        nextImageToPreload = this.imageList[nextImageIndex];
+        nextImage = this.imageList[nextImageIndex];
       }
+      
+      // Wait for the image to load
+      nextImage = await this.preloadImage(nextImage);
+      this.currentImageIndex = nextImageIndex;
+      
+      // Transition to new image
+      this.isTransitioning = true;
 
-      this.preloadedImage = await this.preloadImage(nextImageToPreload);
-      this.debugInfo.preloadedImage = this.preloadedImage;
-      this.requestUpdate();
-    } catch (error) {
-      console.error('Error preloading next image:', error);
-      this.preloadedImage = '';
-      this.debugInfo.preloadError = error.message;
-      this.requestUpdate();
-    }
-  }
-
-  async getNextImage() {
-    if (this.imageList.length === 0) return null;
-
-    let newImage;
-    try {
-      // Use preloaded image if available
-      if (this.preloadedImage) {
-        newImage = this.preloadedImage;
-        this.preloadedImage = '';
+      if (this.activeImage === 'A') {
+        this.imageB = nextImage;
       } else {
-        // Otherwise load a new image
-        if (this.getImageSourceType() === 'picsum') {
-          newImage = this.getImageUrl();
-        } else {
-          this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-          newImage = this.imageList[this.currentImageIndex];
-        }
-        
-        // Wait for the image to load
-        newImage = await this.preloadImage(newImage);
+        this.imageA = nextImage;
       }
-      
-      this.imageUpdateRetries = 0;
-      return newImage;
-    } catch (error) {
-      console.error('Error getting next image:', error);
-      this.imageUpdateRetries++;
-      
-      // If we've tried too many times, reset the index and try again with the first image
-      if (this.imageUpdateRetries > this.maxRetries) {
-        this.imageUpdateRetries = 0;
-        this.currentImageIndex = -1;
-        return null;
-      }
-      
-      // Try the next image after a short delay
-      setTimeout(() => this.updateImage(), 2000);
-      return null;
-    }
-  }
 
-  async updateImage() {
-    // Skip if already transitioning or if image list is empty
-    if (this.isTransitioning || this.pendingImageUpdate || this.imageList.length === 0) return;
+      this.requestUpdate();
 
-    try {
-      this.pendingImageUpdate = true;
-      const newImage = await this.getNextImage();
+      // Short delay to ensure DOM update before transition
+      await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
       
-      if (newImage) {
-        await this.transitionToNewImage(newImage);
-        // Start preloading next image after current transition finishes
-        setTimeout(() => this.preloadNextImage(), this.config?.crossfade_time * 1000 + TRANSITION_BUFFER);
-      }
+      // Start transition by changing active image
+      this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
+      this.requestUpdate();
+
+      // Wait for transition to complete
+      const transitionTime = (this.config?.crossfade_time || 3) * 1000 + TRANSITION_BUFFER;
+      await new Promise(resolve => setTimeout(resolve, transitionTime));
+      
+      this.isTransitioning = false;
     } catch (error) {
       console.error('Error updating image:', error);
-    } finally {
-      this.pendingImageUpdate = false;
-    }
-  }
-
-  async transitionToNewImage(newImage) {
-    this.isTransitioning = true;
-
-    if (this.activeImage === 'A') {
-      this.imageB = newImage;
-    } else {
-      this.imageA = newImage;
-    }
-
-    this.updateDebugInfo();
-    this.requestUpdate();
-
-    // Short delay to ensure DOM update before transition
-    await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
-    
-    // Start transition by changing active image
-    this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
-    this.requestUpdate();
-
-    // Wait for transition to complete plus a small buffer
-    const transitionTime = (this.config?.crossfade_time || 3) * 1000 + TRANSITION_BUFFER;
-    await new Promise(resolve => setTimeout(resolve, transitionTime));
-    
-    this.isTransitioning = false;
-  }
-
-  updateDebugInfo() {
-    this.debugInfo = {
-      imageA: this.imageA,
-      imageB: this.imageB,
-      activeImage: this.activeImage,
-      preloadedImage: this.preloadedImage,
-      imageList: this.imageList,
-      currentImageIndex: this.currentImageIndex,
-      config: this.config,
-      error: this.error,
-      isTransitioning: this.isTransitioning,
-      pendingImageUpdate: this.pendingImageUpdate,
-      imageUpdateRetries: this.imageUpdateRetries,
-    };
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('config') && this.config) {
-      // Update CSS variables when config changes
-      this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
+      this.isTransitioning = false;
     }
   }
 
@@ -469,31 +375,6 @@ export class BackgroundRotator extends LitElement {
         ></div>
       </div>
       ${this.error ? html`<div class="error">${this.error}</div>` : ''}
-      ${this.showDebugInfo ? this.renderDebugInfo() : ''}
-    `;
-  }
-
-  renderDebugInfo() {
-    return html`
-      <div class="debug-info">
-        <h2>Background Rotator Debug Info</h2>
-        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
-        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
-        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
-        <p><strong>Source Type:</strong> ${this.getImageSourceType()}</p>
-        <p><strong>Image A:</strong> ${this.imageA}</p>
-        <p><strong>Image B:</strong> ${this.imageB}</p>
-        <p><strong>Active Image:</strong> ${this.activeImage}</p>
-        <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
-        <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
-        <p><strong>Current Image Index:</strong> ${this.currentImageIndex}</p>
-        <p><strong>Image List Length:</strong> ${this.imageList?.length || 0}</p>
-        <p><strong>Error:</strong> ${this.error}</p>
-        <h3>Image List:</h3>
-        <pre>${JSON.stringify(this.imageList?.slice(0, 5), null, 2)}${this.imageList?.length > 5 ? '...' : ''}</pre>
-        <h3>Config:</h3>
-        <pre>${JSON.stringify(this.config, null, 2)}</pre>
-      </div>
     `;
   }
 }
