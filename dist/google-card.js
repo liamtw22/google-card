@@ -931,7 +931,7 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
 });
 
-const nightModeStyles = css$1`
+const nightModeStyles = css`
   .night-mode {
     position: absolute;
     top: 0;
