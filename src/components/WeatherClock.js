@@ -258,6 +258,8 @@ export class WeatherClock extends LitElement {
   }
 
   render() {
+    const hasValidAqi = this.aqi && this.aqi !== '--';
+    
     return html`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
@@ -282,9 +284,11 @@ export class WeatherClock extends LitElement {
             />
             <span class="temperature">${this.temperature}</span>
           </div>
-          <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
-            ${this.aqi} AQI
-          </div>
+          ${hasValidAqi ? html`
+            <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
+              ${this.aqi} AQI
+            </div>
+          ` : ''}
         </div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ''}
       </div>
