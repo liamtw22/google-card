@@ -1,3 +1,5 @@
+import { LitElement as LitElement$1, css as css$1, html as html$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
+
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
@@ -1428,7 +1430,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
 });
 
-class GoogleCard extends LitElement {
+class GoogleCard extends LitElement$1 {
   static get properties() {
     return {
       hass: {
@@ -1512,7 +1514,7 @@ class GoogleCard extends LitElement {
     };
   }
   static get styles() {
-    return [ sharedStyles, css`
+    return [ sharedStyles, css$1`
         :host {
           display: block;
           width: 100%;
@@ -1636,7 +1638,9 @@ class GoogleCard extends LitElement {
     super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this), 
     this.brightnessUpdateQueue = [], this.isProcessingBrightnessUpdate = !1, this.debugActiveTab = "main", 
     this.isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches, this.themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)"), 
-    this.boundHandleThemeChange = this.handleThemeChange.bind(this);
+    this.boundHandleThemeChange = this.handleThemeChange.bind(this), setTimeout((() => {
+      this.updateCssVariables(), this.refreshComponents();
+    }), 100);
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
@@ -1685,7 +1689,10 @@ class GoogleCard extends LitElement {
   connectedCallback() {
     super.connectedCallback(), this.startTimeUpdates(), setTimeout((() => this.updateNightMode()), 1e3), 
     window.addEventListener("resize", this.boundUpdateScreenSize), this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), 
-    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light"), 
+    setTimeout((() => {
+      this.requestUpdate();
+    }), 500);
   }
   disconnectedCallback() {
     super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
@@ -1845,7 +1852,8 @@ class GoogleCard extends LitElement {
       nightModeComponent && (nightModeComponent.isInNightMode = newNightMode, nightModeComponent.previousBrightness = this.previousBrightness, 
       nightModeComponent.nightModeSource = this.nightModeSource), this.requestUpdate();
     } catch (error) {
-      this.isInNightMode = !newNightMode, this.isNightMode = !newNightMode, this.requestUpdate();
+      console.error("Error in night mode transition:", error), this.isInNightMode = !newNightMode, 
+      this.isNightMode = !newNightMode, this.requestUpdate();
     }
   }
   async enterNightMode() {
@@ -1904,14 +1912,24 @@ class GoogleCard extends LitElement {
     const shouldBeInNightMode = 0 === parseInt(sensorState);
     this.isInNightMode && "manual" === this.nightModeSource || shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
+  updateBrightness() {
+    if (!this.hass) return;
+    if (!this.hass.states["sensor.liam_room_display_light_sensor"]) return;
+    const brightnessSensor = this.hass.states["sensor.liam_room_display_brightness_sensor"];
+    if (brightnessSensor && "unavailable" !== brightnessSensor.state && "unknown" !== brightnessSensor.state) try {
+      const currentBrightness = parseInt(brightnessSensor.state);
+      !isNaN(currentBrightness) && currentBrightness > 0 && !this.isAdjustingBrightness && (this.isInNightMode || (this.brightness = currentBrightness, 
+      this.visualBrightness = currentBrightness));
+    } catch (error) {}
+  }
   updated(changedProperties) {
     if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
-      Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
+      Date.now() - this.lastBrightnessUpdateTime > 2e3 && (this.updateNightMode(), this.updateBrightness());
     }
   }
   renderDebugInfo() {
     return this.showDebugInfo ? (this.shadowRoot.querySelector("background-rotator"), 
-    this.shadowRoot.querySelector("weather-clock"), html`
+    this.shadowRoot.querySelector("weather-clock"), html$1`
       <div class="debug-info">
         <h2>Google Card Debug Info</h2>
         <div style="display: flex; justify-content: space-between;">
@@ -1950,7 +1968,7 @@ class GoogleCard extends LitElement {
     }
   }
   renderMainDebugInfo() {
-    return html`
+    return html$1`
       <h3>Main Information</h3>
       <p><strong>Screen Width:</strong> ${this.screenWidth}px</p>
       <p><strong>Screen Height:</strong> ${this.screenHeight}px</p>
@@ -1990,7 +2008,7 @@ class GoogleCard extends LitElement {
     `;
   }
   renderTouchDebugInfo() {
-    return html`
+    return html$1`
       <h3>Touch Information</h3>
       <p>
         <strong>Last Swipe Direction:</strong> ${this.debugTouchInfo.lastSwipeDirection || "None"}
@@ -2028,7 +2046,7 @@ class GoogleCard extends LitElement {
     const backgroundRotator = this.shadowRoot.querySelector("background-rotator");
     let imageA = "Not available", imageB = "Not available", imageList = [];
     return backgroundRotator && (imageA = backgroundRotator.imageA, imageB = backgroundRotator.imageB, 
-    imageList = backgroundRotator.imageList || []), html`
+    imageList = backgroundRotator.imageList || []), html$1`
       <h3>Background Information</h3>
       <p><strong>Current Image Index:</strong> ${backgroundRotator?.currentImageIndex || -1}</p>
       <p><strong>Image List Length:</strong> ${imageList.length}</p>
@@ -2045,14 +2063,14 @@ class GoogleCard extends LitElement {
 
       <h4>Image List (first 3):</h4>
       <div style="max-width: 100%; word-break: break-all; font-size: 11px;">
-        ${imageList.slice(0, 3).map((url => html`<div>${url}</div>`))}
-        ${imageList.length > 3 ? html`<div>...and ${imageList.length - 3} more</div>` : ""}
+        ${imageList.slice(0, 3).map((url => html$1`<div>${url}</div>`))}
+        ${imageList.length > 3 ? html$1`<div>...and ${imageList.length - 3} more</div>` : ""}
       </div>
     `;
   }
   renderWeatherDebugInfo() {
     const weatherClock = this.shadowRoot.querySelector("weather-clock");
-    return html`
+    return html$1`
       <h3>Weather Information</h3>
       <p><strong>Date:</strong> ${weatherClock?.date || "N/A"}</p>
       <p><strong>Time:</strong> ${weatherClock?.time || "N/A"}</p>
@@ -2075,7 +2093,7 @@ class GoogleCard extends LitElement {
     `;
   }
   renderConfigDebugInfo() {
-    return html`
+    return html$1`
       <h3>Configuration</h3>
       <pre style="font-size: 11px; overflow: auto; max-height: 300px;">
 ${JSON.stringify(this.config, null, 2)}</pre
@@ -2083,7 +2101,7 @@ ${JSON.stringify(this.config, null, 2)}</pre
     `;
   }
   render() {
-    const mainContent = this.isNightMode ? html`
+    const mainContent = this.isNightMode ? html$1`
           <night-mode
             .currentTime=${this.currentTime}
             .hass=${this.hass}
@@ -2093,7 +2111,7 @@ ${JSON.stringify(this.config, null, 2)}</pre
             .nightModeSource=${this.nightModeSource}
             @nightModeExit=${this.handleNightModeExit}
           ></night-mode>
-        ` : html`
+        ` : html$1`
       <background-rotator
         .hass=${this.hass}
         .config=${this.config}
@@ -2123,16 +2141,21 @@ ${JSON.stringify(this.config, null, 2)}</pre
         @debugToggle=${this.handleDebugToggle}
       ></google-controls>
     `;
-    return html`
-      <!-- Import all required fonts -->
+    return html$1`
+      <!-- Import all required fonts with crossorigin attribute -->
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <link
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
+
+      <!-- Ensure Iconify is loaded -->
+      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 
       <!-- Fallback font style for Product Sans -->
       <style>
@@ -2143,6 +2166,7 @@ ${JSON.stringify(this.config, null, 2)}</pre
               format('woff2');
           font-weight: 400;
           font-style: normal;
+          font-display: swap;
         }
       </style>
 
