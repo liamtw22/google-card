@@ -5,6 +5,9 @@ export const sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease;
+    --theme-background: #ffffff;
+    --theme-text: #333333;
     display: block;
     position: fixed;
     top: 0;
@@ -14,6 +17,17 @@ export const sharedStyles = css`
     z-index: 1;
     font-family: 'Product Sans Regular', sans-serif;
     font-weight: 400;
+    transition: var(--theme-transition);
+  }
+
+  :host([data-theme="dark"]) {
+    --theme-background: #121212;
+    --theme-text: #ffffff;
+  }
+
+  html[data-theme="dark"] {
+    --theme-background: #121212;
+    --theme-text: #ffffff;
   }
 
   .error {
