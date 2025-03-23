@@ -1,5 +1,5 @@
 // src/GoogleCard.js
-import { LitElement, html, css } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
 import { DEFAULT_CONFIG, MIN_BRIGHTNESS } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
 import './components/BackgroundRotator';
@@ -176,6 +176,12 @@ export class GoogleCard extends LitElement {
     this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
+    
+    // Force style refresh on mount
+    setTimeout(() => {
+      this.updateCssVariables();
+      this.refreshComponents();
+    }, 100);
   }
 
   initializeProperties() {
@@ -296,6 +302,11 @@ export class GoogleCard extends LitElement {
     
     // Apply current theme on initial load
     document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+    
+    // Force a full refresh after connection
+    setTimeout(() => {
+      this.requestUpdate();
+    }, 500);
   }
 
   disconnectedCallback() {
@@ -629,6 +640,7 @@ export class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
+      console.error("Error in night mode transition:", error);
       // Restore previous state on error
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
@@ -767,11 +779,39 @@ export class GoogleCard extends LitElement {
     }
   }
 
+  updateBrightness() {
+    // Function to maintain compatibility with existing code
+    if (!this.hass) return;
+    
+    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+    if (!lightSensor) {
+      return;
+    }
+
+    // Get the brightness entity if available
+    const brightnessSensor = this.hass.states['sensor.liam_room_display_brightness_sensor'];
+    if (brightnessSensor && brightnessSensor.state !== 'unavailable' && brightnessSensor.state !== 'unknown') {
+      try {
+        const currentBrightness = parseInt(brightnessSensor.state);
+        if (!isNaN(currentBrightness) && currentBrightness > 0 && !this.isAdjustingBrightness) {
+          // Only update if not in night mode and not manually adjusting
+          if (!this.isInNightMode) {
+            this.brightness = currentBrightness;
+            this.visualBrightness = currentBrightness;
+          }
+        }
+      } catch (error) {
+        // Silently handle errors
+      }
+    }
+  }
+
   updated(changedProperties) {
     if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
+        this.updateBrightness();
       }
     }
   }
@@ -1000,9 +1040,12 @@ export class GoogleCard extends LitElement {
     `;
 
     return html`
-      <!-- Import all required fonts -->
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
-      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet">
+      <!-- Import all required fonts with crossorigin attribute -->
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
+      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+      
+      <!-- Ensure Iconify is loaded -->
+      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
       
       <!-- Fallback font style for Product Sans -->
       <style>
@@ -1011,6 +1054,7 @@ export class GoogleCard extends LitElement {
           src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
           font-weight: 400;
           font-style: normal;
+          font-display: swap;
         }
       </style>
       
