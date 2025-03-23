@@ -1067,6 +1067,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
       try {
         this.brightness > 1 && (this.previousBrightness = this.brightness), await this.toggleAutoBrightness(!1), 
         await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
+        await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0), 
         this.isInNightMode = !0, this.error = null;
       } catch (error) {
         this.error = `Error entering night mode: ${error.message}`;
@@ -1393,6 +1394,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
   }
   render() {
+    const hasValidAqi = this.aqi && "--" !== this.aqi;
     return html`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
@@ -1417,9 +1419,11 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
             />
             <span class="temperature">${this.temperature}</span>
           </div>
-          <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
-            ${this.aqi} AQI
-          </div>
+          ${hasValidAqi ? html`
+                <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
+                  ${this.aqi} AQI
+                </div>
+              ` : ""}
         </div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ""}
       </div>
