@@ -20,6 +20,15 @@ export const DEFAULT_CONFIG = {
   image_order: 'sorted',
   show_debug: false,
   sensor_update_delay: DEFAULT_SENSOR_UPDATE_DELAY,
+  device_name: 'mobile_app_liam_s_room_display', // Customizable device target
+  show_date: true,
+  show_time: true,
+  show_weather: true,
+  show_aqi: true,
+  weather_entity: 'weather.forecast_home',
+  aqi_entity: 'sensor.air_quality_index',
+  light_sensor_entity: 'sensor.liam_room_display_light_sensor',
+  brightness_sensor_entity: 'sensor.liam_room_display_brightness_sensor',
 };
 
 export const IMAGE_SOURCE_TYPES = {
