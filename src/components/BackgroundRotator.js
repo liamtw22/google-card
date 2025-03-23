@@ -176,9 +176,11 @@ export class BackgroundRotator extends LitElement {
       case IMAGE_SOURCE_TYPES.PICSUM:
         // For Picsum, return multiple URLs to allow rotation
         return Array.from({ length: 10 }, () => this.getImageUrl());
-      default:
+      default: {
+        // Added block scope with curly braces
         const url = this.getImageUrl();
         return url ? [url] : [];
+      }
     }
   }
 
