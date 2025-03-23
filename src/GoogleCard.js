@@ -30,11 +30,8 @@ export class GoogleCard extends LitElement {
       isAdjustingBrightness: { type: Boolean },
       lastBrightnessUpdateTime: { type: Number },
       touchStartY: { type: Number },
-      touchStartTime: { type: Number },
       touchStartX: { type: Number },
-      debugTouchInfo: { type: Object },
-      brightnessUpdateQueue: { type: Array },
-      isProcessingBrightnessUpdate: { type: Boolean },
+      touchStartTime: { type: Number },
       isDarkMode: { type: Boolean },
     };
   }
@@ -68,98 +65,6 @@ export class GoogleCard extends LitElement {
           width: 100%;
           height: 100%;
         }
-
-        .debug-info {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.9);
-          color: white;
-          padding: 20px;
-          border-radius: 10px;
-          font-family: monospace;
-          font-size: 12px;
-          width: 90%;
-          max-width: 600px;
-          max-height: 80%;
-          overflow: auto;
-          z-index: 9999;
-          box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .debug-info h2 {
-          margin-top: 0;
-          margin-bottom: 15px;
-          color: #fff;
-          text-align: center;
-          border-bottom: 1px solid #444;
-          padding-bottom: 10px;
-        }
-        
-        .debug-info h3 {
-          margin-top: 15px;
-          margin-bottom: 10px;
-          color: #76d275;
-          border-bottom: 1px dotted #444;
-          padding-bottom: 5px;
-        }
-        
-        .debug-info h4 {
-          margin-top: 15px;
-          margin-bottom: 5px;
-          color: #80deea;
-        }
-
-        .debug-info p {
-          margin: 5px 0;
-          line-height: 1.3;
-        }
-
-        .debug-info button {
-          background: #333;
-          color: white;
-          border: 1px solid #555;
-          border-radius: 5px;
-          padding: 5px 10px;
-          margin: 0 2px;
-          cursor: pointer;
-          font-family: monospace;
-          font-size: 12px;
-          transition: background 0.2s;
-        }
-        
-        .debug-info button:hover {
-          background: #444;
-        }
-        
-        .debug-info button:active {
-          background: #222;
-        }
-
-        .debug-info pre {
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          background: rgba(0, 0, 0, 0.3);
-          padding: 10px;
-          border-radius: 5px;
-          font-size: 11px;
-          margin: 5px 0;
-        }
-        
-        .debug-info ul {
-          margin: 5px 0;
-          padding-left: 20px;
-        }
-        
-        .debug-info li {
-          margin: 3px 0;
-        }
-        
-        /* Style for strong tags */
-        .debug-info strong {
-          color: #ffab40;
-        }
       `
     ];
   }
@@ -170,18 +75,11 @@ export class GoogleCard extends LitElement {
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
     this.brightnessUpdateQueue = [];
     this.isProcessingBrightnessUpdate = false;
-    this.debugActiveTab = 'main'; // For the tabbed debug view
     
-    // Add theme detection
+    // Theme detection
     this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
-    
-    // Force style refresh on mount
-    setTimeout(() => {
-      this.updateCssVariables();
-      this.refreshComponents();
-    }, 100);
   }
 
   initializeProperties() {
@@ -206,17 +104,33 @@ export class GoogleCard extends LitElement {
     this.brightnessCardDismissTimer = null;
     this.brightnessStabilizeTimer = null;
     this.timeUpdateInterval = null;
-    this.nightModeSource = null; // Can be 'sensor' or 'manual'
-    this.debugTouchInfo = {
-      touchStartY: 0,
-      currentY: 0,
-      deltaY: 0,
-      lastSwipeDirection: 'none',
-      swipeCount: 0,
-    };
+    this.nightModeSource = null;
 
     this.updateScreenSize();
     this.updateTime();
+  }
+
+  // Home Assistant configuration
+  static getConfigElement() {
+    return document.createElement('google-card-editor');
+  }
+
+  static getStubConfig() {
+    return {
+      image_url: 'https://source.unsplash.com/random',
+      display_time: 15,
+      crossfade_time: 3,
+      image_fit: 'contain',
+      show_date: true,
+      show_time: true,
+      show_weather: true,
+      show_aqi: true,
+      weather_entity: 'weather.forecast_home',
+      aqi_entity: 'sensor.air_quality_index',
+      device_name: 'mobile_app_device',
+      light_sensor_entity: 'sensor.light_sensor',
+      brightness_sensor_entity: 'sensor.brightness_sensor',
+    };
   }
 
   setConfig(config) {
@@ -231,23 +145,17 @@ export class GoogleCard extends LitElement {
     };
 
     this.showDebugInfo = this.config.show_debug;
-    
-    // Set CSS variables based on config
     this.updateCssVariables();
   }
   
   updateCssVariables() {
     if (!this.config) return;
     
-    // Set crossfade time variable for background transitions
     this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
-    
-    // Add theme-specific variables
     this.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
     this.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
     this.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
     
-    // Force update CSS variables on document level (for global theme)
     document.documentElement.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
     document.documentElement.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
     document.documentElement.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
@@ -257,37 +165,23 @@ export class GoogleCard extends LitElement {
     const newIsDarkMode = e.matches;
     if (this.isDarkMode !== newIsDarkMode) {
       this.isDarkMode = newIsDarkMode;
-      this.requestUpdate();
-      
-      // Force update on CSS variables
       this.updateCssVariables();
-      
-      // Force a refresh of key components
       this.refreshComponents();
+      this.requestUpdate();
     }
   }
 
   refreshComponents() {
-    // Remove and re-add key components to force refresh
+    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+    
+    // Force refresh of key components
     const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
     const weatherClock = this.shadowRoot.querySelector('weather-clock');
     const controls = this.shadowRoot.querySelector('google-controls');
     
-    if (backgroundRotator) {
-      backgroundRotator.requestUpdate();
-      backgroundRotator.updateCssVariables?.();
-    }
-    
-    if (weatherClock) {
-      weatherClock.requestUpdate();
-    }
-    
-    if (controls) {
-      controls.requestUpdate();
-    }
-    
-    // Apply theme to document
-    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+    if (backgroundRotator) backgroundRotator.requestUpdate();
+    if (weatherClock) weatherClock.requestUpdate();
+    if (controls) controls.requestUpdate();
   }
 
   connectedCallback() {
@@ -303,10 +197,11 @@ export class GoogleCard extends LitElement {
     // Apply current theme on initial load
     document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
     
-    // Force a full refresh after connection
+    // Force initial refresh to ensure everything loads properly
     setTimeout(() => {
-      this.requestUpdate();
-    }, 500);
+      this.updateCssVariables();
+      this.refreshComponents();
+    }, 100);
   }
 
   disconnectedCallback() {
@@ -371,32 +266,15 @@ export class GoogleCard extends LitElement {
       this.touchStartY = event.touches[0].clientY;
       this.touchStartX = event.touches[0].clientX;
       this.touchStartTime = Date.now();
-      this.debugTouchInfo = {
-        ...this.debugTouchInfo,
-        touchStartY: this.touchStartY,
-        currentY: this.touchStartY,
-        deltaY: 0,
-      };
-      this.requestUpdate();
     }
   }
 
   handleTouchMove(event) {
     if (event.touches.length === 1) {
-      const currentY = event.touches[0].clientY;
-      const deltaY = this.touchStartY - currentY;
-      this.debugTouchInfo = {
-        ...this.debugTouchInfo,
-        currentY,
-        deltaY,
-      };
-      
       // Prevent default scroll behavior only when showing UI overlays
       if (this.showBrightnessCard || this.showOverlay) {
         event.preventDefault();
       }
-      
-      this.requestUpdate();
     }
   }
 
@@ -408,22 +286,10 @@ export class GoogleCard extends LitElement {
       const velocityY = Math.abs(deltaY) / deltaTime;
       const velocityX = Math.abs(deltaX) / deltaTime;
       
-      this.debugTouchInfo = {
-        ...this.debugTouchInfo,
-        deltaY,
-        deltaX,
-        velocityY: velocityY.toFixed(2),
-        velocityX: velocityX.toFixed(2),
-        screenWidth: window.innerWidth,
-        touchStartX: this.touchStartX,
-        swipeCount: this.debugTouchInfo.swipeCount + 1,
-      };
-      
       // If in manually activated night mode, any touch/tap should exit night mode
       if (this.isNightMode && this.nightModeSource === 'manual') {
         // Only minor movements should count as taps, not full swipes
         if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) {
-          this.debugTouchInfo.lastSwipeDirection = 'tap';
           this.handleNightModeTransition(false);
           return;
         }
@@ -436,8 +302,6 @@ export class GoogleCard extends LitElement {
           this.touchStartX < window.innerWidth * 0.2 && // Started from the left edge (20% of screen)
           deltaX < 0) { // Left to right swipe (negative deltaX)
         
-        this.debugTouchInfo.lastSwipeDirection = 'right-edge';
-        
         // Toggle night mode with manual source
         if (!this.isNightMode) {
           this.handleNightModeTransition(true, 'manual');
@@ -445,8 +309,6 @@ export class GoogleCard extends LitElement {
       }
       // Check for vertical swipe
       else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocityY > 0.2) {
-        this.debugTouchInfo.lastSwipeDirection = deltaY > 0 ? 'up' : 'down';
-
         if (deltaY > 0 && !this.showBrightnessCard && !this.showOverlay) {
           // Swipe up - show overlay
           this.handleOverlayToggle(true);
@@ -458,8 +320,6 @@ export class GoogleCard extends LitElement {
           }
         }
       }
-      
-      this.requestUpdate();
     }
   }
 
@@ -595,15 +455,16 @@ export class GoogleCard extends LitElement {
     if (!this.hass) return;
     
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
+    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
     
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+    await this.hass.callService('notify', deviceName, {
       message: 'command_screen_brightness_level',
       data: {
         command: brightness
       }
     });
 
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
+    await this.hass.callService('notify', deviceName, {
       message: 'command_update_sensors'
     });
 
@@ -640,7 +501,6 @@ export class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
-      console.error("Error in night mode transition:", error);
       // Restore previous state on error
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
@@ -654,9 +514,16 @@ export class GoogleCard extends LitElement {
       this.previousBrightness = this.brightness;
     }
     
+    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
+    
     try {
       // First disable auto brightness
-      await this.toggleAutoBrightness(false);
+      await this.hass.callService('notify', deviceName, {
+        message: 'command_auto_screen_brightness',
+        data: {
+          command: 'turn_off'
+        }
+      });
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Set to minimum brightness
@@ -664,7 +531,12 @@ export class GoogleCard extends LitElement {
       
       // Then enable auto brightness for night mode
       await new Promise(resolve => setTimeout(resolve, 200));
-      await this.toggleAutoBrightness(true);
+      await this.hass.callService('notify', deviceName, {
+        message: 'command_auto_screen_brightness',
+        data: {
+          command: 'turn_on'
+        }
+      });
     } catch (error) {
       console.error("Error entering night mode:", error);
       throw error;
@@ -672,9 +544,16 @@ export class GoogleCard extends LitElement {
   }
 
   async exitNightMode() {
+    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
+    
     try {
       // First disable auto brightness
-      await this.toggleAutoBrightness(false);
+      await this.hass.callService('notify', deviceName, {
+        message: 'command_auto_screen_brightness',
+        data: {
+          command: 'turn_off'
+        }
+      });
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Restore previous brightness or use a reasonable default
@@ -689,17 +568,6 @@ export class GoogleCard extends LitElement {
       console.error("Error exiting night mode:", error);
       throw error;
     }
-  }
-
-  async toggleAutoBrightness(enabled) {
-    if (!this.hass) return;
-    
-    await this.hass.callService('notify', 'mobile_app_liam_s_room_display', {
-      message: 'command_auto_screen_brightness',
-      data: {
-        command: enabled ? 'turn_on' : 'turn_off'
-      }
-    });
   }
 
   handleBrightnessCardToggle = (event) => {
@@ -755,7 +623,8 @@ export class GoogleCard extends LitElement {
   updateNightMode() {
     if (!this.hass) return;
     
-    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
+    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+    const lightSensor = this.hass.states[lightSensorEntity];
     if (!lightSensor) {
       return;
     }
@@ -779,222 +648,13 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  updateBrightness() {
-    // Function to maintain compatibility with existing code
-    if (!this.hass) return;
-    
-    const lightSensor = this.hass.states['sensor.liam_room_display_light_sensor'];
-    if (!lightSensor) {
-      return;
-    }
-
-    // Get the brightness entity if available
-    const brightnessSensor = this.hass.states['sensor.liam_room_display_brightness_sensor'];
-    if (brightnessSensor && brightnessSensor.state !== 'unavailable' && brightnessSensor.state !== 'unknown') {
-      try {
-        const currentBrightness = parseInt(brightnessSensor.state);
-        if (!isNaN(currentBrightness) && currentBrightness > 0 && !this.isAdjustingBrightness) {
-          // Only update if not in night mode and not manually adjusting
-          if (!this.isInNightMode) {
-            this.brightness = currentBrightness;
-            this.visualBrightness = currentBrightness;
-          }
-        }
-      } catch (error) {
-        // Silently handle errors
-      }
-    }
-  }
-
   updated(changedProperties) {
     if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
-        this.updateBrightness();
       }
     }
-  }
-
-  renderDebugInfo() {
-    if (!this.showDebugInfo) return '';
-    
-    // Add underscore prefix to indicate intentionally unused variables
-    const _backgroundRotator = this.shadowRoot.querySelector('background-rotator');
-    const _weatherClock = this.shadowRoot.querySelector('weather-clock');
-    
-    return html`
-      <div class="debug-info">
-        <h2>Google Card Debug Info</h2>
-        <div style="display: flex; justify-content: space-between;">
-          <button @click="${() => this.handleDebugTabClick('main')}">Main</button>
-          <button @click="${() => this.handleDebugTabClick('touch')}">Touch</button>
-          <button @click="${() => this.handleDebugTabClick('background')}">Background</button>
-          <button @click="${() => this.handleDebugTabClick('weather')}">Weather</button>
-          <button @click="${() => this.handleDebugTabClick('config')}">Config</button>
-        </div>
-        <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
-          ${this.renderDebugTab()}
-        </div>
-      </div>
-    `;
-  }
-  
-  handleDebugTabClick(tab) {
-    this.debugActiveTab = tab;
-    this.requestUpdate();
-  }
-  
-  renderDebugTab() {
-    if (!this.debugActiveTab) {
-      this.debugActiveTab = 'main';
-    }
-    
-    switch (this.debugActiveTab) {
-      case 'main':
-        return this.renderMainDebugInfo();
-      case 'touch':
-        return this.renderTouchDebugInfo();
-      case 'background':
-        return this.renderBackgroundDebugInfo();
-      case 'weather':
-        return this.renderWeatherDebugInfo();
-      case 'config':
-        return this.renderConfigDebugInfo();
-      default:
-        return this.renderMainDebugInfo();
-    }
-  }
-  
-  renderMainDebugInfo() {
-    return html`
-      <h3>Main Information</h3>
-      <p><strong>Screen Width:</strong> ${this.screenWidth}px</p>
-      <p><strong>Screen Height:</strong> ${this.screenHeight}px</p>
-      <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}</p>
-      <p><strong>Dark Mode:</strong> ${this.isDarkMode ? 'Enabled' : 'Disabled'}</p>
-      
-      <h4>Night Mode:</h4>
-      <p><strong>Night Mode:</strong> ${this.isNightMode ? 'Active' : 'Inactive'}</p>
-      <p><strong>Is In Night Mode:</strong> ${this.isInNightMode ? 'Yes' : 'No'}</p>
-      <p><strong>Night Mode Source:</strong> ${this.nightModeSource || 'None'}</p>
-      <p><small>${this.nightModeSource === 'sensor' ? 
-        'Sensor-activated night mode will turn off when room brightens' : 
-        this.nightModeSource === 'manual' ? 
-        'Manually-activated night mode will turn off when screen is tapped' : 
-        ''}</small></p>
-      
-      <h4>Brightness:</h4>
-      <p><strong>Current Brightness:</strong> ${this.brightness}</p>
-      <p><strong>Visual Brightness:</strong> ${this.visualBrightness}</p>
-      <p><strong>Previous Brightness:</strong> ${this.previousBrightness}</p>
-      <p><strong>Is Adjusting Brightness:</strong> ${this.isAdjustingBrightness ? 'Yes' : 'No'}</p>
-      <p><strong>Last Brightness Update:</strong> ${new Date(this.lastBrightnessUpdateTime).toLocaleString()}</p>
-      
-      <h4>UI States:</h4>
-      <p><strong>Show Overlay:</strong> ${this.showOverlay ? 'Yes' : 'No'}</p>
-      <p><strong>Overlay Visible:</strong> ${this.isOverlayVisible ? 'Yes' : 'No'}</p>
-      <p><strong>Overlay Transitioning:</strong> ${this.isOverlayTransitioning ? 'Yes' : 'No'}</p>
-      <p><strong>Show Brightness Card:</strong> ${this.showBrightnessCard ? 'Yes' : 'No'}</p>
-      <p><strong>Brightness Card Visible:</strong> ${this.isBrightnessCardVisible ? 'Yes' : 'No'}</p>
-      <p><strong>Brightness Card Transitioning:</strong> ${this.isBrightnessCardTransitioning ? 'Yes' : 'No'}</p>
-    `;
-  }
-  
-  renderTouchDebugInfo() {
-    return html`
-      <h3>Touch Information</h3>
-      <p><strong>Last Swipe Direction:</strong> ${this.debugTouchInfo.lastSwipeDirection || 'None'}</p>
-      <p><strong>Swipe Count:</strong> ${this.debugTouchInfo.swipeCount || 0}</p>
-      <p><strong>Touch Start X:</strong> ${this.debugTouchInfo.touchStartX?.toFixed(1) || 0}px</p>
-      <p><strong>Touch Start Y:</strong> ${this.debugTouchInfo.touchStartY?.toFixed(1) || 0}px</p>
-      <p><strong>Current Y:</strong> ${this.debugTouchInfo.currentY?.toFixed(1) || 0}px</p>
-      <p><strong>Delta X:</strong> ${this.debugTouchInfo.deltaX?.toFixed(1) || 0}px</p>
-      <p><strong>Delta Y:</strong> ${this.debugTouchInfo.deltaY?.toFixed(1) || 0}px</p>
-      <p><strong>Velocity X:</strong> ${this.debugTouchInfo.velocityX || 0}px/ms</p>
-      <p><strong>Velocity Y:</strong> ${this.debugTouchInfo.velocityY || 0}px/ms</p>
-      <p><strong>Gesture Instructions:</strong></p>
-      <ul>
-        <li>Swipe up from bottom: Show overlay controls</li>
-        <li>Swipe down: Dismiss overlay/controls</li>
-        <li>Swipe right from left edge: Activate manual night mode</li>
-        <li>Tap screen: Turn off manual night mode</li>
-      </ul>
-      
-      <h4>Night Mode Behavior:</h4>
-      <ul>
-        <li><strong>Manual Night Mode:</strong> Activated by swiping from left edge. Can only be dismissed by tapping screen. Ignores room brightness.</li>
-        <li><strong>Sensor Night Mode:</strong> Activated when room is dark. Automatically deactivates when room brightens.</li>
-      </ul>
-    `;
-  }
-  
-  renderBackgroundDebugInfo() {
-    // Get background rotator debug info if possible
-    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
-    let imageA = 'Not available';
-    let imageB = 'Not available';
-    let imageList = [];
-    
-    if (backgroundRotator) {
-      imageA = backgroundRotator.imageA;
-      imageB = backgroundRotator.imageB;
-      imageList = backgroundRotator.imageList || [];
-    }
-    
-    return html`
-      <h3>Background Information</h3>
-      <p><strong>Current Image Index:</strong> ${backgroundRotator?.currentImageIndex || -1}</p>
-      <p><strong>Image List Length:</strong> ${imageList.length}</p>
-      <p><strong>Active Image:</strong> ${backgroundRotator?.activeImage || 'None'}</p>
-      <p><strong>Is Transitioning:</strong> ${backgroundRotator?.isTransitioning ? 'Yes' : 'No'}</p>
-      <p><strong>Source Type:</strong> ${backgroundRotator?.getImageSourceType?.() || 'unknown'}</p>
-      <p><strong>Error:</strong> ${backgroundRotator?.error || 'None'}</p>
-      
-      <h4>Image A:</h4>
-      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">${imageA}</div>
-      
-      <h4>Image B:</h4>
-      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">${imageB}</div>
-      
-      <h4>Image List (first 3):</h4>
-      <div style="max-width: 100%; word-break: break-all; font-size: 11px;">
-        ${imageList.slice(0, 3).map(url => html`<div>${url}</div>`)}
-        ${imageList.length > 3 ? html`<div>...and ${imageList.length - 3} more</div>` : ''}
-      </div>
-    `;
-  }
-  
-  renderWeatherDebugInfo() {
-    // Get weather clock debug info if possible
-    const weatherClock = this.shadowRoot.querySelector('weather-clock');
-    
-    return html`
-      <h3>Weather Information</h3>
-      <p><strong>Date:</strong> ${weatherClock?.date || 'N/A'}</p>
-      <p><strong>Time:</strong> ${weatherClock?.time || 'N/A'}</p>
-      <p><strong>Temperature:</strong> ${weatherClock?.temperature || 'N/A'}</p>
-      <p><strong>Weather Icon:</strong> ${weatherClock?.weatherIcon || 'N/A'}</p>
-      <p><strong>AQI:</strong> ${weatherClock?.aqi || 'N/A'}</p>
-      <p><strong>Weather Entity:</strong> ${weatherClock?.weatherEntity || 'N/A'}</p>
-      <p><strong>AQI Entity:</strong> ${weatherClock?.aqiEntity || 'N/A'}</p>
-      <p><strong>Error:</strong> ${weatherClock?.error || 'None'}</p>
-      
-      <div style="margin-top: 15px;">
-        <h4>Light Sensor:</h4>
-        <p>The Google Card uses the light sensor to determine night mode.</p>
-        <p><strong>Sensor Entity:</strong> sensor.liam_room_display_light_sensor</p>
-        <p><strong>Current Value:</strong> ${this.hass?.states['sensor.liam_room_display_light_sensor']?.state || 'N/A'}</p>
-        <p><small>Night mode activates when sensor value is 0</small></p>
-      </div>
-    `;
-  }
-  
-  renderConfigDebugInfo() {
-    return html`
-      <h3>Configuration</h3>
-      <pre style="font-size: 11px; overflow: auto; max-height: 300px;">${JSON.stringify(this.config, null, 2)}</pre>
-    `;
   }
 
   render() {
@@ -1002,6 +662,7 @@ export class GoogleCard extends LitElement {
       <night-mode 
         .currentTime=${this.currentTime}
         .hass=${this.hass}
+        .config=${this.config}
         .brightness=${this.brightness}
         .previousBrightness=${this.previousBrightness}
         .isInNightMode=${this.isInNightMode}
@@ -1014,15 +675,16 @@ export class GoogleCard extends LitElement {
         .config=${this.config}
         .screenWidth=${this.screenWidth}
         .screenHeight=${this.screenHeight}
-        .showDebugInfo=${false} <!-- Never show component's own debug, we use consolidated view -->
       ></background-rotator>
 
       <weather-clock 
         .hass=${this.hass}
+        .config=${this.config}
       ></weather-clock>
 
       <google-controls
         .hass=${this.hass}
+        .config=${this.config}
         .showOverlay=${this.showOverlay}
         .isOverlayVisible=${this.isOverlayVisible}
         .isOverlayTransitioning=${this.isOverlayTransitioning}
@@ -1040,12 +702,9 @@ export class GoogleCard extends LitElement {
     `;
 
     return html`
-      <!-- Import all required fonts with crossorigin attribute -->
+      <!-- Import all required fonts -->
       <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
       <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
-      
-      <!-- Ensure Iconify is loaded -->
-      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
       
       <!-- Fallback font style for Product Sans -->
       <style>
@@ -1061,7 +720,6 @@ export class GoogleCard extends LitElement {
       <div class="touch-container">
         <div class="content-wrapper">
           ${mainContent}
-          ${this.showDebugInfo ? this.renderDebugInfo() : ''}
         </div>
       </div>
     `;
@@ -1069,12 +727,3 @@ export class GoogleCard extends LitElement {
 }
 
 customElements.define('google-card', GoogleCard);
-
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'google-card',
-  name: 'Google Card',
-  description: 'A Google Nest Hub-inspired card for Home Assistant',
-  preview: true,
-  documentationURL: 'https://github.com/liamtw22/google-card',
-});
