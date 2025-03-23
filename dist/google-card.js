@@ -1,4 +1,4 @@
-import { LitElement as LitElement$1, css as css$1, html as html$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
+import { LitElement as LitElement$1, html as html$1, css as css$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
 
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
@@ -1240,7 +1240,7 @@ const weatherClockStyles = css`
   }
 `;
 
-customElements.define("weather-clock", class WeatherClock extends LitElement {
+customElements.define("weather-clock", class WeatherClock extends LitElement$1 {
   static get properties() {
     return {
       hass: {
@@ -1394,14 +1394,16 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
   render() {
     const hasValidAqi = this.aqi && "--" !== this.aqi;
-    return html`
+    return html$1`
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <link
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <div class="weather-component">
         <div class="left-column">
@@ -1414,17 +1416,17 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
               src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
               class="weather-icon"
               alt="Weather icon"
-              onerror="this.src='https://basmilius.github.io/weather-icons/production/fill/all/not-available.svg'"
+              onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
             />
             <span class="temperature">${this.temperature}</span>
           </div>
-          ${hasValidAqi ? html`
+          ${hasValidAqi ? html$1`
                 <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
                   ${this.aqi} AQI
                 </div>
               ` : ""}
         </div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+        ${this.error ? html$1`<div class="error">${this.error}</div>` : ""}
       </div>
     `;
   }
