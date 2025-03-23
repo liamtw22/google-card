@@ -1,5 +1,5 @@
 // src/components/NightMode.js
-import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
 import { nightModeStyles } from '../styles/NightModeStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import {
@@ -241,10 +241,12 @@ export class NightMode extends LitElement {
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <link
         href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
         rel="stylesheet"
+        crossorigin="anonymous"
       />
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
