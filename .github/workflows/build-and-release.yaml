@@ -24,7 +24,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm ci
           echo "Dependencies installed successfully"
       
       - name: Lint and Format
@@ -46,11 +46,13 @@ jobs:
           # Ensure each component registers itself correctly
           echo 'Fixing Google Card imports and exports'
           for component_file in src/components/*.js; do
-            component_name=$(basename $component_file .js)
+            component_name=$(basename $component_file .js | tr '[:upper:]' '[:lower:]')
             class_name=$(grep -oP "export\s+class\s+\K\w+" $component_file || echo '')
             if [ ! -z "$class_name" ]; then
               # Ensure component defines itself with custom elements
-              grep -q "customElements.define" $component_file || echo "customElements.define('${component_name,,}', $class_name);" >> $component_file
+              if ! grep -q "customElements.define" $component_file; then
+                echo "customElements.define('${component_name}', $class_name);" >> $component_file
+              fi
             fi
           done
           
@@ -62,25 +64,30 @@ jobs:
           sed -i 's/IMAGE_SOURCE_TYPES_PICSUM/IMAGE_SOURCE_TYPES.PICSUM/g' src/components/BackgroundRotator.js
           sed -i 's/IMAGE_SOURCE_TYPES_URL/IMAGE_SOURCE_TYPES.URL/g' src/components/BackgroundRotator.js
           
-          # Fix the curly braces around case statements in BackgroundRotator.js
-          echo 'Adding curly braces around case statements in BackgroundRotator.js'
-          sed -i 's/case IMAGE_SOURCE_TYPES.PICSUM:/case IMAGE_SOURCE_TYPES.PICSUM: {/g' src/components/BackgroundRotator.js
-          sed -i 's/return Array.from/  return Array.from/g' src/components/BackgroundRotator.js
-          sed -i 's/Array.from({ length: 10 }, () => this.getImageUrl());/Array.from({ length: 10 }, () => this.getImageUrl());\n      }/g' src/components/BackgroundRotator.js
+          # Fix case statements in BackgroundRotator.js
+          if grep -q "case IMAGE_SOURCE_TYPES.PICSUM:" src/components/BackgroundRotator.js; then
+            sed -i '/case IMAGE_SOURCE_TYPES.PICSUM:/s/:/: {/' src/components/BackgroundRotator.js
+            sed -i '/return Array.from.*getImageUrl()/s/$/;\\n      }/' src/components/BackgroundRotator.js
+          fi
           
-          sed -i 's/default:/default: {/g' src/components/BackgroundRotator.js
-          sed -i 's/const url = this.getImageUrl();/  const url = this.getImageUrl();/g' src/components/BackgroundRotator.js
-          sed -i 's/return url ? \[ url \] : \[\];/  return url ? \[ url \] : \[\];\n      }/g' src/components/BackgroundRotator.js
+          if grep -q "default:" src/components/BackgroundRotator.js; then
+            sed -i '/default:/s/:/: {/' src/components/BackgroundRotator.js
+            sed -i '/return url ? \[/s/\];/\];\n      }/' src/components/BackgroundRotator.js
+          fi
           
-          # Fix arrow functions in GoogleCard.js by using proper binding in constructor
+          # Fix arrow functions in GoogleCard.js
           echo 'Converting arrow functions in GoogleCard.js to bound methods'
-          sed -i 's/handleBrightnessCardToggle *=/handleBrightnessCardToggle/g' src/GoogleCard.js
-          sed -i 's/handleBrightnessChange *=/handleBrightnessChange/g' src/GoogleCard.js
-          sed -i 's/handleDebugToggle *=/handleDebugToggle/g' src/GoogleCard.js
-          sed -i 's/handleNightModeExit *=/handleNightModeExit/g' src/GoogleCard.js
-          
-          # Add method binding in constructor
-          sed -i '/this.boundHandleThemeChange = this.handleThemeChange.bind(this);/a\    // Bind event handler methods to preserve this context\n    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);\n    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);\n    this.handleDebugToggle = this.handleDebugToggle.bind(this);\n    this.handleNightModeExit = this.handleNightModeExit.bind(this);' src/GoogleCard.js
+          if grep -q "handleBrightnessCardToggle *= *(" src/GoogleCard.js; then
+            sed -i 's/\(handleBrightnessCardToggle\) *= *(/\1(/g' src/GoogleCard.js
+            sed -i 's/\(handleBrightnessChange\) *= *(/\1(/g' src/GoogleCard.js
+            sed -i 's/\(handleDebugToggle\) *= *(/\1(/g' src/GoogleCard.js
+            sed -i 's/\(handleNightModeExit\) *= *(/\1(/g' src/GoogleCard.js
+            
+            # Add binding in constructor if not already there
+            if ! grep -q "this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this)" src/GoogleCard.js; then
+              sed -i '/this.boundHandleThemeChange = this.handleThemeChange.bind(this);/a\\n    // Bind event handler methods\n    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);\n    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);\n    this.handleDebugToggle = this.handleDebugToggle.bind(this);\n    this.handleNightModeExit = this.handleNightModeExit.bind(this);' src/GoogleCard.js
+            fi
+          fi
           
           echo "Source files modified successfully"
       
