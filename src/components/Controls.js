@@ -1,5 +1,6 @@
 // src/components/Controls.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { MIN_BRIGHTNESS, MAX_BRIGHTNESS, LONG_PRESS_TIMEOUT } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
