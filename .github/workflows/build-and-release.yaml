@@ -41,28 +41,46 @@ jobs:
           npm run lint:fix
           echo "Linting and formatting completed successfully"
       
-      - name: Modify source files for proper component order
+      - name: Modify source files
         run: |
-          # Ensure we register components in the correct order
-          echo 'Fixing component registration order in GoogleCard.js'
-          sed -i 's/customElements.define("google-card", GoogleCard);/\/\/ Register custom elements before registering the main card\ncustomElements.define("background-rotator", BackgroundRotator);\ncustomElements.define("google-controls", Controls);\ncustomElements.define("night-mode", NightMode);\ncustomElements.define("weather-clock", WeatherClock);\ncustomElements.define("google-card", GoogleCard);\n\n\/\/ Make GoogleCard available to the outside world\nwindow.customCards = window.customCards || [];\nwindow.customCards.push({\n  type: "google-card",\n  name: "Google Card",\n  description: "A card that mimics Google\'s UI for photo frame displays",\n  preview: true\n});/g' src/GoogleCard.js || true
+          # Ensure each component registers itself correctly
+          echo 'Fixing Google Card imports and exports'
+          for component_file in src/components/*.js; do
+            component_name=$(basename $component_file .js)
+            class_name=$(grep -oP "export\s+class\s+\K\w+" $component_file || echo '')
+            if [ ! -z "$class_name" ]; then
+              # Ensure component defines itself with custom elements
+              grep -q "customElements.define" $component_file || echo "customElements.define('${component_name,,}', $class_name);" >> $component_file
+            fi
+          done
           
-          # Fix the IMAGE_SOURCE_TYPES structure in constants.js
-          echo 'Updating IMAGE_SOURCE_TYPES to use proper object structure'
-          sed -i 's/export const IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source";\nexport const IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api";\nexport const IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api";\nexport const IMAGE_SOURCE_TYPES_PICSUM = "picsum";\nexport const IMAGE_SOURCE_TYPES_URL = "url";/export const IMAGE_SOURCE_TYPES = {\n  MEDIA_SOURCE: "media-source",\n  UNSPLASH_API: "unsplash-api",\n  IMMICH_API: "immich-api",\n  PICSUM: "picsum",\n  URL: "url"\n};/g' src/constants.js || true
-          
-          # Update BackgroundRotator.js to use the new IMAGE_SOURCE_TYPES object
-          echo 'Updating BackgroundRotator.js to use the new IMAGE_SOURCE_TYPES object'
+          # Update BackgroundRotator.js to use the IMAGE_SOURCE_TYPES object
+          echo 'Updating BackgroundRotator.js to use proper IMAGE_SOURCE_TYPES object'
           sed -i 's/IMAGE_SOURCE_TYPES_MEDIA_SOURCE/IMAGE_SOURCE_TYPES.MEDIA_SOURCE/g' src/components/BackgroundRotator.js
           sed -i 's/IMAGE_SOURCE_TYPES_UNSPLASH_API/IMAGE_SOURCE_TYPES.UNSPLASH_API/g' src/components/BackgroundRotator.js
           sed -i 's/IMAGE_SOURCE_TYPES_IMMICH_API/IMAGE_SOURCE_TYPES.IMMICH_API/g' src/components/BackgroundRotator.js
           sed -i 's/IMAGE_SOURCE_TYPES_PICSUM/IMAGE_SOURCE_TYPES.PICSUM/g' src/components/BackgroundRotator.js
           sed -i 's/IMAGE_SOURCE_TYPES_URL/IMAGE_SOURCE_TYPES.URL/g' src/components/BackgroundRotator.js
           
-          # Fix the curly braces around the case statement in BackgroundRotator.js
-          echo 'Adding curly braces around case statement in BackgroundRotator.js'
-          sed -i 's/default:\n      const url = this.getImageUrl();/default: {\n      const url = this.getImageUrl();/g' src/components/BackgroundRotator.js
-          sed -i 's/return url ? \[ url \] : \[\];/return url ? \[ url \] : \[\];\n      }/g' src/components/BackgroundRotator.js
+          # Fix the curly braces around case statements in BackgroundRotator.js
+          echo 'Adding curly braces around case statements in BackgroundRotator.js'
+          sed -i 's/case IMAGE_SOURCE_TYPES.PICSUM:/case IMAGE_SOURCE_TYPES.PICSUM: {/g' src/components/BackgroundRotator.js
+          sed -i 's/return Array.from/  return Array.from/g' src/components/BackgroundRotator.js
+          sed -i 's/Array.from({ length: 10 }, () => this.getImageUrl());/Array.from({ length: 10 }, () => this.getImageUrl());\n      }/g' src/components/BackgroundRotator.js
+          
+          sed -i 's/default:/default: {/g' src/components/BackgroundRotator.js
+          sed -i 's/const url = this.getImageUrl();/  const url = this.getImageUrl();/g' src/components/BackgroundRotator.js
+          sed -i 's/return url ? \[ url \] : \[\];/  return url ? \[ url \] : \[\];\n      }/g' src/components/BackgroundRotator.js
+          
+          # Fix arrow functions in GoogleCard.js by using proper binding in constructor
+          echo 'Converting arrow functions in GoogleCard.js to bound methods'
+          sed -i 's/handleBrightnessCardToggle *=/handleBrightnessCardToggle/g' src/GoogleCard.js
+          sed -i 's/handleBrightnessChange *=/handleBrightnessChange/g' src/GoogleCard.js
+          sed -i 's/handleDebugToggle *=/handleDebugToggle/g' src/GoogleCard.js
+          sed -i 's/handleNightModeExit *=/handleNightModeExit/g' src/GoogleCard.js
+          
+          # Add method binding in constructor
+          sed -i '/this.boundHandleThemeChange = this.handleThemeChange.bind(this);/a\    // Bind event handler methods to preserve this context\n    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);\n    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);\n    this.handleDebugToggle = this.handleDebugToggle.bind(this);\n    this.handleNightModeExit = this.handleNightModeExit.bind(this);' src/GoogleCard.js
           
           echo "Source files modified successfully"
       
@@ -115,9 +133,10 @@ jobs:
             Release of version ${{ steps.get_version.outputs.version }}
             
             Changes in this release:
-            - Fixed component registration order in GoogleCard.js
+            - Fixed component registration and dependencies
             - Updated IMAGE_SOURCE_TYPES to use proper object structure
             - Added proper block scoping for case statements in switch blocks
+            - Converted arrow functions to properly bound methods
             - Resolved ESLint warnings
           draft: false
           prerelease: false
