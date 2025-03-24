@@ -494,5 +494,3 @@ export class Controls extends LitElement {
     `;
   }
 }
-
-customElements.define('google-controls', Controls);
