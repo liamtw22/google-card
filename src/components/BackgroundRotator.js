@@ -381,5 +381,3 @@ export class BackgroundRotator extends LitElement {
     `;
   }
 }
-
-customElements.define('background-rotator', BackgroundRotator);
