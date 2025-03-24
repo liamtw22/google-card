@@ -72,50 +72,93 @@ jobs:
           npm install
           echo "Dependencies installed successfully"
       
-      - name: Fix source files
+      - name: Fix GoogleCard.js
         run: |
-          # Fix GoogleCard.js arrow functions
-          echo "Fixing GoogleCard.js arrow functions"
-          if grep -q "handleBrightnessCardToggle *=" src/GoogleCard.js; then
-            sed -i 's/\(handleBrightnessCardToggle\) *=/\1/g' src/GoogleCard.js
-            sed -i 's/\(handleBrightnessChange\) *=/\1/g' src/GoogleCard.js
-            sed -i 's/\(handleDebugToggle\) *=/\1/g' src/GoogleCard.js
-            sed -i 's/\(handleNightModeExit\) *=/\1/g' src/GoogleCard.js
+          # Get content of GoogleCard.js
+          cat > fix_google_card.js << 'EOL'
+          const fs = require('fs');
+          
+          // Read the file
+          const filePath = 'src/GoogleCard.js';
+          let content = fs.readFileSync(filePath, 'utf8');
+          
+          // Fix arrow functions
+          if (content.includes('handleBrightnessCardToggle = ')) {
+            console.log('Fixing arrow functions');
+            content = content.replace(/(\w+)\s*=\s*\((.*?)\)\s*=>\s*{/g, '$1($2) {');
+          }
+          
+          // Make sure bindings have equal signs
+          if (content.includes('this.boundHandleThemeChange = this.handleThemeChange.bind(this);')) {
+            console.log('Adding method bindings to constructor');
             
-            # Add method binding in constructor
-            if ! grep -q "this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this)" src/GoogleCard.js; then
-              sed -i '/this.boundHandleThemeChange = this.handleThemeChange.bind(this);/a\
-              \n    // Bind event handler methods\n    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);\n    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);\n    this.handleDebugToggle = this.handleDebugToggle.bind(this);\n    this.handleNightModeExit = this.handleNightModeExit.bind(this);' src/GoogleCard.js
-            fi
-          fi
-          
-          # Fix constants in BackgroundRotator.js
-          echo "Fixing constants in BackgroundRotator.js"
-          if grep -q "IMAGE_SOURCE_TYPES_MEDIA_SOURCE" src/components/BackgroundRotator.js; then
-            sed -i 's/IMAGE_SOURCE_TYPES_MEDIA_SOURCE/IMAGE_SOURCE_TYPES.MEDIA_SOURCE/g' src/components/BackgroundRotator.js
-            sed -i 's/IMAGE_SOURCE_TYPES_UNSPLASH_API/IMAGE_SOURCE_TYPES.UNSPLASH_API/g' src/components/BackgroundRotator.js
-            sed -i 's/IMAGE_SOURCE_TYPES_IMMICH_API/IMAGE_SOURCE_TYPES.IMMICH_API/g' src/components/BackgroundRotator.js
-            sed -i 's/IMAGE_SOURCE_TYPES_PICSUM/IMAGE_SOURCE_TYPES.PICSUM/g' src/components/BackgroundRotator.js
-            sed -i 's/IMAGE_SOURCE_TYPES_URL/IMAGE_SOURCE_TYPES.URL/g' src/components/BackgroundRotator.js
-          fi
-          
-          # Fix case statements with braces
-          echo "Fixing case statements in BackgroundRotator.js"
-          if grep -q "case IMAGE_SOURCE_TYPES.PICSUM:" src/components/BackgroundRotator.js; then
-            # Add braces to PICSUM case if not already there
-            if ! grep -q "case IMAGE_SOURCE_TYPES.PICSUM: {" src/components/BackgroundRotator.js; then
-              sed -i '/case IMAGE_SOURCE_TYPES.PICSUM:/s/:/: {/' src/components/BackgroundRotator.js
-              sed -i '/Array.from({ length: 10 }, () => this.getImageUrl());/s/$/\n      }/' src/components/BackgroundRotator.js
-            fi
+            const bindingCode = `
+    // Bind event handler methods to preserve 'this' context
+    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleDebugToggle = this.handleDebugToggle.bind(this);
+    this.handleNightModeExit = this.handleNightModeExit.bind(this);`;
             
-            # Add braces to default case if not already there
-            if grep -q "default:" src/components/BackgroundRotator.js && ! grep -q "default: {" src/components/BackgroundRotator.js; then
-              sed -i '/default:/s/:/: {/' src/components/BackgroundRotator.js
-              sed -i '/return url ? \[ url \] : \[\];/s/$/\n      }/' src/components/BackgroundRotator.js
-            fi
-          fi
+            // Check if the bindings are already there
+            if (!content.includes('this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);')) {
+              content = content.replace(/this\.boundHandleThemeChange = this\.handleThemeChange\.bind\(this\);/, 
+                `this.boundHandleThemeChange = this.handleThemeChange.bind(this);${bindingCode}`);
+            }
+          }
           
-          echo "Source files fixed successfully"
+          // Write the file back
+          fs.writeFileSync(filePath, content);
+          console.log('GoogleCard.js fixed successfully');
+          EOL
+          
+          # Run the fix script
+          node fix_google_card.js
+      
+      - name: Fix BackgroundRotator.js
+        run: |
+          # Create fix script
+          cat > fix_background_rotator.js << 'EOL'
+          const fs = require('fs');
+          
+          // Read the file
+          const filePath = 'src/components/BackgroundRotator.js';
+          let content = fs.readFileSync(filePath, 'utf8');
+          
+          // Fix IMAGE_SOURCE_TYPES constants
+          if (content.includes('IMAGE_SOURCE_TYPES_MEDIA_SOURCE')) {
+            console.log('Fixing constants in BackgroundRotator.js');
+            
+            content = content.replace(/IMAGE_SOURCE_TYPES_MEDIA_SOURCE/g, 'IMAGE_SOURCE_TYPES.MEDIA_SOURCE');
+            content = content.replace(/IMAGE_SOURCE_TYPES_UNSPLASH_API/g, 'IMAGE_SOURCE_TYPES.UNSPLASH_API');
+            content = content.replace(/IMAGE_SOURCE_TYPES_IMMICH_API/g, 'IMAGE_SOURCE_TYPES.IMMICH_API');
+            content = content.replace(/IMAGE_SOURCE_TYPES_PICSUM/g, 'IMAGE_SOURCE_TYPES.PICSUM');
+            content = content.replace(/IMAGE_SOURCE_TYPES_URL/g, 'IMAGE_SOURCE_TYPES.URL');
+          }
+          
+          // Fix case statements with proper braces
+          if (content.includes('case IMAGE_SOURCE_TYPES.PICSUM:') && !content.includes('case IMAGE_SOURCE_TYPES.PICSUM: {')) {
+            console.log('Fixing case statements in BackgroundRotator.js');
+            
+            // Add braces to PICSUM case
+            content = content.replace(
+              /case IMAGE_SOURCE_TYPES\.PICSUM:([\s\S]*?)(return[\s\S]*?;)([\s\S]*?)(?=case|default|\})/,
+              'case IMAGE_SOURCE_TYPES.PICSUM: {$1$2\n      }$3'
+            );
+            
+            // Add braces to default case
+            content = content.replace(
+              /default:([\s\S]*?)(return[\s\S]*?;)([\s\S]*?)(?=\})/,
+              'default: {$1$2\n      }$3'
+            );
+          }
+          
+          // Write the file back
+          fs.writeFileSync(filePath, content);
+          console.log('BackgroundRotator.js fixed successfully');
+          EOL
+          
+          # Run the fix script
+          node fix_background_rotator.js
       
       - name: Format and lint
         run: |
@@ -135,8 +178,8 @@ jobs:
       
       - name: Commit changes
         run: |
-          git add package.json dist/google-card.js
-          git commit -m "chore: update dependencies and build files" || echo "No changes to commit"
+          git add package.json dist/google-card.js src/
+          git commit -m "chore: update dependencies and fix code issues" || echo "No changes to commit"
           git push || echo "No changes to push"
       
       - name: Verify build exists
