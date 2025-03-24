@@ -1,9 +1,11 @@
 name: Build and Release
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -16,33 +18,47 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      
+
       - name: Install dependencies
         run: |
-          npm ci || npm install
+          npm install --legacy-peer-deps
           echo "Dependencies installed successfully"
-      
-      - name: Build
+
+      - name: Lint and Format
         run: |
-          npm run build
-          echo "Build completed successfully"
-      
+          npm run format
+          npm run lint:fix
+          echo "Linting and formatting completed successfully"
+
       - name: Configure Git
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-      
-      - name: Commit changes
+
+      - name: Build
         run: |
-          git add dist/
-          git commit -m "chore: update build files" || echo "No changes to commit"
-          git push || echo "No changes to push"
-      
+          npm run build
+          echo "Build completed successfully"
+
+      - name: Stage dist file
+        run: |
+          git add dist/google-card.js
+          git status
+
+      - name: Commit dist file
+        run: |
+          if git diff --staged --quiet; then
+            echo "No changes to google-card.js"
+          else
+            git commit -m "chore: update dist/google-card.js"
+            git push origin main
+          fi
+
       - name: Verify build exists
         run: |
           if [ ! -f "dist/google-card.js" ]; then
@@ -50,13 +66,13 @@ jobs:
             exit 1
           fi
           echo "Build verification completed successfully"
-      
+
       - name: Get version
         id: get_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -68,6 +84,11 @@ jobs:
             Release of version ${{ steps.get_version.outputs.version }}
             
             Changes in this release:
-            - Updated build files
+            - Updated dist/google-card.js
           draft: false
           prerelease: false
+
+      - name: Verify workflow completion
+        run: |
+          echo "All jobs completed successfully"
+          echo "Version released: v${{ steps.get_version.outputs.version }}"
