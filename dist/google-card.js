@@ -739,6 +739,206 @@ customElements.define("controls", class Controls extends LitElement {
   }
 });
 
+customElements.define("night-mode", class NightMode extends LitElement {
+  static get properties() {
+    return {
+      hass: {
+        type: Object
+      },
+      config: {
+        type: Object
+      },
+      currentTime: {
+        type: String
+      },
+      brightness: {
+        type: Number
+      },
+      isInNightMode: {
+        type: Boolean
+      },
+      previousBrightness: {
+        type: Number
+      },
+      isTransitioning: {
+        type: Boolean
+      },
+      error: {
+        type: String
+      },
+      nightModeSource: {
+        type: String
+      }
+    };
+  }
+  static get styles() {
+    return [ sharedStyles, css`
+        .night-mode {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: black;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          z-index: 5;
+          cursor: pointer;
+        }
+
+        .night-time {
+          color: white;
+          font-size: 35vw;
+          font-weight: 400;
+          font-family: 'Product Sans Regular', sans-serif;
+        }
+
+        .tap-hint {
+          position: fixed;
+          bottom: 40px;
+          left: 0;
+          right: 0;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 16px;
+          text-align: center;
+          font-family: 'Rubik', sans-serif;
+          font-weight: 300;
+          animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 0.7;
+          }
+          100% {
+            opacity: 0.3;
+          }
+        }
+      ` ];
+  }
+  constructor() {
+    super(), this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1, 
+    this.isTransitioning = !1, this.error = null, this.nightModeSource = null, this.timeUpdateInterval = null, 
+    this.sensorCheckInterval = null, this.sensorCheckedTime = 0;
+  }
+  connectedCallback() {
+    super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
+    this.sensorCheckInterval = setInterval((() => {
+      this.checkLightSensor();
+    }), 3e4);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback(), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), 
+    this.sensorCheckInterval && clearInterval(this.sensorCheckInterval);
+  }
+  startTimeUpdates() {
+    this.timeUpdateInterval = setInterval((() => {
+      this.updateTime();
+    }), 1e3);
+  }
+  updateTime() {
+    const now = new Date;
+    this.currentTime = now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: !0
+    }).replace(/\s?[AP]M/, "");
+  }
+  async enterNightMode() {
+    if (!this.isInNightMode || this.isTransitioning) {
+      this.isTransitioning = !0;
+      try {
+        this.brightness > 1 && (this.previousBrightness = this.brightness), await this.toggleAutoBrightness(!1), 
+        await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
+        await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0), 
+        this.isInNightMode = !0, this.error = null;
+      } catch (error) {
+        this.error = `Error entering night mode: ${error.message}`;
+      } finally {
+        this.isTransitioning = !1, this.requestUpdate();
+      }
+    }
+  }
+  async exitNightMode() {
+    if (this.isInNightMode && !this.isTransitioning) {
+      this.isTransitioning = !0;
+      try {
+        await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100)));
+        const targetBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
+        await this.setBrightness(targetBrightness), this.isInNightMode = !1, this.error = null, 
+        this.dispatchEvent(new CustomEvent("nightModeExit", {
+          bubbles: !0,
+          composed: !0
+        }));
+      } catch (error) {
+        this.error = `Error exiting night mode: ${error.message}`;
+      } finally {
+        this.isTransitioning = !1, this.requestUpdate();
+      }
+    }
+  }
+  async setBrightness(value) {
+    if (!this.hass || !this.config) return;
+    const brightness = Math.max(1, Math.min(255, Math.round(value))), deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
+    await this.hass.callService("notify", deviceName, {
+      message: "command_screen_brightness_level",
+      data: {
+        command: brightness
+      }
+    }), await this.hass.callService("notify", deviceName, {
+      message: "command_update_sensors"
+    }), await new Promise((resolve => setTimeout(resolve, this.config.sensor_update_delay || 500))), 
+    this.brightness = brightness, this.requestUpdate();
+  }
+  async toggleAutoBrightness(enabled) {
+    if (!this.hass || !this.config) return;
+    const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
+    await this.hass.callService("notify", deviceName, {
+      message: "command_auto_screen_brightness",
+      data: {
+        command: enabled ? "turn_on" : "turn_off"
+      }
+    });
+  }
+  updated(changedProperties) {
+    if (changedProperties.has("hass") && this.hass) {
+      Date.now() - this.sensorCheckedTime > 5e3 && this.checkLightSensor();
+    }
+  }
+  checkLightSensor() {
+    if (!this.hass || !this.config) return;
+    this.sensorCheckedTime = Date.now();
+    const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor", lightSensor = this.hass.states[lightSensorEntity];
+    if (lightSensor && "unavailable" !== lightSensor.state && "unknown" !== lightSensor.state) try {
+      const shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+      if (this.isInNightMode && "manual" === this.nightModeSource) return;
+      shouldBeInNightMode && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : !shouldBeInNightMode && this.isInNightMode && "sensor" === this.nightModeSource && (this.exitNightMode(), 
+      this.nightModeSource = null);
+    } catch (error) {}
+  }
+  render() {
+    return html`
+      <div class="night-mode" @click="${this.handleNightModeTap}">
+        <div class="night-time">${this.currentTime}</div>
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+        ${"manual" === this.nightModeSource ? html` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
+      </div>
+    `;
+  }
+  handleNightModeTap() {
+    this.isInNightMode && "manual" === this.nightModeSource && (this.exitNightMode(), 
+    this.dispatchEvent(new CustomEvent("nightModeExit", {
+      bubbles: !0,
+      composed: !0
+    })));
+  }
+});
+
 class GoogleCard extends LitElement {
   static get properties() {
     return {
