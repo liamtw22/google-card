@@ -1,5 +1,5 @@
 // src/components/Controls.js
-import { LitElement, html, css } from 'lit-element';
+import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 import { MIN_BRIGHTNESS, MAX_BRIGHTNESS, LONG_PRESS_TIMEOUT } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
