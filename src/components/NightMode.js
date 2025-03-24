@@ -296,3 +296,4 @@ export class NightMode extends LitElement {
     }
   }
 }
+customElements.define('night-mode', NightMode);
