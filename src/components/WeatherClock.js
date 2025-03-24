@@ -121,13 +121,15 @@ export class WeatherClock extends LitElement {
     // Add AQI polling every 15 seconds
     this.aqiPollInterval = setInterval(() => {
       if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const aqiState = this.hass.states[this.aqiEntity].state;
-        if (aqiState !== this.aqi && 
-            aqiState !== 'unknown' && 
-            aqiState !== 'unavailable') {
-          console.log('AQI poll detected change:', aqiState);
-          this.aqi = aqiState;
-          this.requestUpdate();
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        if (aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
+          // Only update if it's a valid numeric value
+          const aqiValue = parseFloat(aqiEntity.state);
+          if (!isNaN(aqiValue)) {
+            console.log('AQI poll detected numeric change:', aqiValue);
+            this.aqi = aqiEntity.state;
+            this.requestUpdate();
+          }
         }
       }
     }, 15000);
@@ -187,8 +189,12 @@ export class WeatherClock extends LitElement {
         const newState = this.hass.states[this.aqiEntity].state;
         
         if (oldState !== newState) {
-          console.log('AQI state changed from', oldState, 'to', newState);
-          this.requestUpdate(); // Force update when AQI changes
+          // Only update if it's a valid numeric value
+          const aqiValue = parseFloat(newState);
+          if (!isNaN(aqiValue)) {
+            console.log('AQI state changed from', oldState, 'to', newState);
+            this.requestUpdate(); // Force update when AQI changes
+          }
         }
       }
     }
@@ -219,35 +225,33 @@ export class WeatherClock extends LitElement {
         this.weatherIcon = 'not-available';
       }
       
-      // Improved AQI detection with more verbose logging
+      // Improved AQI detection - only accept numeric values
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
         console.log('AQI Entity state:', aqiEntity.state, 'Entity:', this.aqiEntity);
         
-        // Make sure we handle all possible states correctly
         if (aqiEntity.state && 
             aqiEntity.state !== 'unknown' && 
-            aqiEntity.state !== 'unavailable' && 
-            aqiEntity.state !== '--') {
+            aqiEntity.state !== 'unavailable') {
           
-          // Try to parse as number to ensure it's valid
+          // Only accept valid numeric values
           const aqiValue = parseFloat(aqiEntity.state);
           if (!isNaN(aqiValue)) {
             // Valid numeric value
             this.aqi = aqiEntity.state;
-            console.log('Valid AQI value detected:', this.aqi);
+            console.log('Valid numeric AQI value detected:', this.aqi);
           } else {
-            // Non-numeric but not empty/unavailable
-            this.aqi = aqiEntity.state;
-            console.log('Non-numeric AQI value detected:', this.aqi);
+            // Non-numeric - don't display
+            this.aqi = null;
+            console.log('Non-numeric AQI value detected, not displaying');
           }
         } else {
-          this.aqi = '--';
-          console.log('Invalid AQI state, setting to placeholder');
+          this.aqi = null;
+          console.log('Invalid AQI state, not displaying');
         }
       } else {
-        this.aqi = '--';
-        console.log('AQI entity not found:', this.aqiEntity);
+        this.aqi = null;
+        console.log('AQI entity not found, not displaying');
       }
       
       this.error = null;
@@ -312,15 +316,13 @@ export class WeatherClock extends LitElement {
   }
 
   render() {
-    // More reliable AQI validity check
-    const hasValidAqi = this.aqi && 
-                        this.aqi !== '--' && 
-                        this.aqi !== 'unknown' && 
-                        this.aqi !== 'unavailable' && 
-                        this.config.show_aqi !== false;
+    // Only show AQI if we have a valid numeric value and config allows it
+    const hasValidAqi = this.aqi !== null && 
+                        this.config.show_aqi !== false && 
+                        !isNaN(parseFloat(this.aqi));
     
     if (hasValidAqi) {
-      console.log('Rendering AQI indicator with value:', this.aqi);
+      console.log('Rendering AQI indicator with numeric value:', this.aqi);
     } else {
       console.log('Not showing AQI indicator, value:', this.aqi, 'show_aqi config:', this.config.show_aqi);
     }
