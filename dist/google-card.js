@@ -831,7 +831,7 @@ const DEFAULT_CONFIG = {
   }
 `;
 
-customElements.define("background-rotator", class BackgroundRotator extends LitElement$1 {
+customElements.define("background-rotator", class BackgroundRotator extends LitElement {
   static get properties() {
     return {
       hass: {
@@ -870,7 +870,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     };
   }
   static get styles() {
-    return [ sharedStyles, css$1`
+    return [ sharedStyles, css`
         .background-container {
           position: absolute;
           top: 0;
@@ -1058,7 +1058,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
   render() {
     const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0, imageFit = this.config?.image_fit || "contain";
-    return html$1`
+    return html`
       <div class="background-container">
         <div
           class="background-image"
@@ -1073,12 +1073,12 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
                  background-size: ${imageFit};"
         ></div>
       </div>
-      ${this.error ? html$1`<div class="error">${this.error}</div>` : ""}
+      ${this.error ? html`<div class="error">${this.error}</div>` : ""}
     `;
   }
 });
 
-customElements.define("google-controls", class Controls extends LitElement$1 {
+customElements.define("google-controls", class Controls extends LitElement {
   static get properties() {
     return {
       hass: {
@@ -1120,7 +1120,7 @@ customElements.define("google-controls", class Controls extends LitElement$1 {
     };
   }
   static get styles() {
-    return [ sharedStyles, css$1`
+    return [ sharedStyles, css`
         .controls-container {
           position: fixed;
           bottom: 0;
@@ -1427,7 +1427,7 @@ customElements.define("google-controls", class Controls extends LitElement$1 {
   }
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
-    return html$1`
+    return html`
       <div
         class="brightness-card ${this.isBrightnessCardVisible ? "show" : ""} ${this.isBrightnessCardTransitioning ? "transitioning" : ""}"
         @click="${e => e.stopPropagation()}"
@@ -1440,7 +1440,7 @@ customElements.define("google-controls", class Controls extends LitElement$1 {
               @mousedown="${this.handleBrightnessDragStart}"
               @touchstart="${this.handleBrightnessDragStart}"
             >
-              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html$1`
+              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
                   <div
                     class="brightness-dot ${value <= brightnessDisplayValue ? "active" : ""}"
                     data-value="${value}"
@@ -1454,7 +1454,7 @@ customElements.define("google-controls", class Controls extends LitElement$1 {
     `;
   }
   renderOverlay() {
-    return html$1`
+    return html`
       <div
         class="overlay ${this.isOverlayVisible ? "show" : ""} ${this.isOverlayTransitioning ? "transitioning" : ""}"
         @click="${e => e.stopPropagation()}"
@@ -1492,7 +1492,7 @@ customElements.define("google-controls", class Controls extends LitElement$1 {
     `;
   }
   render() {
-    return html$1`
+    return html`
       <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ""}
