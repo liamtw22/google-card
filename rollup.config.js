@@ -2,8 +2,6 @@ import resolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
 
-const isDev = process.env.DEV === 'true';
-
 export default {
   input: 'src/GoogleCard.js',
   output: {
@@ -18,20 +16,20 @@ export default {
     }),
     json(),
     terser({
+      compress: false,        // Disable compression entirely
+      mangle: false,          // Don't rename variables
       format: {
-        comments: false,
-        beautify: true,
-        indent_level: 2,
-        max_line_len: 100,
-        semicolons: true
+        comments: 'all',      // Keep all comments
+        beautify: true,       // Make output readable
+        indent_level: 2,      // Set indentation level
+        max_line_len: 120,    // Allow longer lines
+        semicolons: true,     // Keep semicolons
+        preserve_line: true,  // Preserve line breaks
+        keep_quoted_props: true, // Don't transform property names
+        braces: true          // Keep braces
       },
-      compress: isDev ? false : {
-        passes: 2,
-        drop_console: false
-      },
-      keep_classnames: true,
-      keep_fnames: true,
-      mangle: false
+      keep_classnames: true,  // Don't modify class names
+      keep_fnames: true       // Don't modify function names
     })
   ]
 };
