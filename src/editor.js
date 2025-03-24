@@ -1,5 +1,5 @@
 // src/editor.js
-import { LitElement, html, css } from 'lit-element';
+import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 import { DEFAULT_CONFIG } from './constants';
 
