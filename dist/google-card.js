@@ -1,4 +1,4 @@
-import { css as css$1, LitElement as LitElement$1, html as html$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
+import { css as css$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
 
 const isCEPolyfill = "undefined" != typeof window && null != window.customElements && void 0 !== window.customElements.polyfillWrapFlushCallback, removeNodes = (container, start, end = null) => {
   for (;start !== end; ) {
@@ -1502,7 +1502,7 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
 });
 
-customElements.define("night-mode", class NightMode extends LitElement$1 {
+customElements.define("night-mode", class NightMode extends LitElement {
   static get properties() {
     return {
       hass: {
@@ -1535,7 +1535,7 @@ customElements.define("night-mode", class NightMode extends LitElement$1 {
     };
   }
   static get styles() {
-    return [ sharedStyles, css$1`
+    return [ sharedStyles, css`
         .night-mode {
           position: absolute;
           top: 0;
@@ -1685,11 +1685,11 @@ customElements.define("night-mode", class NightMode extends LitElement$1 {
     } catch (error) {}
   }
   render() {
-    return html$1`
+    return html`
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
-        ${this.error ? html$1`<div class="error">${this.error}</div>` : ""}
-        ${"manual" === this.nightModeSource ? html$1` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+        ${"manual" === this.nightModeSource ? html` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
       </div>
     `;
   }
@@ -1702,7 +1702,7 @@ customElements.define("night-mode", class NightMode extends LitElement$1 {
   }
 });
 
-customElements.define("weather-clock", class WeatherClock extends LitElement$1 {
+customElements.define("weather-clock", class WeatherClock extends LitElement {
   static get properties() {
     return {
       hass: {
@@ -1738,7 +1738,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement$1 {
     };
   }
   static get styles() {
-    return [ sharedStyles, css$1`
+    return [ sharedStyles, css`
         .weather-component {
           position: fixed;
           bottom: 30px;
@@ -1904,14 +1904,14 @@ customElements.define("weather-clock", class WeatherClock extends LitElement$1 {
   }
   render() {
     const hasValidAqi = this.aqi && "--" !== this.aqi && !1 !== this.config.show_aqi;
-    return html$1`
+    return html`
       <div class="weather-component">
         <div class="left-column">
-          ${!1 !== this.config.show_date ? html$1`<div class="date">${this.date}</div>` : ""}
-          ${!1 !== this.config.show_time ? html$1`<div class="time">${this.time}</div>` : ""}
+          ${!1 !== this.config.show_date ? html`<div class="date">${this.date}</div>` : ""}
+          ${!1 !== this.config.show_time ? html`<div class="time">${this.time}</div>` : ""}
         </div>
         <div class="right-column">
-          ${!1 !== this.config.show_weather ? html$1`
+          ${!1 !== this.config.show_weather ? html`
                 <div class="weather-info">
                   <img
                     src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
@@ -1922,13 +1922,13 @@ customElements.define("weather-clock", class WeatherClock extends LitElement$1 {
                   <span class="temperature">${this.temperature}</span>
                 </div>
               ` : ""}
-          ${hasValidAqi ? html$1`
+          ${hasValidAqi ? html`
                 <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
                   ${this.aqi} AQI
                 </div>
               ` : ""}
         </div>
-        ${this.error ? html$1`<div class="error">${this.error}</div>` : ""}
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
       </div>
     `;
   }
