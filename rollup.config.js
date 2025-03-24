@@ -16,20 +16,16 @@ export default {
     }),
     json(),
     terser({
-      compress: false,        // Disable compression entirely
-      mangle: false,          // Don't rename variables
       format: {
-        comments: 'all',      // Keep all comments
-        beautify: true,       // Make output readable
-        indent_level: 2,      // Set indentation level
-        max_line_len: 120,    // Allow longer lines
-        semicolons: true,     // Keep semicolons
-        preserve_line: true,  // Preserve line breaks
-        keep_quoted_props: true, // Don't transform property names
-        braces: true          // Keep braces
+        comments: false,
+        beautify: true,
+        indent_level: 2,
+        max_line_len: 100,
+        semicolons: true
       },
-      keep_classnames: true,  // Don't modify class names
-      keep_fnames: true       // Don't modify function names
+      keep_classnames: true,
+      keep_fnames: true,
+      mangle: false
     })
   ]
 };
