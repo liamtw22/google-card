@@ -21,7 +21,8 @@
   "author": "liamtw22",
   "license": "MIT",
   "dependencies": {
-    "lit-element": "2.4.0"
+    "lit-element": "^2.4.0", 
+    "lit-html": "^1.4.1"
   },
   "devDependencies": {
     "@rollup/plugin-json": "6.1.0",
