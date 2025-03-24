@@ -22,149 +22,10 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Update package.json
-        run: |
-          cat > package.json << 'EOL'
-          {
-            "name": "google-card",
-            "version": "0.1.5",
-            "description": "A Home Assistant card that resembles Google's UI for photo frames and smart displays",
-            "main": "dist/google-card.js",
-            "scripts": {
-              "build": "rollup -c",
-              "build:dev": "rollup -c --environment DEV",
-              "watch": "rollup -c -w",
-              "lint": "eslint src",
-              "lint:fix": "eslint src --fix",
-              "format": "prettier --write \"src/**/*.js\"",
-              "test": "echo \"No tests yet\" && exit 0"
-            },
-            "keywords": [
-              "home-assistant",
-              "lovelace",
-              "card",
-              "google"
-            ],
-            "author": "Your Name",
-            "license": "MIT",
-            "dependencies": {
-              "lit-element": "2.4.0"
-            },
-            "devDependencies": {
-              "@rollup/plugin-json": "6.1.0",
-              "@rollup/plugin-node-resolve": "15.2.3",
-              "@rollup/plugin-terser": "0.4.4",
-              "eslint": "8.57.0",
-              "eslint-config-prettier": "9.1.0",
-              "eslint-plugin-import": "2.29.1",
-              "eslint-plugin-prettier": "4.2.1",
-              "prettier": "2.8.8",
-              "rollup": "2.79.1",
-              "rollup-plugin-copy": "3.5.0"
-            }
-          }
-          EOL
-          echo "Updated package.json"
-      
       - name: Install dependencies
         run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          npm ci || npm install
           echo "Dependencies installed successfully"
-      
-      - name: Fix GoogleCard.js
-        run: |
-          # Get content of GoogleCard.js
-          cat > fix_google_card.js << 'EOL'
-          const fs = require('fs');
-          
-          // Read the file
-          const filePath = 'src/GoogleCard.js';
-          let content = fs.readFileSync(filePath, 'utf8');
-          
-          // Fix arrow functions
-          if (content.includes('handleBrightnessCardToggle = ')) {
-            console.log('Fixing arrow functions');
-            content = content.replace(/(\w+)\s*=\s*\((.*?)\)\s*=>\s*{/g, '$1($2) {');
-          }
-          
-          // Make sure bindings have equal signs
-          if (content.includes('this.boundHandleThemeChange = this.handleThemeChange.bind(this);')) {
-            console.log('Adding method bindings to constructor');
-            
-            const bindingCode = `
-    // Bind event handler methods to preserve 'this' context
-    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);
-    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
-    this.handleDebugToggle = this.handleDebugToggle.bind(this);
-    this.handleNightModeExit = this.handleNightModeExit.bind(this);`;
-            
-            // Check if the bindings are already there
-            if (!content.includes('this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);')) {
-              content = content.replace(/this\.boundHandleThemeChange = this\.handleThemeChange\.bind\(this\);/, 
-                `this.boundHandleThemeChange = this.handleThemeChange.bind(this);${bindingCode}`);
-            }
-          }
-          
-          // Write the file back
-          fs.writeFileSync(filePath, content);
-          console.log('GoogleCard.js fixed successfully');
-          EOL
-          
-          # Run the fix script
-          node fix_google_card.js
-      
-      - name: Fix BackgroundRotator.js
-        run: |
-          # Create fix script
-          cat > fix_background_rotator.js << 'EOL'
-          const fs = require('fs');
-          
-          // Read the file
-          const filePath = 'src/components/BackgroundRotator.js';
-          let content = fs.readFileSync(filePath, 'utf8');
-          
-          // Fix IMAGE_SOURCE_TYPES constants
-          if (content.includes('IMAGE_SOURCE_TYPES_MEDIA_SOURCE')) {
-            console.log('Fixing constants in BackgroundRotator.js');
-            
-            content = content.replace(/IMAGE_SOURCE_TYPES_MEDIA_SOURCE/g, 'IMAGE_SOURCE_TYPES.MEDIA_SOURCE');
-            content = content.replace(/IMAGE_SOURCE_TYPES_UNSPLASH_API/g, 'IMAGE_SOURCE_TYPES.UNSPLASH_API');
-            content = content.replace(/IMAGE_SOURCE_TYPES_IMMICH_API/g, 'IMAGE_SOURCE_TYPES.IMMICH_API');
-            content = content.replace(/IMAGE_SOURCE_TYPES_PICSUM/g, 'IMAGE_SOURCE_TYPES.PICSUM');
-            content = content.replace(/IMAGE_SOURCE_TYPES_URL/g, 'IMAGE_SOURCE_TYPES.URL');
-          }
-          
-          // Fix case statements with proper braces
-          if (content.includes('case IMAGE_SOURCE_TYPES.PICSUM:') && !content.includes('case IMAGE_SOURCE_TYPES.PICSUM: {')) {
-            console.log('Fixing case statements in BackgroundRotator.js');
-            
-            // Add braces to PICSUM case
-            content = content.replace(
-              /case IMAGE_SOURCE_TYPES\.PICSUM:([\s\S]*?)(return[\s\S]*?;)([\s\S]*?)(?=case|default|\})/,
-              'case IMAGE_SOURCE_TYPES.PICSUM: {$1$2\n      }$3'
-            );
-            
-            // Add braces to default case
-            content = content.replace(
-              /default:([\s\S]*?)(return[\s\S]*?;)([\s\S]*?)(?=\})/,
-              'default: {$1$2\n      }$3'
-            );
-          }
-          
-          // Write the file back
-          fs.writeFileSync(filePath, content);
-          console.log('BackgroundRotator.js fixed successfully');
-          EOL
-          
-          # Run the fix script
-          node fix_background_rotator.js
-      
-      - name: Format and lint
-        run: |
-          npm run format
-          npm run lint:fix
-          echo "Formatting and linting completed"
       
       - name: Build
         run: |
@@ -178,8 +39,8 @@ jobs:
       
       - name: Commit changes
         run: |
-          git add package.json dist/google-card.js src/
-          git commit -m "chore: update dependencies and fix code issues" || echo "No changes to commit"
+          git add dist/
+          git commit -m "chore: update build files" || echo "No changes to commit"
           git push || echo "No changes to push"
       
       - name: Verify build exists
@@ -207,9 +68,6 @@ jobs:
             Release of version ${{ steps.get_version.outputs.version }}
             
             Changes in this release:
-            - Fixed dependency conflicts
-            - Updated component registration
-            - Fixed syntax issues in JavaScript files
-            - Improved build process
+            - Updated build files
           draft: false
           prerelease: false
