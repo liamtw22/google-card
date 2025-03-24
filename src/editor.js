@@ -1,5 +1,6 @@
 // src/editor.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { DEFAULT_CONFIG } from './constants';
 
 export class GoogleCardEditor extends LitElement {
