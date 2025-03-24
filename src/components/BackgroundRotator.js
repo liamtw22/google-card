@@ -341,15 +341,15 @@ export class BackgroundRotator extends LitElement {
 
       this.requestUpdate();
 
-      // Short delay to ensure DOM update before transition
-      await new Promise(resolve => setTimeout(resolve, TRANSITION_BUFFER));
+      // Increased delay to ensure DOM update before transition, especially on Android
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Start transition by changing active image
       this.activeImage = this.activeImage === 'A' ? 'B' : 'A';
       this.requestUpdate();
 
-      // Wait for transition to complete
-      const transitionTime = (this.config?.crossfade_time || 3) * 1000 + TRANSITION_BUFFER;
+      // Wait for transition to complete, with extra buffer time for Android
+      const transitionTime = (this.config?.crossfade_time || 3) * 1000 + 200;
       await new Promise(resolve => setTimeout(resolve, transitionTime));
       
       this.isTransitioning = false;
