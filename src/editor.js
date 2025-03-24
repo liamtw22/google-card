@@ -2,8 +2,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
 import { DEFAULT_CONFIG } from './constants';
 
-// Removed the unused import: import { IMAGE_SOURCE_TYPES } from './constants';
-
 export class GoogleCardEditor extends LitElement {
   static get properties() {
     return {
@@ -404,9 +402,9 @@ export class GoogleCardEditor extends LitElement {
             </div>
           </div>
           
-          <!-- Advanced Settings -->
+          <!-- Debug Settings -->
           <div class="card-section">
-            <div class="section-header">Advanced Settings</div>
+            <div class="section-header">Debug Settings</div>
             <div class="row">
               <div class="input-group">
                 <label class="input-label">Show Debug Info</label>
