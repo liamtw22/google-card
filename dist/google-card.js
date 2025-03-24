@@ -18,7 +18,7 @@ const DEFAULT_CONFIG = {
   aqi_entity: "sensor.air_quality_index",
   light_sensor_entity: "sensor.liam_room_display_light_sensor",
   brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
-}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css`
+}, sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
@@ -30,7 +30,7 @@ const DEFAULT_CONFIG = {
     --brightness-dot-color: #d1d1d1;
     --brightness-dot-active: #333;
     --background-blur: 10px;
-    
+
     display: block;
     position: fixed;
     top: 0;
@@ -43,7 +43,8 @@ const DEFAULT_CONFIG = {
     transition: var(--theme-transition);
   }
 
-  html[data-theme="dark"], :host([data-theme="dark"]) {
+  html[data-theme='dark'],
+  :host([data-theme='dark']) {
     --theme-background: #121212;
     --theme-text: #ffffff;
     --overlay-background: rgba(32, 33, 36, 0.95);
@@ -150,9 +151,9 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     }), 1e3 * Math.max(60, this.config?.image_list_update_interval || 3600));
   }
   getImageSourceType() {
-    if (!this.config?.image_url) return IMAGE_SOURCE_TYPES_URL;
+    if (!this.config?.image_url) return "url";
     const {image_url: image_url} = this.config;
-    return image_url.startsWith("media-source://") ? IMAGE_SOURCE_TYPES_MEDIA_SOURCE : image_url.startsWith("https://api.unsplash") ? IMAGE_SOURCE_TYPES_UNSPLASH_API : image_url.startsWith("immich+") ? IMAGE_SOURCE_TYPES_IMMICH_API : image_url.includes("picsum.photos") ? IMAGE_SOURCE_TYPES_PICSUM : IMAGE_SOURCE_TYPES_URL;
+    return image_url.startsWith("media-source://") ? "media-source" : image_url.startsWith("https://api.unsplash") ? "unsplash-api" : image_url.startsWith("immich+") ? "immich-api" : image_url.includes("picsum.photos") ? "picsum" : "url";
   }
   getImageUrl() {
     if (!this.config?.image_url) return "";
@@ -187,16 +188,16 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
   async fetchImageList() {
     switch (this.getImageSourceType()) {
-     case IMAGE_SOURCE_TYPES_MEDIA_SOURCE:
+     case "media-source":
       return this.getImagesFromMediaSource();
 
-     case IMAGE_SOURCE_TYPES_UNSPLASH_API:
+     case "unsplash-api":
       return this.getImagesFromUnsplashAPI();
 
-     case IMAGE_SOURCE_TYPES_IMMICH_API:
+     case "immich-api":
       return this.getImagesFromImmichAPI();
 
-     case IMAGE_SOURCE_TYPES_PICSUM:
+     case "picsum":
       return Array.from({
         length: 10
       }, (() => this.getImageUrl()));
@@ -281,7 +282,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     if (!this.isTransitioning && 0 !== this.imageList.length) try {
       const nextImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
       let nextImage;
-      nextImage = this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? this.getImageUrl() : this.imageList[nextImageIndex], 
+      nextImage = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[nextImageIndex], 
       nextImage = await this.preloadImage(nextImage), this.currentImageIndex = nextImageIndex, 
       this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = nextImage : this.imageA = nextImage, 
       this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 50))), this.activeImage = "A" === this.activeImage ? "B" : "A", 
@@ -691,73 +692,76 @@ class GoogleCard extends LitElement {
     this.isInNightMode && "manual" === this.nightModeSource || shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
   updated(changedProperties) {
-    if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
-      Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
-    }
+    changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness && Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
   }
   render() {
     const mainContent = this.isNightMode ? html`
-      <night-mode 
-        .currentTime=${this.currentTime}
-        .hass=${this.hass}
-        .config=${this.config}
-        .brightness=${this.brightness}
-        .previousBrightness=${this.previousBrightness}
-        .isInNightMode=${this.isInNightMode}
-        .nightModeSource=${this.nightModeSource}
-        @nightModeExit=${this.handleNightModeExit}
-      ></night-mode>
-    ` : html`
-      <background-rotator
-        .hass=${this.hass}
-        .config=${this.config}
-        .screenWidth=${this.screenWidth}
-        .screenHeight=${this.screenHeight}
-      ></background-rotator>
+          <night-mode
+            .currentTime=${this.currentTime}
+            .hass=${this.hass}
+            .config=${this.config}
+            .brightness=${this.brightness}
+            .previousBrightness=${this.previousBrightness}
+            .isInNightMode=${this.isInNightMode}
+            .nightModeSource=${this.nightModeSource}
+            @nightModeExit=${this.handleNightModeExit}
+          ></night-mode>
+        ` : html`
+          <background-rotator
+            .hass=${this.hass}
+            .config=${this.config}
+            .screenWidth=${this.screenWidth}
+            .screenHeight=${this.screenHeight}
+          ></background-rotator>
 
-      <weather-clock 
-        .hass=${this.hass}
-        .config=${this.config}
-      ></weather-clock>
+          <weather-clock .hass=${this.hass} .config=${this.config}></weather-clock>
 
-      <google-controls
-        .hass=${this.hass}
-        .config=${this.config}
-        .showOverlay=${this.showOverlay}
-        .isOverlayVisible=${this.isOverlayVisible}
-        .isOverlayTransitioning=${this.isOverlayTransitioning}
-        .showBrightnessCard=${this.showBrightnessCard}
-        .isBrightnessCardVisible=${this.isBrightnessCardVisible}
-        .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
-        .brightness=${this.brightness}
-        .visualBrightness=${this.visualBrightness}
-        .isAdjustingBrightness=${this.isAdjustingBrightness}
-        @overlayToggle=${this.handleOverlayToggle}
-        @brightnessCardToggle=${this.handleBrightnessCardToggle}
-        @brightnessChange=${this.handleBrightnessChange}
-        @debugToggle=${this.handleDebugToggle}
-      ></google-controls>
-    `;
+          <google-controls
+            .hass=${this.hass}
+            .config=${this.config}
+            .showOverlay=${this.showOverlay}
+            .isOverlayVisible=${this.isOverlayVisible}
+            .isOverlayTransitioning=${this.isOverlayTransitioning}
+            .showBrightnessCard=${this.showBrightnessCard}
+            .isBrightnessCardVisible=${this.isBrightnessCardVisible}
+            .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
+            .brightness=${this.brightness}
+            .visualBrightness=${this.visualBrightness}
+            .isAdjustingBrightness=${this.isAdjustingBrightness}
+            @overlayToggle=${this.handleOverlayToggle}
+            @brightnessCardToggle=${this.handleBrightnessCardToggle}
+            @brightnessChange=${this.handleBrightnessChange}
+            @debugToggle=${this.handleDebugToggle}
+          ></google-controls>
+        `;
     return html`
       <!-- Import all required fonts -->
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
-      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
-      
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+        crossorigin="anonymous"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+        crossorigin="anonymous"
+      />
+
       <!-- Fallback font style for Product Sans -->
       <style>
         @font-face {
           font-family: 'Product Sans Regular';
-          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
+          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'),
+            url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2)
+              format('woff2');
           font-weight: 400;
           font-style: normal;
           font-display: swap;
         }
       </style>
-      
+
       <div class="touch-container">
-        <div class="content-wrapper">
-          ${mainContent}
-        </div>
+        <div class="content-wrapper">${mainContent}</div>
       </div>
     `;
   }
