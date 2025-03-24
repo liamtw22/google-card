@@ -26,9 +26,9 @@ const DEFAULT_CONFIG = {
     --theme-background: #ffffff;
     --theme-text: #333333;
     --overlay-background: rgba(255, 255, 255, 0.95);
-    --control-text-color: #333;
+    --control-text-color: #333333; /* Ensure this is dark for light mode */
     --brightness-dot-color: #d1d1d1;
-    --brightness-dot-active: #333;
+    --brightness-dot-active: #333333; /* Ensure this is dark for light mode */
     --background-blur: 10px;
 
     display: block;
@@ -48,9 +48,9 @@ const DEFAULT_CONFIG = {
     --theme-background: #121212;
     --theme-text: #ffffff;
     --overlay-background: rgba(32, 33, 36, 0.95);
-    --control-text-color: #fff;
+    --control-text-color: #ffffff; /* Ensure this is light for dark mode */
     --brightness-dot-color: #5f6368;
-    --brightness-dot-active: #fff;
+    --brightness-dot-active: #ffffff; /* Ensure this is light for dark mode */
   }
 
   .error {
@@ -285,9 +285,9 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       nextImage = this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? this.getImageUrl() : this.imageList[nextImageIndex], 
       nextImage = await this.preloadImage(nextImage), this.currentImageIndex = nextImageIndex, 
       this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = nextImage : this.imageA = nextImage, 
-      this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 50))), this.activeImage = "A" === this.activeImage ? "B" : "A", 
-      this.requestUpdate();
-      const transitionTime = 1e3 * (this.config?.crossfade_time || 3) + 50;
+      this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 100))), 
+      this.activeImage = "A" === this.activeImage ? "B" : "A", this.requestUpdate();
+      const transitionTime = 1e3 * (this.config?.crossfade_time || 3) + 200;
       await new Promise((resolve => setTimeout(resolve, transitionTime))), this.isTransitioning = !1;
     } catch (error) {
       console.error("Error updating image:", error), this.isTransitioning = !1;
@@ -999,8 +999,8 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          margin-left: auto;
-          margin-right: 40px;
+          margin-left: 10px; /* Reduced from auto to bring closer */
+          margin-right: 20px; /* Reduced from 40px */
         }
 
         .date {
@@ -1021,9 +1021,9 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
         .weather-info {
           display: flex;
           align-items: center;
-          margin-top: 10px;
+          margin-top: 5px; /* Reduced from 10px */
           font-weight: 500;
-          margin-right: 40px;
+          margin-right: 20px; /* Reduced from 40px */
         }
 
         .weather-icon {
