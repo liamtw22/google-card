@@ -1078,9 +1078,12 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     super.connectedCallback(), this.updateWeather(), this.scheduleNextMinuteUpdate(), 
     this.aqiPollInterval = setInterval((() => {
       if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const aqiState = this.hass.states[this.aqiEntity].state;
-        aqiState !== this.aqi && "unknown" !== aqiState && "unavailable" !== aqiState && (console.log("AQI poll detected change:", aqiState), 
-        this.aqi = aqiState, this.requestUpdate());
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        if ("unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
+          const aqiValue = parseFloat(aqiEntity.state);
+          isNaN(aqiValue) || (console.log("AQI poll detected numeric change:", aqiValue), 
+          this.aqi = aqiEntity.state, this.requestUpdate());
+        }
       }
     }), 15e3);
   }
@@ -1112,8 +1115,11 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has("hass") && this.hass && (this.updateWeatherData(), this.aqiEntity && this.hass.states[this.aqiEntity])) {
       const oldState = changedProperties.get("hass")?.states?.[this.aqiEntity]?.state, newState = this.hass.states[this.aqiEntity].state;
-      oldState !== newState && (console.log("AQI state changed from", oldState, "to", newState), 
-      this.requestUpdate());
+      if (oldState !== newState) {
+        const aqiValue = parseFloat(newState);
+        isNaN(aqiValue) || (console.log("AQI state changed from", oldState, "to", newState), 
+        this.requestUpdate());
+      }
     }
     changedProperties.has("config") && this.config && (this.weatherEntity = this.config.weather_entity || "weather.forecast_home", 
     this.aqiEntity = this.config.aqi_entity || "sensor.air_quality_index", this.requestUpdate());
@@ -1129,12 +1135,12 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
         if (console.log("AQI Entity state:", aqiEntity.state, "Entity:", this.aqiEntity), 
-        aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state && "--" !== aqiEntity.state) {
+        aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
           const aqiValue = parseFloat(aqiEntity.state);
-          isNaN(aqiValue) ? (this.aqi = aqiEntity.state, console.log("Non-numeric AQI value detected:", this.aqi)) : (this.aqi = aqiEntity.state, 
-          console.log("Valid AQI value detected:", this.aqi));
-        } else this.aqi = "--", console.log("Invalid AQI state, setting to placeholder");
-      } else this.aqi = "--", console.log("AQI entity not found:", this.aqiEntity);
+          isNaN(aqiValue) ? (this.aqi = null, console.log("Non-numeric AQI value detected, not displaying")) : (this.aqi = aqiEntity.state, 
+          console.log("Valid numeric AQI value detected:", this.aqi));
+        } else this.aqi = null, console.log("Invalid AQI state, not displaying");
+      } else this.aqi = null, console.log("AQI entity not found, not displaying");
       this.error = null, this.requestUpdate();
     } catch (error) {
       console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
@@ -1177,8 +1183,8 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
   }
   render() {
-    const hasValidAqi = this.aqi && "--" !== this.aqi && "unknown" !== this.aqi && "unavailable" !== this.aqi && !1 !== this.config.show_aqi;
-    return hasValidAqi ? console.log("Rendering AQI indicator with value:", this.aqi) : console.log("Not showing AQI indicator, value:", this.aqi, "show_aqi config:", this.config.show_aqi), 
+    const hasValidAqi = null !== this.aqi && !1 !== this.config.show_aqi && !isNaN(parseFloat(this.aqi));
+    return hasValidAqi ? console.log("Rendering AQI indicator with numeric value:", this.aqi) : console.log("Not showing AQI indicator, value:", this.aqi, "show_aqi config:", this.config.show_aqi), 
     html`
       <div class="weather-component">
         <div class="left-column">
