@@ -1,5 +1,6 @@
 // src/components/NightMode.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { NIGHT_MODE_TRANSITION_DELAY, MIN_BRIGHTNESS, DEFAULT_SENSOR_UPDATE_DELAY } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
