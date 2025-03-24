@@ -315,7 +315,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
 });
 
-customElements.define("controls", class Controls extends LitElement {
+customElements.define("google-controls", class Controls extends LitElement {
   static get properties() {
     return {
       hass: {
