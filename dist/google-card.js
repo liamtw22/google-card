@@ -939,6 +939,238 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
 });
 
+customElements.define("weather-clock", class WeatherClock extends LitElement {
+  static get properties() {
+    return {
+      hass: {
+        type: Object
+      },
+      config: {
+        type: Object
+      },
+      date: {
+        type: String
+      },
+      time: {
+        type: String
+      },
+      temperature: {
+        type: String
+      },
+      weatherIcon: {
+        type: String
+      },
+      aqi: {
+        type: String
+      },
+      weatherEntity: {
+        type: String
+      },
+      aqiEntity: {
+        type: String
+      },
+      error: {
+        type: String
+      }
+    };
+  }
+  static get styles() {
+    return [ sharedStyles, css`
+        .weather-component {
+          position: fixed;
+          bottom: 30px;
+          left: 40px;
+          display: flex;
+          justify-content: start;
+          align-items: center;
+          color: white;
+          font-family: 'Product Sans Regular', sans-serif;
+          width: 100%;
+          max-width: 400px;
+        }
+
+        .left-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .right-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          margin-left: auto;
+          margin-right: 40px;
+        }
+
+        .date {
+          font-size: 25px;
+          margin-bottom: 5px;
+          font-weight: 400;
+          margin-left: 20px; /* Added left padding */
+          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .time {
+          font-size: 90px;
+          line-height: 1;
+          font-weight: 500;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .weather-info {
+          display: flex;
+          align-items: center;
+          margin-top: 10px;
+          font-weight: 500;
+          margin-right: 40px;
+        }
+
+        .weather-icon {
+          width: 50px;
+          height: 50px;
+        }
+
+        .temperature {
+          font-size: 35px;
+          font-weight: 500;
+          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+          padding-top: 2px;
+        }
+
+        .aqi {
+          font-size: 20px;
+          padding: 7px 15px 5px 15px;
+          border-radius: 6px;
+          font-weight: 500;
+          margin-left: 30px;
+          align-self: flex-end;
+          min-width: 60px;
+          text-align: center;
+        }
+      ` ];
+  }
+  constructor() {
+    super(), this.date = "", this.time = "", this.temperature = "--°", this.weatherIcon = "not-available", 
+    this.aqi = "--", this.weatherEntity = "", this.aqiEntity = "", this.error = null, 
+    this.updateTimer = null;
+  }
+  connectedCallback() {
+    super.connectedCallback(), this.updateWeather(), this.scheduleNextMinuteUpdate();
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback(), this.updateTimer && clearTimeout(this.updateTimer);
+  }
+  scheduleNextMinuteUpdate() {
+    const now = new Date, delay = 1e3 * (60 - now.getSeconds()) + (1e3 - now.getMilliseconds());
+    this.updateTimer = setTimeout((() => {
+      this.updateWeather(), this.scheduleNextMinuteUpdate();
+    }), delay);
+  }
+  updateWeather() {
+    const now = new Date;
+    this.updateDateTime(now), this.updateWeatherData(), this.requestUpdate();
+  }
+  updateDateTime(now) {
+    this.date = now.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    }), this.time = now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: !0
+    }).replace(/\s?[AP]M/, "");
+  }
+  updated(changedProperties) {
+    changedProperties.has("hass") && this.hass && this.updateWeatherData(), changedProperties.has("config") && this.config && (this.weatherEntity = this.config.weather_entity || "weather.forecast_home", 
+    this.aqiEntity = this.config.aqi_entity || "sensor.air_quality_index");
+  }
+  updateWeatherData() {
+    if (this.hass) try {
+      if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
+        const weatherEntity = this.hass.states[this.weatherEntity];
+        weatherEntity && weatherEntity.attributes && void 0 !== weatherEntity.attributes.temperature ? (this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`, 
+        this.weatherIcon = this.getWeatherIcon(weatherEntity.state)) : (this.temperature = "--°", 
+        this.weatherIcon = "not-available");
+      } else this.temperature = "--°", this.weatherIcon = "not-available";
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        aqiEntity && aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state ? this.aqi = aqiEntity.state : this.aqi = "--";
+      } else this.aqi = "--";
+      this.error = null;
+    } catch (error) {
+      console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
+    }
+  }
+  getWeatherIcon(state) {
+    return {
+      "clear-night": "clear-night",
+      cloudy: "cloudy",
+      fog: "fog",
+      hail: "hail",
+      lightning: "thunderstorms",
+      "lightning-rainy": "thunderstorms-rain",
+      partlycloudy: "partly-cloudy-day",
+      pouring: "rain",
+      rainy: "drizzle",
+      snowy: "snow",
+      "snowy-rainy": "sleet",
+      sunny: "clear-day",
+      windy: "wind",
+      "windy-variant": "wind",
+      exceptional: "not-available",
+      overcast: "overcast-day",
+      "partly-cloudy": "partly-cloudy-day",
+      "partly-cloudy-night": "partly-cloudy-night",
+      clear: "clear-day",
+      thunderstorm: "thunderstorms",
+      storm: "thunderstorms",
+      rain: "rain",
+      snow: "snow",
+      mist: "fog",
+      dust: "dust",
+      smoke: "smoke",
+      drizzle: "drizzle",
+      "light-rain": "drizzle"
+    }[state] || "not-available";
+  }
+  getAqiColor(aqi) {
+    const aqiNum = parseInt(aqi);
+    return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
+  }
+  render() {
+    const hasValidAqi = this.aqi && "--" !== this.aqi && !1 !== this.config.show_aqi;
+    return html`
+      <div class="weather-component">
+        <div class="left-column">
+          ${!1 !== this.config.show_date ? html`<div class="date">${this.date}</div>` : ""}
+          ${!1 !== this.config.show_time ? html`<div class="time">${this.time}</div>` : ""}
+        </div>
+        <div class="right-column">
+          ${!1 !== this.config.show_weather ? html`
+                <div class="weather-info">
+                  <img
+                    src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
+                    class="weather-icon"
+                    alt="Weather icon"
+                    onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
+                  />
+                  <span class="temperature">${this.temperature}</span>
+                </div>
+              ` : ""}
+          ${hasValidAqi ? html`
+                <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
+                  ${this.aqi} AQI
+                </div>
+              ` : ""}
+        </div>
+        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+      </div>
+    `;
+  }
+});
+
 class GoogleCard extends LitElement {
   static get properties() {
     return {
