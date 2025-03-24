@@ -1,5 +1,6 @@
 // src/GoogleCard.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { DEFAULT_CONFIG, MIN_BRIGHTNESS } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
 import './components/BackgroundRotator';
