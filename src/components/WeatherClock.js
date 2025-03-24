@@ -46,8 +46,8 @@ export class WeatherClock extends LitElement {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          margin-left: auto;
-          margin-right: 40px;
+          margin-left: 10px; /* Reduced from auto to bring closer */
+          margin-right: 20px; /* Reduced from 40px */
         }
 
         .date {
@@ -68,9 +68,9 @@ export class WeatherClock extends LitElement {
         .weather-info {
           display: flex;
           align-items: center;
-          margin-top: 10px;
+          margin-top: 5px; /* Reduced from 10px */
           font-weight: 500;
-          margin-right: 40px;
+          margin-right: 20px; /* Reduced from 40px */
         }
 
         .weather-icon {
@@ -293,4 +293,5 @@ export class WeatherClock extends LitElement {
     `;
   }
 }
+
 customElements.define('weather-clock', WeatherClock);
