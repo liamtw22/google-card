@@ -383,5 +383,4 @@ export class BackgroundRotator extends LitElement {
   }
 }
 
-// Register the component
 customElements.define('background-rotator', BackgroundRotator);
