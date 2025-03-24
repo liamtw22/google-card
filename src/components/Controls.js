@@ -494,3 +494,4 @@ export class Controls extends LitElement {
     `;
   }
 }
+customElements.define('controls', Controls);
