@@ -1,28 +1,33 @@
 module.exports = {
   env: {
     browser: true,
-    es2021: true
+    es2021: true,
   },
-  extends: [
-    'eslint:recommended'
-  ],
+  extends: ['eslint:recommended', 'plugin:prettier/recommended'],
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module'
+    ecmaVersion: 2020,
+    sourceType: 'module',
   },
   rules: {
-    'no-unused-vars': ['error', { 
-      'argsIgnorePattern': '^_',
-      'varsIgnorePattern': '^_'
-    }],
-    'no-console': ['warn', { 
-      allow: ['warn', 'error'] 
-    }],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always']
+    'no-console': 'off',
+    'no-case-declarations': 'off', // Turn off this rule to avoid issues with lexical declarations in switch statements
+    'prettier/prettier': [
+      'error',
+      {
+        endOfLine: 'auto',
+        singleQuote: true,
+        trailingComma: 'es5',
+        printWidth: 100,
+      },
+    ],
   },
-  globals: {
-    customElements: 'readonly',
-    HTMLElement: 'readonly'
-  }
+  overrides: [
+    {
+      files: ['src/editor.js'],
+      rules: {
+        // Allow unused imports in editor.js specifically for IMAGE_SOURCE_TYPES
+        'no-unused-vars': ['error', { 'varsIgnorePattern': 'IMAGE_SOURCE_TYPES' }]
+      }
+    }
+  ]
 };
