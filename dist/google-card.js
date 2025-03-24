@@ -1026,7 +1026,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
           font-size: 25px;
           margin-bottom: 5px;
           font-weight: 400;
-          margin-left: 20px; /* Added left padding */
+          margin-left: 10px; /* Added left padding */
           text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
         }
 
@@ -1040,7 +1040,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
         .weather-info {
           display: flex;
           align-items: center;
-          margin-top: 5px; /* Reduced from 10px */
+          margin-top: 10px; /* Reduced from 10px */
           font-weight: 500;
           margin-right: 20px; /* Reduced from 40px */
         }
