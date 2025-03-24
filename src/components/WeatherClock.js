@@ -1,5 +1,6 @@
 // src/components/WeatherClock.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { sharedStyles } from '../styles/SharedStyles';
 
 export class WeatherClock extends LitElement {
