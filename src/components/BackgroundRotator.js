@@ -24,7 +24,7 @@ export class BackgroundRotator extends LitElement {
   }
 
   static get styles() {
-    return [backgroundRotatorStyles, sharedStyles];
+    return [sharedStyles];
   }
 
   constructor() {
