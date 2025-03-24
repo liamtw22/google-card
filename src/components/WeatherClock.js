@@ -110,18 +110,36 @@ export class WeatherClock extends LitElement {
     this.aqiEntity = '';
     this.error = null;
     this.updateTimer = null;
+    this.aqiPollInterval = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.updateWeather();
     this.scheduleNextMinuteUpdate();
+    
+    // Add AQI polling every 15 seconds
+    this.aqiPollInterval = setInterval(() => {
+      if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiState = this.hass.states[this.aqiEntity].state;
+        if (aqiState !== this.aqi && 
+            aqiState !== 'unknown' && 
+            aqiState !== 'unavailable') {
+          console.log('AQI poll detected change:', aqiState);
+          this.aqi = aqiState;
+          this.requestUpdate();
+        }
+      }
+    }, 15000);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.updateTimer) {
       clearTimeout(this.updateTimer);
+    }
+    if (this.aqiPollInterval) {
+      clearInterval(this.aqiPollInterval);
     }
   }
 
@@ -162,11 +180,23 @@ export class WeatherClock extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('hass') && this.hass) {
       this.updateWeatherData();
+      
+      // Check if AQI entity has changed
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const oldState = changedProperties.get('hass')?.states?.[this.aqiEntity]?.state;
+        const newState = this.hass.states[this.aqiEntity].state;
+        
+        if (oldState !== newState) {
+          console.log('AQI state changed from', oldState, 'to', newState);
+          this.requestUpdate(); // Force update when AQI changes
+        }
+      }
     }
     
     if (changedProperties.has('config') && this.config) {
       this.weatherEntity = this.config.weather_entity || 'weather.forecast_home';
       this.aqiEntity = this.config.aqi_entity || 'sensor.air_quality_index';
+      this.requestUpdate();
     }
   }
 
@@ -189,19 +219,39 @@ export class WeatherClock extends LitElement {
         this.weatherIcon = 'not-available';
       }
       
-      // Update AQI
+      // Improved AQI detection with more verbose logging
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
-        if (aqiEntity && aqiEntity.state && aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
-          this.aqi = aqiEntity.state;
+        console.log('AQI Entity state:', aqiEntity.state, 'Entity:', this.aqiEntity);
+        
+        // Make sure we handle all possible states correctly
+        if (aqiEntity.state && 
+            aqiEntity.state !== 'unknown' && 
+            aqiEntity.state !== 'unavailable' && 
+            aqiEntity.state !== '--') {
+          
+          // Try to parse as number to ensure it's valid
+          const aqiValue = parseFloat(aqiEntity.state);
+          if (!isNaN(aqiValue)) {
+            // Valid numeric value
+            this.aqi = aqiEntity.state;
+            console.log('Valid AQI value detected:', this.aqi);
+          } else {
+            // Non-numeric but not empty/unavailable
+            this.aqi = aqiEntity.state;
+            console.log('Non-numeric AQI value detected:', this.aqi);
+          }
         } else {
           this.aqi = '--';
+          console.log('Invalid AQI state, setting to placeholder');
         }
       } else {
         this.aqi = '--';
+        console.log('AQI entity not found:', this.aqiEntity);
       }
       
       this.error = null;
+      this.requestUpdate(); // Force update after AQI changes
     } catch (error) {
       console.error('Error updating weather data:', error);
       this.error = `Error: ${error.message}`;
@@ -262,7 +312,18 @@ export class WeatherClock extends LitElement {
   }
 
   render() {
-    const hasValidAqi = this.aqi && this.aqi !== '--' && this.config.show_aqi !== false;
+    // More reliable AQI validity check
+    const hasValidAqi = this.aqi && 
+                        this.aqi !== '--' && 
+                        this.aqi !== 'unknown' && 
+                        this.aqi !== 'unavailable' && 
+                        this.config.show_aqi !== false;
+    
+    if (hasValidAqi) {
+      console.log('Rendering AQI indicator with value:', this.aqi);
+    } else {
+      console.log('Not showing AQI indicator, value:', this.aqi, 'show_aqi config:', this.config.show_aqi);
+    }
     
     return html`
       <div class="weather-component">
