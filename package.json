@@ -5,7 +5,7 @@
   "main": "dist/google-card.js",
   "scripts": {
     "build": "rollup -c",
-    "build:dev": "rollup -c --environment DEV",
+    "build:dev": "DEV=true rollup -c",
     "watch": "rollup -c -w",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
@@ -18,7 +18,7 @@
     "card",
     "google"
   ],
-  "author": "Your Name",
+  "author": "liamtw22",
   "license": "MIT",
   "dependencies": {
     "lit-element": "2.4.0"
