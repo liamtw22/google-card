@@ -1,6 +1,5 @@
-// ORIGINAL src/components/BackgroundRotator.js
+//src/components/BackgroundRotator.js
 import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
-import { backgroundRotatorStyles } from '../styles/BackgroundRotatorStyles';
 import { sharedStyles } from '../styles/SharedStyles';
 import { TRANSITION_BUFFER } from '../constants';
 
