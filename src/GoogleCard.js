@@ -80,6 +80,12 @@ export class GoogleCard extends LitElement {
     this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
+    
+    // Bind event handler methods to preserve 'this' context
+    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleDebugToggle = this.handleDebugToggle.bind(this);
+    this.handleNightModeExit = this.handleNightModeExit.bind(this);
   }
 
   initializeProperties() {
@@ -570,7 +576,7 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  handleBrightnessCardToggle = (event) => {
+  handleBrightnessCardToggle(event) {
     const shouldShow = event.detail;
     
     if (shouldShow && !this.showBrightnessCard) {
@@ -604,18 +610,18 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  handleBrightnessChange = async (event) => {
-    await this.updateBrightnessValue(event.detail);
+  handleBrightnessChange(event) {
+    this.updateBrightnessValue(event.detail);
     // Reset dismiss timer when user interacts with brightness
     this.startBrightnessCardDismissTimer();
   }
 
-  handleDebugToggle = () => {
+  handleDebugToggle() {
     this.showDebugInfo = !this.showDebugInfo;
     this.requestUpdate();
   }
 
-  handleNightModeExit = () => {
+  handleNightModeExit() {
     this.isNightMode = false;
     this.requestUpdate();
   }
@@ -726,4 +732,18 @@ export class GoogleCard extends LitElement {
   }
 }
 
+// Register custom elements before registering the main card
+customElements.define('background-rotator', customElements.get('background-rotator') || HTMLElement);
+customElements.define('google-controls', customElements.get('google-controls') || HTMLElement);
+customElements.define('night-mode', customElements.get('night-mode') || HTMLElement);
+customElements.define('weather-clock', customElements.get('weather-clock') || HTMLElement);
 customElements.define('google-card', GoogleCard);
+
+// Make GoogleCard available to the outside world
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "google-card",
+  name: "Google Card",
+  description: "A card that mimics Google's UI for photo frame displays",
+  preview: true
+});
