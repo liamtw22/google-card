@@ -732,11 +732,6 @@ export class GoogleCard extends LitElement {
   }
 }
 
-// Register custom elements before registering the main card
-customElements.define('background-rotator', customElements.get('background-rotator') || HTMLElement);
-customElements.define('google-controls', customElements.get('google-controls') || HTMLElement);
-customElements.define('night-mode', customElements.get('night-mode') || HTMLElement);
-customElements.define('weather-clock', customElements.get('weather-clock') || HTMLElement);
 customElements.define('google-card', GoogleCard);
 
 // Make GoogleCard available to the outside world
