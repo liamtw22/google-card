@@ -18,7 +18,7 @@ const DEFAULT_CONFIG = {
   aqi_entity: "sensor.air_quality_index",
   light_sensor_entity: "sensor.liam_room_display_light_sensor",
   brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
-}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css`
+}, sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
@@ -83,6 +83,9 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       screenHeight: {
         type: Number
       },
+      showDebugInfo: {
+        type: Boolean
+      },
       currentImageIndex: {
         type: Number
       },
@@ -98,219 +101,217 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
       activeImage: {
         type: String
       },
-      isTransitioning: {
-        type: Boolean
+      preloadedImage: {
+        type: String
       },
       error: {
         type: String
+      },
+      debugInfo: {
+        type: Object
+      },
+      isTransitioning: {
+        type: Boolean
       }
     };
   }
   static get styles() {
-    return [ sharedStyles, css`
-        .background-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: black;
-        }
-
-        .background-image {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-size: contain;
-          background-position: center;
-          background-repeat: no-repeat;
-          transition: opacity var(--crossfade-time) ease-in-out;
-        }
-      ` ];
+    return [ sharedStyles ];
   }
   constructor() {
-    super(), this.currentImageIndex = -1, this.imageList = [], this.imageA = "", this.imageB = "", 
-    this.activeImage = "A", this.preloadedImage = "", this.isTransitioning = !1, this.error = null;
+    super(), this.initializeProperties();
+  }
+  initializeProperties() {
+    this.currentImageIndex = -1, this.imageList = [], this.imageA = "", this.imageB = "", 
+    this.activeImage = "A", this.preloadedImage = "", this.error = null, this.debugInfo = {}, 
+    this.isTransitioning = !1;
   }
   connectedCallback() {
-    super.connectedCallback(), this.updateImageList().then((() => {
-      this.startImageRotation();
-    }));
+    super.connectedCallback(), this.startImageRotation(), this.startImageListUpdates();
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.imageUpdateInterval && clearInterval(this.imageUpdateInterval), 
-    this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval);
+    super.disconnectedCallback(), this.clearTimers();
+  }
+  clearTimers() {
+    this.imageUpdateInterval && clearInterval(this.imageUpdateInterval), this.imageListUpdateInterval && clearInterval(this.imageListUpdateInterval);
+  }
+  startImageListUpdates() {
+    this.updateImageList(), this.imageListUpdateInterval = setInterval((() => {
+      this.updateImageList();
+    }), 1e3 * this.config.image_list_update_interval);
   }
   startImageRotation() {
-    setTimeout((() => this.updateImage()), 500), this.imageUpdateInterval = setInterval((() => {
+    this.updateImage(), this.imageUpdateInterval = setInterval((() => {
       this.updateImage();
-    }), 1e3 * Math.max(5, this.config?.display_time || 15)), this.imageListUpdateInterval = setInterval((() => {
-      this.updateImageList();
-    }), 1e3 * Math.max(60, this.config?.image_list_update_interval || 3600));
+    }), 1e3 * this.config.display_time);
   }
   getImageSourceType() {
-    if (!this.config?.image_url) return IMAGE_SOURCE_TYPES_URL;
     const {image_url: image_url} = this.config;
-    return image_url.startsWith("media-source://") ? IMAGE_SOURCE_TYPES_MEDIA_SOURCE : image_url.startsWith("https://api.unsplash") ? IMAGE_SOURCE_TYPES_UNSPLASH_API : image_url.startsWith("immich+") ? IMAGE_SOURCE_TYPES_IMMICH_API : image_url.includes("picsum.photos") ? IMAGE_SOURCE_TYPES_PICSUM : IMAGE_SOURCE_TYPES_URL;
+    return image_url.startsWith("media-source://") ? "media-source" : image_url.startsWith("https://api.unsplash") ? "unsplash-api" : image_url.startsWith("immich+") ? "immich-api" : image_url.includes("picsum.photos") ? "picsum" : "url";
   }
   getImageUrl() {
-    if (!this.config?.image_url) return "";
-    const timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3), width = this.screenWidth || 1280, height = this.screenHeight || 720;
-    return this.config.image_url.replace(/\${width}/g, width).replace(/\${height}/g, height).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
+    const timestamp_ms = Date.now(), timestamp = Math.floor(timestamp_ms / 1e3);
+    return this.config.image_url.replace(/\${width}/g, this.screenWidth).replace(/\${height}/g, this.screenHeight).replace(/\${timestamp_ms}/g, timestamp_ms).replace(/\${timestamp}/g, timestamp);
   }
   async updateImageList() {
     if (!this.screenWidth || !this.screenHeight) return this.error = "Screen dimensions not set", 
     void this.requestUpdate();
     try {
       const newImageList = await this.fetchImageList();
-      if (!Array.isArray(newImageList) || 0 === newImageList.length) throw new Error("No valid images found");
-      if (this.imageList = "random" === this.config?.image_order ? this.shuffleArray([ ...newImageList ]) : [ ...newImageList ].sort(), 
-      -1 === this.currentImageIndex && this.imageList.length > 0) try {
-        this.imageA = await this.preloadImage(this.imageList[0]), this.currentImageIndex = 0, 
-        this.error = null;
-      } catch (error) {
-        this.error = `Error loading initial image: ${error.message}`;
-      }
-      return this.requestUpdate(), this.imageList;
+      this.imageList = "random" === this.config.image_order ? newImageList.sort((() => .5 - Math.random())) : newImageList.sort(), 
+      -1 === this.currentImageIndex && this.imageList.length > 0 && (this.imageA = await this.preloadImage(this.imageList[0]), 
+      this.currentImageIndex = 0), this.error = null, this.debugInfo.imageList = this.imageList;
     } catch (error) {
-      return this.error = `Error updating image list: ${error.message}`, this.requestUpdate(), 
-      [];
+      this.error = `Error updating image list: ${error.message}`;
     }
-  }
-  shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [ array[j], array[i] ];
-    }
-    return array;
+    this.requestUpdate();
   }
   async fetchImageList() {
     switch (this.getImageSourceType()) {
-     case IMAGE_SOURCE_TYPES_MEDIA_SOURCE:
+     case "media-source":
       return this.getImagesFromMediaSource();
 
-     case IMAGE_SOURCE_TYPES_UNSPLASH_API:
+     case "unsplash-api":
       return this.getImagesFromUnsplashAPI();
 
-     case IMAGE_SOURCE_TYPES_IMMICH_API:
+     case "immich-api":
       return this.getImagesFromImmichAPI();
 
-     case IMAGE_SOURCE_TYPES_PICSUM:
-      return Array.from({
-        length: 10
-      }, (() => this.getImageUrl()));
-
      default:
-      {
-        const url = this.getImageUrl();
-        return url ? [ url ] : [];
-      }
+      return [ this.getImageUrl() ];
     }
   }
   async getImagesFromMediaSource() {
-    if (!this.hass) return [ this.getImageUrl() ];
     try {
-      const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, ""), result = await this.hass.callWS({
+      const mediaContentId = this.config.image_url.replace(/^media-source:\/\//, "");
+      return (await this.hass.callWS({
         type: "media_source/browse_media",
         media_content_id: mediaContentId
-      });
-      if (!result || !Array.isArray(result.children)) throw new Error("Invalid response from media source");
-      return result.children.filter((child => "image" === child.media_class)).map((child => child.media_content_id));
+      })).children.filter((child => "image" === child.media_class)).map((child => child.media_content_id));
     } catch (error) {
-      console.error("Error fetching images from media source:", error);
-      const fallback = this.getImageUrl();
-      return fallback ? [ fallback ] : [];
+      return console.error("Error fetching images from media source:", error), [ this.getImageUrl() ];
     }
   }
   async getImagesFromUnsplashAPI() {
     try {
       const response = await fetch(`${this.config.image_url}&count=30`);
-      if (!response.ok) throw new Error(`Unsplash API returned status ${response.status}`);
-      const data = await response.json();
-      if (!Array.isArray(data)) throw new Error("Invalid response from Unsplash API");
-      return data.map((image => image.urls.regular));
+      return (await response.json()).map((image => image.urls.regular));
     } catch (error) {
-      console.error("Error fetching images from Unsplash API:", error);
-      const fallback = this.getImageUrl();
-      return fallback ? [ fallback ] : [];
+      return console.error("Error fetching images from Unsplash API:", error), [ this.getImageUrl() ];
     }
   }
   async getImagesFromImmichAPI() {
     try {
-      if (!this.config.immich_api_key) throw new Error("Immich API key not configured");
       const apiUrl = this.config.image_url.replace(/^immich\+/, ""), response = await fetch(`${apiUrl}/albums`, {
         headers: {
           "x-api-key": this.config.immich_api_key
         }
-      });
-      if (!response.ok) throw new Error(`Immich API returned status ${response.status}`);
-      const albums = await response.json();
-      if (!Array.isArray(albums)) throw new Error("Invalid response from Immich API");
-      const imagePromises = albums.map((async album => {
+      }), imagePromises = (await response.json()).map((async album => {
         const albumResponse = await fetch(`${apiUrl}/albums/${album.id}`, {
           headers: {
             "x-api-key": this.config.immich_api_key
           }
         });
-        if (!albumResponse.ok) throw new Error(`Immich API album fetch returned status ${albumResponse.status}`);
-        const albumData = await albumResponse.json();
-        return albumData && Array.isArray(albumData.assets) ? albumData.assets.filter((asset => "IMAGE" === asset.type)).map((asset => `${apiUrl}/assets/${asset.id}/original`)) : [];
+        return (await albumResponse.json()).assets.filter((asset => "IMAGE" === asset.type)).map((asset => `${apiUrl}/assets/${asset.id}/original`));
       }));
       return (await Promise.all(imagePromises)).flat();
     } catch (error) {
-      console.error("Error fetching images from Immich API:", error);
-      const fallback = this.getImageUrl();
-      return fallback ? [ fallback ] : [];
+      return console.error("Error fetching images from Immich API:", error), [ this.getImageUrl() ];
     }
   }
   async preloadImage(url) {
-    if (!url) throw new Error("Invalid image URL");
     return new Promise(((resolve, reject) => {
-      const img = new Image, timeout = setTimeout((() => {
-        reject(new Error(`Image load timeout: ${url}`));
-      }), 3e4);
-      img.onload = () => {
-        clearTimeout(timeout), resolve(url);
-      }, img.onerror = () => {
-        clearTimeout(timeout), reject(new Error(`Failed to load image: ${url}`));
-      }, img.src = url;
+      const img = new Image;
+      img.onload = () => resolve(url), img.onerror = () => reject(new Error(`Failed to load image: ${url}`)), 
+      img.src = url;
     }));
+  }
+  async preloadNextImage() {
+    if (0 === this.imageList.length) return;
+    const nextImageToPreload = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[(this.currentImageIndex + 1) % this.imageList.length];
+    try {
+      this.preloadedImage = await this.preloadImage(nextImageToPreload);
+    } catch (error) {
+      console.error("Error preloading next image:", error), this.preloadedImage = "";
+    }
+  }
+  async getNextImage() {
+    if (0 === this.imageList.length) return null;
+    let newImage;
+    try {
+      return this.preloadedImage ? (newImage = this.preloadedImage, this.preloadedImage = "") : ("picsum" === this.getImageSourceType() ? newImage = this.getImageUrl() : (this.currentImageIndex = (this.currentImageIndex + 1) % this.imageList.length, 
+      newImage = this.imageList[this.currentImageIndex]), newImage = await this.preloadImage(newImage)), 
+      newImage;
+    } catch (error) {
+      return console.error("Error getting next image:", error), null;
+    }
   }
   async updateImage() {
     if (!this.isTransitioning && 0 !== this.imageList.length) try {
-      const nextImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
-      let nextImage;
-      nextImage = this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? this.getImageUrl() : this.imageList[nextImageIndex], 
-      nextImage = await this.preloadImage(nextImage), this.currentImageIndex = nextImageIndex, 
-      this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = nextImage : this.imageA = nextImage, 
-      this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 100))), 
-      this.activeImage = "A" === this.activeImage ? "B" : "A", this.requestUpdate();
-      const transitionTime = 1e3 * (this.config?.crossfade_time || 3) + 200;
-      await new Promise((resolve => setTimeout(resolve, transitionTime))), this.isTransitioning = !1;
+      const newImage = await this.getNextImage();
+      newImage && (await this.transitionToNewImage(newImage), this.preloadNextImage());
     } catch (error) {
-      console.error("Error updating image:", error), this.isTransitioning = !1;
+      console.error("Error updating image:", error);
     }
   }
+  async transitionToNewImage(newImage) {
+    this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = newImage : this.imageA = newImage, 
+    this.updateDebugInfo(), this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 50))), 
+    this.activeImage = "A" === this.activeImage ? "B" : "A", this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 1e3 * this.config.crossfade_time + 50))), 
+    this.isTransitioning = !1;
+  }
+  updateDebugInfo() {
+    this.debugInfo = {
+      imageA: this.imageA,
+      imageB: this.imageB,
+      activeImage: this.activeImage,
+      preloadedImage: this.preloadedImage,
+      imageList: this.imageList,
+      currentImageIndex: this.currentImageIndex,
+      config: this.config,
+      error: this.error
+    };
+  }
   render() {
-    const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0, imageFit = this.config?.image_fit || "contain";
+    const imageAOpacity = "A" === this.activeImage ? 1 : 0, imageBOpacity = "B" === this.activeImage ? 1 : 0;
     return html`
       <div class="background-container">
         <div
           class="background-image"
           style="background-image: url('${this.imageA}'); 
                  opacity: ${imageAOpacity};
-                 background-size: ${imageFit};"
+                 background-size: ${this.config.image_fit || "contain"};"
         ></div>
         <div
           class="background-image"
           style="background-image: url('${this.imageB}'); 
                  opacity: ${imageBOpacity};
-                 background-size: ${imageFit};"
+                 background-size: ${this.config.image_fit || "contain"};"
         ></div>
       </div>
       ${this.error ? html`<div class="error">${this.error}</div>` : ""}
+      ${this.showDebugInfo ? this.renderDebugInfo() : ""}
+    `;
+  }
+  renderDebugInfo() {
+    return html`
+      <div class="debug-info">
+        <h2>Background Rotator Debug Info</h2>
+        <p><strong>Screen Width:</strong> ${this.screenWidth}</p>
+        <p><strong>Screen Height:</strong> ${this.screenHeight}</p>
+        <p><strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio || 1}</p>
+        <p><strong>Image A:</strong> ${this.imageA}</p>
+        <p><strong>Image B:</strong> ${this.imageB}</p>
+        <p><strong>Active Image:</strong> ${this.activeImage}</p>
+        <p><strong>Preloaded Image:</strong> ${this.preloadedImage}</p>
+        <p><strong>Is Transitioning:</strong> ${this.isTransitioning}</p>
+        <p><strong>Current Image Index:</strong> ${this.currentImageIndex}</p>
+        <p><strong>Error:</strong> ${this.error}</p>
+        <h3>Image List:</h3>
+        <pre>${JSON.stringify(this.imageList, null, 2)}</pre>
+        <h3>Config:</h3>
+        <pre>${JSON.stringify(this.config, null, 2)}</pre>
+      </div>
     `;
   }
 });
