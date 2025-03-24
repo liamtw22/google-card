@@ -292,3 +292,4 @@ export class WeatherClock extends LitElement {
     `;
   }
 }
+customElements.define('weather-clock', WeatherClock);
