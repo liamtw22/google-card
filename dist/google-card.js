@@ -1,5 +1,3 @@
-import { css as css$1 } from "https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module";
-
 const isCEPolyfill = "undefined" != typeof window && null != window.customElements && void 0 !== window.customElements.polyfillWrapFlushCallback, removeNodes = (container, start, end = null) => {
   for (;start !== end; ) {
     const n = start.nextSibling;
@@ -781,7 +779,7 @@ const DEFAULT_CONFIG = {
   aqi_entity: "sensor.air_quality_index",
   light_sensor_entity: "sensor.liam_room_display_light_sensor",
   brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
-}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css$1`
+}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
