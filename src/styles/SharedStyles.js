@@ -9,9 +9,9 @@ export const sharedStyles = css`
     --theme-background: #ffffff;
     --theme-text: #333333;
     --overlay-background: rgba(255, 255, 255, 0.95);
-    --control-text-color: #333;
+    --control-text-color: #333333; /* Ensure this is dark for light mode */
     --brightness-dot-color: #d1d1d1;
-    --brightness-dot-active: #333;
+    --brightness-dot-active: #333333; /* Ensure this is dark for light mode */
     --background-blur: 10px;
     
     display: block;
@@ -30,9 +30,9 @@ export const sharedStyles = css`
     --theme-background: #121212;
     --theme-text: #ffffff;
     --overlay-background: rgba(32, 33, 36, 0.95);
-    --control-text-color: #fff;
+    --control-text-color: #ffffff; /* Ensure this is light for dark mode */
     --brightness-dot-color: #5f6368;
-    --brightness-dot-active: #fff;
+    --brightness-dot-active: #ffffff; /* Ensure this is light for dark mode */
   }
 
   .error {
