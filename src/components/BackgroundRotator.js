@@ -1,5 +1,6 @@
 // src/components/BackgroundRotator.js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2.4.0/all/lit-element.js?module';
+import { LitElement, html, css } from 'lit-element';
+
 import { TRANSITION_BUFFER, IMAGE_SOURCE_TYPES } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
