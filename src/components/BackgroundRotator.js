@@ -174,9 +174,10 @@ export class BackgroundRotator extends LitElement {
       case IMAGE_SOURCE_TYPES.IMMICH_API:
         return this.getImagesFromImmichAPI();
 
-      case IMAGE_SOURCE_TYPES.PICSUM:
+      case IMAGE_SOURCE_TYPES.PICSUM: {
         // For Picsum, return multiple URLs to allow rotation
         return Array.from({ length: 10 }, () => this.getImageUrl());
+      }
 
       default: {
         const url = this.getImageUrl();
@@ -381,3 +382,6 @@ export class BackgroundRotator extends LitElement {
     `;
   }
 }
+
+// Register the component
+customElements.define('background-rotator', BackgroundRotator);
