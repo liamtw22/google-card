@@ -36,5 +36,5 @@ export const IMAGE_SOURCE_TYPES = {
   UNSPLASH_API: 'unsplash-api',
   IMMICH_API: 'immich-api',
   PICSUM: 'picsum',
-  URL: 'url',
+  URL: 'url'
 };
