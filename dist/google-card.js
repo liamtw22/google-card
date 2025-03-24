@@ -18,7 +18,7 @@ const DEFAULT_CONFIG = {
   aqi_entity: "sensor.air_quality_index",
   light_sensor_entity: "sensor.liam_room_display_light_sensor",
   brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
-}, sharedStyles = css`
+}, IMAGE_SOURCE_TYPES_MEDIA_SOURCE = "media-source", IMAGE_SOURCE_TYPES_UNSPLASH_API = "unsplash-api", IMAGE_SOURCE_TYPES_IMMICH_API = "immich-api", IMAGE_SOURCE_TYPES_PICSUM = "picsum", IMAGE_SOURCE_TYPES_URL = "url", sharedStyles = css`
   :host {
     --crossfade-time: 3s;
     --overlay-height: 120px;
@@ -151,9 +151,9 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     }), 1e3 * Math.max(60, this.config?.image_list_update_interval || 3600));
   }
   getImageSourceType() {
-    if (!this.config?.image_url) return "url";
+    if (!this.config?.image_url) return IMAGE_SOURCE_TYPES_URL;
     const {image_url: image_url} = this.config;
-    return image_url.startsWith("media-source://") ? "media-source" : image_url.startsWith("https://api.unsplash") ? "unsplash-api" : image_url.startsWith("immich+") ? "immich-api" : image_url.includes("picsum.photos") ? "picsum" : "url";
+    return image_url.startsWith("media-source://") ? IMAGE_SOURCE_TYPES_MEDIA_SOURCE : image_url.startsWith("https://api.unsplash") ? IMAGE_SOURCE_TYPES_UNSPLASH_API : image_url.startsWith("immich+") ? IMAGE_SOURCE_TYPES_IMMICH_API : image_url.includes("picsum.photos") ? IMAGE_SOURCE_TYPES_PICSUM : IMAGE_SOURCE_TYPES_URL;
   }
   getImageUrl() {
     if (!this.config?.image_url) return "";
@@ -188,16 +188,16 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
   async fetchImageList() {
     switch (this.getImageSourceType()) {
-     case "media-source":
+     case IMAGE_SOURCE_TYPES_MEDIA_SOURCE:
       return this.getImagesFromMediaSource();
 
-     case "unsplash-api":
+     case IMAGE_SOURCE_TYPES_UNSPLASH_API:
       return this.getImagesFromUnsplashAPI();
 
-     case "immich-api":
+     case IMAGE_SOURCE_TYPES_IMMICH_API:
       return this.getImagesFromImmichAPI();
 
-     case "picsum":
+     case IMAGE_SOURCE_TYPES_PICSUM:
       return Array.from({
         length: 10
       }, (() => this.getImageUrl()));
@@ -282,7 +282,7 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     if (!this.isTransitioning && 0 !== this.imageList.length) try {
       const nextImageIndex = (this.currentImageIndex + 1) % this.imageList.length;
       let nextImage;
-      nextImage = "picsum" === this.getImageSourceType() ? this.getImageUrl() : this.imageList[nextImageIndex], 
+      nextImage = this.getImageSourceType() === IMAGE_SOURCE_TYPES_PICSUM ? this.getImageUrl() : this.imageList[nextImageIndex], 
       nextImage = await this.preloadImage(nextImage), this.currentImageIndex = nextImageIndex, 
       this.isTransitioning = !0, "A" === this.activeImage ? this.imageB = nextImage : this.imageA = nextImage, 
       this.requestUpdate(), await new Promise((resolve => setTimeout(resolve, 50))), this.activeImage = "A" === this.activeImage ? "B" : "A", 
@@ -692,7 +692,9 @@ class GoogleCard extends LitElement {
     this.isInNightMode && "manual" === this.nightModeSource || shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
   updated(changedProperties) {
-    changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness && Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
+    if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
+      Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
+    }
   }
   render() {
     const mainContent = this.isNightMode ? html`
