@@ -30,7 +30,7 @@ const DEFAULT_CONFIG = {
     --brightness-dot-color: #d1d1d1;
     --brightness-dot-active: #333;
     --background-blur: 10px;
-
+    
     display: block;
     position: fixed;
     top: 0;
@@ -43,8 +43,7 @@ const DEFAULT_CONFIG = {
     transition: var(--theme-transition);
   }
 
-  html[data-theme='dark'],
-  :host([data-theme='dark']) {
+  html[data-theme="dark"], :host([data-theme="dark"]) {
     --theme-background: #121212;
     --theme-text: #ffffff;
     --overlay-background: rgba(32, 33, 36, 0.95);
@@ -315,862 +314,6 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
   }
 });
 
-customElements.define("google-controls", class Controls extends LitElement {
-  static get properties() {
-    return {
-      hass: {
-        type: Object
-      },
-      config: {
-        type: Object
-      },
-      showOverlay: {
-        type: Boolean
-      },
-      isOverlayVisible: {
-        type: Boolean
-      },
-      isOverlayTransitioning: {
-        type: Boolean
-      },
-      showBrightnessCard: {
-        type: Boolean
-      },
-      isBrightnessCardVisible: {
-        type: Boolean
-      },
-      isBrightnessCardTransitioning: {
-        type: Boolean
-      },
-      brightness: {
-        type: Number
-      },
-      visualBrightness: {
-        type: Number
-      },
-      isAdjustingBrightness: {
-        type: Boolean
-      },
-      isDraggingBrightness: {
-        type: Boolean
-      }
-    };
-  }
-  static get styles() {
-    return [ sharedStyles, css`
-        .controls-container {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          pointer-events: none;
-          z-index: 1000;
-          touch-action: none;
-        }
-
-        .overlay {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: var(--overlay-height);
-          background-color: var(--overlay-background);
-          -webkit-backdrop-filter: blur(var(--background-blur));
-          backdrop-filter: blur(var(--background-blur));
-          color: var(--control-text-color);
-          box-sizing: border-box;
-          transform: translateY(calc(100% + 20px));
-          opacity: 0;
-          transition: none;
-          z-index: 1001;
-          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          border-top-left-radius: 20px;
-          border-top-right-radius: 20px;
-          pointer-events: auto;
-          touch-action: none;
-          will-change: transform, opacity;
-        }
-
-        .overlay.transitioning {
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .overlay.show {
-          transform: translateY(0);
-          opacity: 1;
-        }
-
-        .icon-container {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          pointer-events: auto;
-        }
-
-        .icon-row {
-          display: flex;
-          justify-content: space-evenly; /* Ensures icons are spaced evenly */
-          align-items: center;
-          width: 95%;
-          pointer-events: auto;
-        }
-
-        .icon-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--control-text-color);
-          padding: 10px;
-          border-radius: 50%;
-          transition: background-color 0.2s ease, transform 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          pointer-events: auto;
-          touch-action: none;
-          width: 60px;
-          height: 60px;
-          outline: none;
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        .icon-button:hover {
-          background-color: rgba(0, 0, 0, 0.1);
-        }
-
-        .icon-button:active {
-          background-color: rgba(0, 0, 0, 0.2);
-          transform: scale(0.95);
-        }
-
-        .brightness-card {
-          position: fixed;
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
-          height: 70px;
-          background-color: var(--overlay-background);
-          -webkit-backdrop-filter: blur(var(--background-blur));
-          backdrop-filter: blur(var(--background-blur));
-          color: var(--control-text-color);
-          border-radius: 20px;
-          padding: 40px 20px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          z-index: 1002;
-          transform: translateY(calc(100% + 20px));
-          opacity: 0;
-          transition: none;
-          pointer-events: auto;
-          touch-action: none;
-          will-change: transform, opacity;
-        }
-
-        .brightness-card.transitioning {
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .brightness-card.show {
-          transform: translateY(0);
-          opacity: 1;
-        }
-
-        .brightness-control {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          pointer-events: auto;
-          height: 100%;
-        }
-
-        .brightness-dots-container {
-          flex-grow: 1;
-          margin-right: 10px;
-          padding: 0 10px;
-          pointer-events: auto;
-        }
-
-        .brightness-dots {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 30px;
-          pointer-events: auto;
-          touch-action: none;
-          padding: 10px 0;
-        }
-
-        .brightness-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background-color: var(--brightness-dot-color);
-          transition: background-color 0.2s ease, transform 0.2s ease;
-          cursor: pointer;
-          pointer-events: auto;
-        }
-
-        .brightness-dot:hover {
-          transform: scale(1.2);
-        }
-
-        .brightness-dot.active {
-          background-color: var(--brightness-dot-active);
-        }
-
-        .brightness-value {
-          min-width: 60px;
-          text-align: right;
-          font-size: 40px;
-          color: var(--control-text-color);
-          font-weight: 300;
-          margin-right: 20px;
-          pointer-events: none;
-          font-family: 'Rubik', sans-serif;
-        }
-
-        iconify-icon {
-          font-size: 50px;
-          width: 50px;
-          height: 50px;
-          display: block;
-          color: var(--control-text-color);
-          pointer-events: none;
-        }
-
-        /* iOS specific adjustments */
-        @supports (-webkit-touch-callout: none) {
-          .controls-container {
-            padding-bottom: env(safe-area-inset-bottom, 0);
-          }
-
-          .overlay {
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
-          }
-
-          .brightness-card {
-            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
-            margin-bottom: env(safe-area-inset-bottom, 0);
-          }
-        }
-
-        /* PWA standalone mode adjustments */
-        @media (display-mode: standalone) {
-          .controls-container {
-            padding-bottom: env(safe-area-inset-bottom, 0);
-          }
-
-          .overlay {
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
-          }
-
-          .brightness-card {
-            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
-            margin-bottom: env(safe-area-inset-bottom, 0);
-          }
-        }
-      ` ];
-  }
-  constructor() {
-    super(), this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
-    this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
-    this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.longPressTimer = null, this.isDraggingBrightness = !1, this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
-    this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this), this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), 
-    this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
-    this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer), 
-    this.removeBrightnessDragListeners();
-  }
-  updated(changedProperties) {
-    changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness);
-  }
-  handleBrightnessChange(e) {
-    e.stopPropagation();
-    const clickedDot = e.target.closest(".brightness-dot");
-    if (!clickedDot) return;
-    const newBrightness = parseInt(clickedDot.dataset.value);
-    this.updateBrightnessValue(25.5 * newBrightness);
-  }
-  handleBrightnessDragStart(e) {
-    e.stopPropagation(), this.isDraggingBrightness = !0, document.addEventListener("mousemove", this.handleBrightnessDrag), 
-    document.addEventListener("mouseup", this.handleBrightnessDragEnd), document.addEventListener("touchmove", this.handleBrightnessDrag, {
-      passive: !1
-    }), document.addEventListener("touchend", this.handleBrightnessDragEnd), this.handleBrightnessDrag(e);
-  }
-  handleBrightnessDrag(e) {
-    if (e.preventDefault(), e.stopPropagation(), !this.isDraggingBrightness) return;
-    const container = this.shadowRoot.querySelector(".brightness-dots");
-    if (!container) return;
-    const rect = container.getBoundingClientRect(), clientX = e.type.includes("touch") ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
-    if (void 0 === clientX) return;
-    const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width)), newValue = Math.round(relativeX / rect.width * 10), cappedValue = Math.max(1, Math.min(10, newValue));
-    this.updateBrightnessValue(25.5 * cappedValue);
-  }
-  handleBrightnessDragEnd(e) {
-    e && (e.preventDefault(), e.stopPropagation()), this.isDraggingBrightness = !1, 
-    this.removeBrightnessDragListeners();
-  }
-  removeBrightnessDragListeners() {
-    document.removeEventListener("mousemove", this.handleBrightnessDrag), document.removeEventListener("mouseup", this.handleBrightnessDragEnd), 
-    document.removeEventListener("touchmove", this.handleBrightnessDrag), document.removeEventListener("touchend", this.handleBrightnessDragEnd);
-  }
-  updateBrightnessValue(value) {
-    this.visualBrightness = value, this.dispatchEvent(new CustomEvent("brightnessChange", {
-      detail: Math.max(1, Math.min(255, Math.round(value))),
-      bubbles: !0,
-      composed: !0
-    }));
-  }
-  getBrightnessDisplayValue() {
-    return Math.round(this.visualBrightness / 25.5);
-  }
-  toggleBrightnessCard(e) {
-    e && e.stopPropagation(), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
-      detail: !this.showBrightnessCard,
-      bubbles: !0,
-      composed: !0
-    }));
-  }
-  handleSettingsIconTouchStart(e) {
-    e.stopPropagation(), this.longPressTimer && clearTimeout(this.longPressTimer), this.longPressTimer = setTimeout((() => {
-      this.dispatchEvent(new CustomEvent("debugToggle", {
-        bubbles: !0,
-        composed: !0
-      })), this.longPressTimer = null;
-    }), 1e3);
-  }
-  handleSettingsIconTouchEnd(e) {
-    e.stopPropagation(), this.longPressTimer && (clearTimeout(this.longPressTimer), 
-    this.longPressTimer = null);
-  }
-  handleOverlayToggle(shouldShow) {
-    this.dispatchEvent(new CustomEvent("overlayToggle", {
-      detail: shouldShow,
-      bubbles: !0,
-      composed: !0
-    }));
-  }
-  renderBrightnessCard() {
-    const brightnessDisplayValue = this.getBrightnessDisplayValue();
-    return html`
-      <div
-        class="brightness-card ${this.isBrightnessCardVisible ? "show" : ""} ${this.isBrightnessCardTransitioning ? "transitioning" : ""}"
-        @click="${e => e.stopPropagation()}"
-      >
-        <div class="brightness-control">
-          <div class="brightness-dots-container">
-            <div
-              class="brightness-dots"
-              @click="${this.handleBrightnessChange}"
-              @mousedown="${this.handleBrightnessDragStart}"
-              @touchstart="${this.handleBrightnessDragStart}"
-            >
-              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
-                  <div
-                    class="brightness-dot ${value <= brightnessDisplayValue ? "active" : ""}"
-                    data-value="${value}"
-                  ></div>
-                `))}
-            </div>
-          </div>
-          <span class="brightness-value">${brightnessDisplayValue}</span>
-        </div>
-      </div>
-    `;
-  }
-  renderOverlay() {
-    return html`
-      <div
-        class="overlay ${this.isOverlayVisible ? "show" : ""} ${this.isOverlayTransitioning ? "transitioning" : ""}"
-        @click="${e => e.stopPropagation()}"
-      >
-        <div class="icon-container">
-          <div class="icon-row">
-            <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
-              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon
-                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-              ></iconify-icon>
-            </button>
-            <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
-            </button>
-            <button
-              class="icon-button"
-              @touchstart="${this.handleSettingsIconTouchStart}"
-              @touchend="${this.handleSettingsIconTouchEnd}"
-              @touchcancel="${this.handleSettingsIconTouchEnd}"
-              @mousedown="${this.handleSettingsIconTouchStart}"
-              @mouseup="${this.handleSettingsIconTouchEnd}"
-              @mouseleave="${this.handleSettingsIconTouchEnd}"
-            >
-              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-  render() {
-    return html`
-      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
-        ${this.showOverlay ? this.renderOverlay() : ""}
-        ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
-      </div>
-    `;
-  }
-});
-
-customElements.define("night-mode", class NightMode extends LitElement {
-  static get properties() {
-    return {
-      hass: {
-        type: Object
-      },
-      config: {
-        type: Object
-      },
-      currentTime: {
-        type: String
-      },
-      brightness: {
-        type: Number
-      },
-      isInNightMode: {
-        type: Boolean
-      },
-      previousBrightness: {
-        type: Number
-      },
-      isTransitioning: {
-        type: Boolean
-      },
-      error: {
-        type: String
-      },
-      nightModeSource: {
-        type: String
-      }
-    };
-  }
-  static get styles() {
-    return [ sharedStyles, css`
-        .night-mode {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: black;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 5;
-          cursor: pointer;
-        }
-
-        .night-time {
-          color: white;
-          font-size: 35vw;
-          font-weight: 400;
-          font-family: 'Product Sans Regular', sans-serif;
-        }
-
-        .tap-hint {
-          position: fixed;
-          bottom: 40px;
-          left: 0;
-          right: 0;
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 16px;
-          text-align: center;
-          font-family: 'Rubik', sans-serif;
-          font-weight: 300;
-          animation: pulse 3s infinite;
-        }
-
-        @keyframes pulse {
-          0% {
-            opacity: 0.3;
-          }
-          50% {
-            opacity: 0.7;
-          }
-          100% {
-            opacity: 0.3;
-          }
-        }
-      ` ];
-  }
-  constructor() {
-    super(), this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1, 
-    this.isTransitioning = !1, this.error = null, this.nightModeSource = null, this.timeUpdateInterval = null, 
-    this.sensorCheckInterval = null, this.sensorCheckedTime = 0;
-  }
-  connectedCallback() {
-    super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
-    this.sensorCheckInterval = setInterval((() => {
-      this.checkLightSensor();
-    }), 3e4);
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback(), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), 
-    this.sensorCheckInterval && clearInterval(this.sensorCheckInterval);
-  }
-  startTimeUpdates() {
-    this.timeUpdateInterval = setInterval((() => {
-      this.updateTime();
-    }), 1e3);
-  }
-  updateTime() {
-    const now = new Date;
-    this.currentTime = now.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: !0
-    }).replace(/\s?[AP]M/, "");
-  }
-  async enterNightMode() {
-    if (!this.isInNightMode || this.isTransitioning) {
-      this.isTransitioning = !0;
-      try {
-        this.brightness > 1 && (this.previousBrightness = this.brightness), await this.toggleAutoBrightness(!1), 
-        await new Promise((resolve => setTimeout(resolve, 100))), await this.setBrightness(1), 
-        await new Promise((resolve => setTimeout(resolve, 100))), await this.toggleAutoBrightness(!0), 
-        this.isInNightMode = !0, this.error = null;
-      } catch (error) {
-        this.error = `Error entering night mode: ${error.message}`;
-      } finally {
-        this.isTransitioning = !1, this.requestUpdate();
-      }
-    }
-  }
-  async exitNightMode() {
-    if (this.isInNightMode && !this.isTransitioning) {
-      this.isTransitioning = !0;
-      try {
-        await this.toggleAutoBrightness(!1), await new Promise((resolve => setTimeout(resolve, 100)));
-        const targetBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
-        await this.setBrightness(targetBrightness), this.isInNightMode = !1, this.error = null, 
-        this.dispatchEvent(new CustomEvent("nightModeExit", {
-          bubbles: !0,
-          composed: !0
-        }));
-      } catch (error) {
-        this.error = `Error exiting night mode: ${error.message}`;
-      } finally {
-        this.isTransitioning = !1, this.requestUpdate();
-      }
-    }
-  }
-  async setBrightness(value) {
-    if (!this.hass || !this.config) return;
-    const brightness = Math.max(1, Math.min(255, Math.round(value))), deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
-    await this.hass.callService("notify", deviceName, {
-      message: "command_screen_brightness_level",
-      data: {
-        command: brightness
-      }
-    }), await this.hass.callService("notify", deviceName, {
-      message: "command_update_sensors"
-    }), await new Promise((resolve => setTimeout(resolve, this.config.sensor_update_delay || 500))), 
-    this.brightness = brightness, this.requestUpdate();
-  }
-  async toggleAutoBrightness(enabled) {
-    if (!this.hass || !this.config) return;
-    const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
-    await this.hass.callService("notify", deviceName, {
-      message: "command_auto_screen_brightness",
-      data: {
-        command: enabled ? "turn_on" : "turn_off"
-      }
-    });
-  }
-  updated(changedProperties) {
-    if (changedProperties.has("hass") && this.hass) {
-      Date.now() - this.sensorCheckedTime > 5e3 && this.checkLightSensor();
-    }
-  }
-  checkLightSensor() {
-    if (!this.hass || !this.config) return;
-    this.sensorCheckedTime = Date.now();
-    const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor", lightSensor = this.hass.states[lightSensorEntity];
-    if (lightSensor && "unavailable" !== lightSensor.state && "unknown" !== lightSensor.state) try {
-      const shouldBeInNightMode = 0 === parseInt(lightSensor.state);
-      if (this.isInNightMode && "manual" === this.nightModeSource) return;
-      shouldBeInNightMode && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : !shouldBeInNightMode && this.isInNightMode && "sensor" === this.nightModeSource && (this.exitNightMode(), 
-      this.nightModeSource = null);
-    } catch (error) {}
-  }
-  render() {
-    return html`
-      <div class="night-mode" @click="${this.handleNightModeTap}">
-        <div class="night-time">${this.currentTime}</div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
-        ${"manual" === this.nightModeSource ? html` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
-      </div>
-    `;
-  }
-  handleNightModeTap() {
-    this.isInNightMode && "manual" === this.nightModeSource && (this.exitNightMode(), 
-    this.dispatchEvent(new CustomEvent("nightModeExit", {
-      bubbles: !0,
-      composed: !0
-    })));
-  }
-});
-
-customElements.define("weather-clock", class WeatherClock extends LitElement {
-  static get properties() {
-    return {
-      hass: {
-        type: Object
-      },
-      config: {
-        type: Object
-      },
-      date: {
-        type: String
-      },
-      time: {
-        type: String
-      },
-      temperature: {
-        type: String
-      },
-      weatherIcon: {
-        type: String
-      },
-      aqi: {
-        type: String
-      },
-      weatherEntity: {
-        type: String
-      },
-      aqiEntity: {
-        type: String
-      },
-      error: {
-        type: String
-      }
-    };
-  }
-  static get styles() {
-    return [ sharedStyles, css`
-        .weather-component {
-          position: fixed;
-          bottom: 30px;
-          left: 40px;
-          display: flex;
-          justify-content: start;
-          align-items: center;
-          color: white;
-          font-family: 'Product Sans Regular', sans-serif;
-          width: 100%;
-          max-width: 400px;
-        }
-
-        .left-column {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .right-column {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          margin-left: auto;
-          margin-right: 40px;
-        }
-
-        .date {
-          font-size: 25px;
-          margin-bottom: 5px;
-          font-weight: 400;
-          margin-left: 20px; /* Added left padding */
-          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-        }
-
-        .time {
-          font-size: 90px;
-          line-height: 1;
-          font-weight: 500;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .weather-info {
-          display: flex;
-          align-items: center;
-          margin-top: 10px;
-          font-weight: 500;
-          margin-right: 40px;
-        }
-
-        .weather-icon {
-          width: 50px;
-          height: 50px;
-        }
-
-        .temperature {
-          font-size: 35px;
-          font-weight: 500;
-          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-          padding-top: 2px;
-        }
-
-        .aqi {
-          font-size: 20px;
-          padding: 7px 15px 5px 15px;
-          border-radius: 6px;
-          font-weight: 500;
-          margin-left: 30px;
-          align-self: flex-end;
-          min-width: 60px;
-          text-align: center;
-        }
-      ` ];
-  }
-  constructor() {
-    super(), this.date = "", this.time = "", this.temperature = "--°", this.weatherIcon = "not-available", 
-    this.aqi = "--", this.weatherEntity = "", this.aqiEntity = "", this.error = null, 
-    this.updateTimer = null;
-  }
-  connectedCallback() {
-    super.connectedCallback(), this.updateWeather(), this.scheduleNextMinuteUpdate();
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback(), this.updateTimer && clearTimeout(this.updateTimer);
-  }
-  scheduleNextMinuteUpdate() {
-    const now = new Date, delay = 1e3 * (60 - now.getSeconds()) + (1e3 - now.getMilliseconds());
-    this.updateTimer = setTimeout((() => {
-      this.updateWeather(), this.scheduleNextMinuteUpdate();
-    }), delay);
-  }
-  updateWeather() {
-    const now = new Date;
-    this.updateDateTime(now), this.updateWeatherData(), this.requestUpdate();
-  }
-  updateDateTime(now) {
-    this.date = now.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric"
-    }), this.time = now.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: !0
-    }).replace(/\s?[AP]M/, "");
-  }
-  updated(changedProperties) {
-    changedProperties.has("hass") && this.hass && this.updateWeatherData(), changedProperties.has("config") && this.config && (this.weatherEntity = this.config.weather_entity || "weather.forecast_home", 
-    this.aqiEntity = this.config.aqi_entity || "sensor.air_quality_index");
-  }
-  updateWeatherData() {
-    if (this.hass) try {
-      if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
-        const weatherEntity = this.hass.states[this.weatherEntity];
-        weatherEntity && weatherEntity.attributes && void 0 !== weatherEntity.attributes.temperature ? (this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`, 
-        this.weatherIcon = this.getWeatherIcon(weatherEntity.state)) : (this.temperature = "--°", 
-        this.weatherIcon = "not-available");
-      } else this.temperature = "--°", this.weatherIcon = "not-available";
-      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const aqiEntity = this.hass.states[this.aqiEntity];
-        aqiEntity && aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state ? this.aqi = aqiEntity.state : this.aqi = "--";
-      } else this.aqi = "--";
-      this.error = null;
-    } catch (error) {
-      console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
-    }
-  }
-  getWeatherIcon(state) {
-    return {
-      "clear-night": "clear-night",
-      cloudy: "cloudy",
-      fog: "fog",
-      hail: "hail",
-      lightning: "thunderstorms",
-      "lightning-rainy": "thunderstorms-rain",
-      partlycloudy: "partly-cloudy-day",
-      pouring: "rain",
-      rainy: "drizzle",
-      snowy: "snow",
-      "snowy-rainy": "sleet",
-      sunny: "clear-day",
-      windy: "wind",
-      "windy-variant": "wind",
-      exceptional: "not-available",
-      overcast: "overcast-day",
-      "partly-cloudy": "partly-cloudy-day",
-      "partly-cloudy-night": "partly-cloudy-night",
-      clear: "clear-day",
-      thunderstorm: "thunderstorms",
-      storm: "thunderstorms",
-      rain: "rain",
-      snow: "snow",
-      mist: "fog",
-      dust: "dust",
-      smoke: "smoke",
-      drizzle: "drizzle",
-      "light-rain": "drizzle"
-    }[state] || "not-available";
-  }
-  getAqiColor(aqi) {
-    const aqiNum = parseInt(aqi);
-    return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
-  }
-  render() {
-    const hasValidAqi = this.aqi && "--" !== this.aqi && !1 !== this.config.show_aqi;
-    return html`
-      <div class="weather-component">
-        <div class="left-column">
-          ${!1 !== this.config.show_date ? html`<div class="date">${this.date}</div>` : ""}
-          ${!1 !== this.config.show_time ? html`<div class="time">${this.time}</div>` : ""}
-        </div>
-        <div class="right-column">
-          ${!1 !== this.config.show_weather ? html`
-                <div class="weather-info">
-                  <img
-                    src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
-                    class="weather-icon"
-                    alt="Weather icon"
-                    onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
-                  />
-                  <span class="temperature">${this.temperature}</span>
-                </div>
-              ` : ""}
-          ${hasValidAqi ? html`
-                <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
-                  ${this.aqi} AQI
-                </div>
-              ` : ""}
-        </div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : ""}
-      </div>
-    `;
-  }
-});
-
 class GoogleCard extends LitElement {
   static get properties() {
     return {
@@ -1277,7 +420,9 @@ class GoogleCard extends LitElement {
   constructor() {
     super(), this.initializeProperties(), this.boundUpdateScreenSize = this.updateScreenSize.bind(this), 
     this.brightnessUpdateQueue = [], this.isProcessingBrightnessUpdate = !1, this.isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches, 
-    this.themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)"), this.boundHandleThemeChange = this.handleThemeChange.bind(this);
+    this.themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)"), this.boundHandleThemeChange = this.handleThemeChange.bind(this), 
+    this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this), this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
+    this.handleDebugToggle = this.handleDebugToggle.bind(this), this.handleNightModeExit = this.handleNightModeExit.bind(this);
   }
   initializeProperties() {
     this.showDebugInfo = !1, this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
@@ -1516,7 +661,7 @@ class GoogleCard extends LitElement {
       throw console.error("Error exiting night mode:", error), error;
     }
   }
-  handleBrightnessCardToggle=event => {
+  handleBrightnessCardToggle(event) {
     const shouldShow = event.detail;
     shouldShow && !this.showBrightnessCard ? (this.showOverlay && (this.isOverlayVisible = !1, 
     this.showOverlay = !1, this.isOverlayTransitioning = !1, this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer)), 
@@ -1526,16 +671,16 @@ class GoogleCard extends LitElement {
         this.isBrightnessCardTransitioning = !1, this.requestUpdate();
       }), 300);
     }))) : !shouldShow && this.showBrightnessCard && this.dismissBrightnessCard();
-  };
-  handleBrightnessChange=async event => {
-    await this.updateBrightnessValue(event.detail), this.startBrightnessCardDismissTimer();
-  };
-  handleDebugToggle=() => {
+  }
+  handleBrightnessChange(event) {
+    this.updateBrightnessValue(event.detail), this.startBrightnessCardDismissTimer();
+  }
+  handleDebugToggle() {
     this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
-  };
-  handleNightModeExit=() => {
+  }
+  handleNightModeExit() {
     this.isNightMode = !1, this.requestUpdate();
-  };
+  }
   updateNightMode() {
     if (!this.hass) return;
     const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor", lightSensor = this.hass.states[lightSensorEntity];
@@ -1552,78 +697,79 @@ class GoogleCard extends LitElement {
   }
   render() {
     const mainContent = this.isNightMode ? html`
-          <night-mode
-            .currentTime=${this.currentTime}
-            .hass=${this.hass}
-            .config=${this.config}
-            .brightness=${this.brightness}
-            .previousBrightness=${this.previousBrightness}
-            .isInNightMode=${this.isInNightMode}
-            .nightModeSource=${this.nightModeSource}
-            @nightModeExit=${this.handleNightModeExit}
-          ></night-mode>
-        ` : html`
-          <background-rotator
-            .hass=${this.hass}
-            .config=${this.config}
-            .screenWidth=${this.screenWidth}
-            .screenHeight=${this.screenHeight}
-          ></background-rotator>
+      <night-mode 
+        .currentTime=${this.currentTime}
+        .hass=${this.hass}
+        .config=${this.config}
+        .brightness=${this.brightness}
+        .previousBrightness=${this.previousBrightness}
+        .isInNightMode=${this.isInNightMode}
+        .nightModeSource=${this.nightModeSource}
+        @nightModeExit=${this.handleNightModeExit}
+      ></night-mode>
+    ` : html`
+      <background-rotator
+        .hass=${this.hass}
+        .config=${this.config}
+        .screenWidth=${this.screenWidth}
+        .screenHeight=${this.screenHeight}
+      ></background-rotator>
 
-          <weather-clock .hass=${this.hass} .config=${this.config}></weather-clock>
+      <weather-clock 
+        .hass=${this.hass}
+        .config=${this.config}
+      ></weather-clock>
 
-          <google-controls
-            .hass=${this.hass}
-            .config=${this.config}
-            .showOverlay=${this.showOverlay}
-            .isOverlayVisible=${this.isOverlayVisible}
-            .isOverlayTransitioning=${this.isOverlayTransitioning}
-            .showBrightnessCard=${this.showBrightnessCard}
-            .isBrightnessCardVisible=${this.isBrightnessCardVisible}
-            .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
-            .brightness=${this.brightness}
-            .visualBrightness=${this.visualBrightness}
-            .isAdjustingBrightness=${this.isAdjustingBrightness}
-            @overlayToggle=${this.handleOverlayToggle}
-            @brightnessCardToggle=${this.handleBrightnessCardToggle}
-            @brightnessChange=${this.handleBrightnessChange}
-            @debugToggle=${this.handleDebugToggle}
-          ></google-controls>
-        `;
+      <google-controls
+        .hass=${this.hass}
+        .config=${this.config}
+        .showOverlay=${this.showOverlay}
+        .isOverlayVisible=${this.isOverlayVisible}
+        .isOverlayTransitioning=${this.isOverlayTransitioning}
+        .showBrightnessCard=${this.showBrightnessCard}
+        .isBrightnessCardVisible=${this.isBrightnessCardVisible}
+        .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
+        .brightness=${this.brightness}
+        .visualBrightness=${this.visualBrightness}
+        .isAdjustingBrightness=${this.isAdjustingBrightness}
+        @overlayToggle=${this.handleOverlayToggle}
+        @brightnessCardToggle=${this.handleBrightnessCardToggle}
+        @brightnessChange=${this.handleBrightnessChange}
+        @debugToggle=${this.handleDebugToggle}
+      ></google-controls>
+    `;
     return html`
       <!-- Import all required fonts -->
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
+      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+      
       <!-- Fallback font style for Product Sans -->
       <style>
         @font-face {
           font-family: 'Product Sans Regular';
-          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'),
-            url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2)
-              format('woff2');
+          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
           font-weight: 400;
           font-style: normal;
           font-display: swap;
         }
       </style>
-
+      
       <div class="touch-container">
-        <div class="content-wrapper">${mainContent}</div>
+        <div class="content-wrapper">
+          ${mainContent}
+        </div>
       </div>
     `;
   }
 }
 
-customElements.define("google-card", GoogleCard);
+customElements.define("google-card", GoogleCard), window.customCards = window.customCards || [], 
+window.customCards.push({
+  type: "google-card",
+  name: "Google Card",
+  description: "A card that mimics Google's UI for photo frame displays",
+  preview: !0
+});
 
 export { GoogleCard };
 //# sourceMappingURL=google-card.js.map
