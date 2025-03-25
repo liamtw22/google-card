@@ -1,21 +1,24 @@
-// src/components/WeatherClock.js
+// src/components/Controls.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+import { MIN_BRIGHTNESS, MAX_BRIGHTNESS, LONG_PRESS_TIMEOUT } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
-export class WeatherClock extends LitElement {
+export class Controls extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
       config: { type: Object },
-      date: { type: String },
-      time: { type: String },
-      temperature: { type: String },
-      weatherIcon: { type: String },
-      aqi: { type: String },
-      weatherEntity: { type: String },
-      aqiEntity: { type: String },
-      error: { type: String },
+      showOverlay: { type: Boolean },
+      isOverlayVisible: { type: Boolean },
+      isOverlayTransitioning: { type: Boolean },
+      showBrightnessCard: { type: Boolean },
+      isBrightnessCardVisible: { type: Boolean },
+      isBrightnessCardTransitioning: { type: Boolean },
+      brightness: { type: Number },
+      visualBrightness: { type: Number },
+      isAdjustingBrightness: { type: Boolean },
+      isDraggingBrightness: { type: Boolean }
     };
   }
 
@@ -23,82 +26,234 @@ export class WeatherClock extends LitElement {
     return [
       sharedStyles,
       css`
-        .weather-component {
+        .controls-container {
           position: fixed;
-          bottom: 30px;
-          left: 40px;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          color: white;
-          font-family: 'Product Sans Regular', sans-serif;
+          bottom: 0;
+          left: 0;
           width: 100%;
-          max-width: 400px;
+          pointer-events: none;
+          z-index: 1000;
+          touch-action: none;
         }
 
-        .top-row {
+        .overlay {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: var(--overlay-height);
+          background-color: var(--overlay-background);
+          -webkit-backdrop-filter: blur(var(--background-blur));
+          backdrop-filter: blur(var(--background-blur));
+          color: var(--control-text-color);
+          box-sizing: border-box;
+          transform: translateY(calc(100% + 20px));
+          opacity: 0;
+          transition: none;
+          z-index: 1001;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
           display: flex;
-          justify-content: flex-start;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          border-top-left-radius: 20px;
+          border-top-right-radius: 20px;
+          pointer-events: auto;
+          touch-action: none;
+          will-change: transform, opacity;
+        }
+
+        .overlay.transitioning {
+          transition: 
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .overlay.show {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .icon-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          pointer-events: auto;
+        }
+
+        .icon-row {
+          display: flex;
+          justify-content: space-evenly; /* Ensures icons are spaced evenly */
+          align-items: center;
+          width: 95%;
+          pointer-events: auto;
+        }
+
+        .icon-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--control-text-color);
+          padding: 10px;
+          border-radius: 50%;
+          transition: 
+            background-color 0.2s ease,
+            transform 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: auto;
+          touch-action: none;
+          width: 60px;
+          height: 60px;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .icon-button:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-button:active {
+          background-color: rgba(0, 0, 0, 0.2);
+          transform: scale(0.95);
+        }
+
+        .brightness-card {
+          position: fixed;
+          bottom: 20px;
+          left: 20px;
+          right: 20px;
+          height: 70px;
+          background-color: var(--overlay-background);
+          -webkit-backdrop-filter: blur(var(--background-blur));
+          backdrop-filter: blur(var(--background-blur));
+          color: var(--control-text-color);
+          border-radius: 20px;
+          padding: 40px 20px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          z-index: 1002;
+          transform: translateY(calc(100% + 20px));
+          opacity: 0;
+          transition: none;
+          pointer-events: auto;
+          touch-action: none;
+          will-change: transform, opacity;
+        }
+
+        .brightness-card.transitioning {
+          transition: 
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .brightness-card.show {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .brightness-control {
+          display: flex;
           align-items: center;
           width: 100%;
+          pointer-events: auto;
+          height: 100%;
         }
 
-        .left-column {
+        .brightness-dots-container {
+          flex-grow: 1;
+          margin-right: 10px;
+          padding: 0 10px;
+          pointer-events: auto;
+        }
+
+        .brightness-dots {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .date {
-          font-size: 25px;
-          margin-bottom: 5px;
-          font-weight: 400;
-          margin-left: 10px; /* Added left padding */
-          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-        }
-
-        .time {
-          font-size: 90px;
-          line-height: 1;
-          font-weight: 500;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .weather-section {
-          display: flex;
-          flex-direction: column;
+          justify-content: space-between;
           align-items: center;
-          margin-top: 5px;
+          height: 30px;
+          pointer-events: auto;
+          touch-action: none;
+          padding: 10px 0;
         }
 
-        .weather-info {
-          display: flex;
-          align-items: center;
-          font-weight: 500;
-          margin-right: 0px;
+        .brightness-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background-color: var(--brightness-dot-color);
+          transition: 
+            background-color 0.2s ease,
+            transform 0.2s ease;
+          cursor: pointer;
+          pointer-events: auto;
         }
 
-        .weather-icon {
+        .brightness-dot:hover {
+          transform: scale(1.2);
+        }
+
+        .brightness-dot.active {
+          background-color: var(--brightness-dot-active);
+        }
+
+        .brightness-value {
+          min-width: 60px;
+          text-align: right;
+          font-size: 40px;
+          color: var(--control-text-color);
+          font-weight: 300;
+          margin-right: 20px;
+          pointer-events: none;
+          font-family: 'Rubik', sans-serif;
+        }
+
+        iconify-icon {
+          font-size: 50px;
           width: 50px;
           height: 50px;
+          display: block !important;
+          color: var(--control-text-color) !important;
+          pointer-events: none;
+          fill: currentColor;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
 
-        .temperature {
-          font-size: 35px;
-          font-weight: 500;
-          text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-          padding-top: 2px;
+        /* iOS specific adjustments */
+        @supports (-webkit-touch-callout: none) {
+          .controls-container {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+          }
+
+          .overlay {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+          }
+
+          .brightness-card {
+            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+            margin-bottom: env(safe-area-inset-bottom, 0);
+          }
         }
 
-        .aqi {
-          font-size: 20px;
-          padding: 7px 15px 5px 15px;
-          border-radius: 6px;
-          font-weight: 500;
-          margin-top: 5px;
-          align-self: center;
-          min-width: 60px;
-          text-align: center;
+        /* PWA standalone mode adjustments */
+        @media (display-mode: standalone) {
+          .controls-container {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+          }
+
+          .overlay {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+          }
+
+          .brightness-card {
+            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+            margin-bottom: env(safe-area-inset-bottom, 0);
+          }
         }
       `
     ];
@@ -106,263 +261,242 @@ export class WeatherClock extends LitElement {
 
   constructor() {
     super();
-    this.date = '';
-    this.time = '';
-    this.temperature = '--°';
-    this.weatherIcon = 'not-available';
-    this.aqi = null;
-    this.weatherEntity = '';
-    this.aqiEntity = '';
-    this.error = null;
-    this.updateTimer = null;
-    this.aqiPollInterval = null;
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.updateWeather();
-    this.scheduleNextMinuteUpdate();
+    this.showOverlay = false;
+    this.isOverlayVisible = false;
+    this.isOverlayTransitioning = false;
+    this.showBrightnessCard = false;
+    this.isBrightnessCardVisible = false;
+    this.isBrightnessCardTransitioning = false;
+    this.brightness = 128;
+    this.visualBrightness = 128;
+    this.isAdjustingBrightness = false;
+    this.longPressTimer = null;
+    this.isDraggingBrightness = false;
     
-    // Add AQI polling every 15 seconds
-    this.aqiPollInterval = setInterval(() => {
-      if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const aqiEntity = this.hass.states[this.aqiEntity];
-        if (aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
-          // Only update if it's a valid numeric value
-          const aqiValue = parseFloat(aqiEntity.state);
-          if (!isNaN(aqiValue)) {
-            console.log('AQI poll detected numeric change:', aqiValue);
-            this.aqi = aqiEntity.state;
-            this.requestUpdate();
-          }
-        }
-      }
-    }, 15000);
+    // Bind methods to preserve 'this' context
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this);
+    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this);
+    this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this);
+    this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this);
+    this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.updateTimer) {
-      clearTimeout(this.updateTimer);
-    }
-    if (this.aqiPollInterval) {
-      clearInterval(this.aqiPollInterval);
-    }
-  }
-
-  scheduleNextMinuteUpdate() {
-    const now = new Date();
-    // Calculate milliseconds until the start of the next minute
-    const delay = (60 - now.getSeconds()) * 1000 + (1000 - now.getMilliseconds());
-    
-    this.updateTimer = setTimeout(() => {
-      this.updateWeather();
-      this.scheduleNextMinuteUpdate();
-    }, delay);
-  }
-
-  updateWeather() {
-    const now = new Date();
-    this.updateDateTime(now);
-    this.updateWeatherData();
-    this.requestUpdate();
-  }
-
-  updateDateTime(now) {
-    this.date = now.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-
-    this.time = now
-      .toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      })
-      .replace(/\s?[AP]M/, '');
+    if (this.longPressTimer) clearTimeout(this.longPressTimer);
+    this.removeBrightnessDragListeners();
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('hass') && this.hass) {
-      this.updateWeatherData();
-      
-      // Check if AQI entity has changed
-      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const oldState = changedProperties.get('hass')?.states?.[this.aqiEntity]?.state;
-        const newState = this.hass.states[this.aqiEntity].state;
-        
-        if (oldState !== newState) {
-          // Only update if it's a valid numeric value
-          const aqiValue = parseFloat(newState);
-          if (!isNaN(aqiValue)) {
-            console.log('AQI state changed from', oldState, 'to', newState);
-            this.requestUpdate(); // Force update when AQI changes
-          }
-        }
-      }
-    }
-    
-    if (changedProperties.has('config') && this.config) {
-      this.weatherEntity = this.config.weather_entity || 'weather.forecast_home';
-      this.aqiEntity = this.config.aqi_entity || 'sensor.air_quality_index';
-      this.requestUpdate();
+    // Update visualBrightness when brightness changes from external sources
+    if (changedProperties.has('brightness') && !this.isAdjustingBrightness) {
+      this.visualBrightness = this.brightness;
     }
   }
 
-  updateWeatherData() {
-    if (!this.hass) return;
+  handleBrightnessChange(e) {
+    e.stopPropagation();
+    const clickedDot = e.target.closest('.brightness-dot');
+    if (!clickedDot) return;
 
-    try {
-      // Update temperature and weather state
-      if (this.weatherEntity && this.hass.states[this.weatherEntity]) {
-        const weatherEntity = this.hass.states[this.weatherEntity];
-        if (weatherEntity && weatherEntity.attributes && typeof weatherEntity.attributes.temperature !== 'undefined') {
-          this.temperature = `${Math.round(weatherEntity.attributes.temperature)}°`;
-          this.weatherIcon = this.getWeatherIcon(weatherEntity.state);
-        } else {
-          this.temperature = '--°';
-          this.weatherIcon = 'not-available';
-        }
-      } else {
-        this.temperature = '--°';
-        this.weatherIcon = 'not-available';
-      }
+    const newBrightness = parseInt(clickedDot.dataset.value);
+    this.updateBrightnessValue(newBrightness * 25.5);
+  }
+
+  handleBrightnessDragStart(e) {
+    e.stopPropagation();
+    this.isDraggingBrightness = true;
+    
+    // Add global event listeners
+    document.addEventListener('mousemove', this.handleBrightnessDrag);
+    document.addEventListener('mouseup', this.handleBrightnessDragEnd);
+    document.addEventListener('touchmove', this.handleBrightnessDrag, { passive: false });
+    document.addEventListener('touchend', this.handleBrightnessDragEnd);
+    
+    // Process the first drag event
+    this.handleBrightnessDrag(e);
+  }
+
+  handleBrightnessDrag(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!this.isDraggingBrightness) return;
+    
+    const container = this.shadowRoot.querySelector('.brightness-dots');
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const clientX = e.type.includes('touch') 
+      ? (e.touches[0]?.clientX || e.changedTouches[0]?.clientX) 
+      : e.clientX;
       
-      // Improved AQI detection - only accept numeric values
-      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
-        const aqiEntity = this.hass.states[this.aqiEntity];
-        console.log('AQI Entity state:', aqiEntity.state, 'Entity:', this.aqiEntity);
-        
-        if (aqiEntity.state && 
-            aqiEntity.state !== 'unknown' && 
-            aqiEntity.state !== 'unavailable') {
-          
-          // Only accept valid numeric values
-          const aqiValue = parseFloat(aqiEntity.state);
-          if (!isNaN(aqiValue)) {
-            // Valid numeric value
-            this.aqi = aqiEntity.state;
-            console.log('Valid numeric AQI value detected:', this.aqi);
-          } else {
-            // Non-numeric - don't display
-            this.aqi = null;
-            console.log('Non-numeric AQI value detected, not displaying');
-          }
-        } else {
-          this.aqi = null;
-          console.log('Invalid AQI state, not displaying');
-        }
-      } else {
-        this.aqi = null;
-        console.log('AQI entity not found, not displaying');
-      }
-      
-      this.error = null;
-      this.requestUpdate(); // Force update after AQI changes
-    } catch (error) {
-      console.error('Error updating weather data:', error);
-      this.error = `Error: ${error.message}`;
+    if (clientX === undefined) return;
+    
+    const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const newValue = Math.round((relativeX / rect.width) * 10);
+    
+    // Limit to range 1-10
+    const cappedValue = Math.max(1, Math.min(10, newValue));
+    this.updateBrightnessValue(cappedValue * 25.5);
+  }
+
+  handleBrightnessDragEnd(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    this.isDraggingBrightness = false;
+    this.removeBrightnessDragListeners();
+  }
+
+  removeBrightnessDragListeners() {
+    document.removeEventListener('mousemove', this.handleBrightnessDrag);
+    document.removeEventListener('mouseup', this.handleBrightnessDragEnd);
+    document.removeEventListener('touchmove', this.handleBrightnessDrag);
+    document.removeEventListener('touchend', this.handleBrightnessDragEnd);
+  }
+
+  updateBrightnessValue(value) {
+    this.visualBrightness = value;
+    this.dispatchEvent(new CustomEvent('brightnessChange', {
+      detail: Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value))),
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  getBrightnessDisplayValue() {
+    return Math.round(this.visualBrightness / 25.5);
+  }
+
+  toggleBrightnessCard(e) {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    this.dispatchEvent(new CustomEvent('brightnessCardToggle', {
+      detail: !this.showBrightnessCard,
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  handleSettingsIconTouchStart(e) {
+    e.stopPropagation();
+    // Clear any existing timer
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+    }
+    
+    // Set new timer for long press
+    this.longPressTimer = setTimeout(() => {
+      this.dispatchEvent(new CustomEvent('debugToggle', {
+        bubbles: true,
+        composed: true,
+      }));
+      this.longPressTimer = null;
+    }, LONG_PRESS_TIMEOUT);
+  }
+
+  handleSettingsIconTouchEnd(e) {
+    e.stopPropagation();
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
     }
   }
 
-  getWeatherIcon(state) {
-    // Comprehensive weather icon mapping
-    const iconMapping = {
-      'clear-night': 'clear-night',
-      'cloudy': 'cloudy',
-      'fog': 'fog',
-      'hail': 'hail',
-      'lightning': 'thunderstorms',
-      'lightning-rainy': 'thunderstorms-rain',
-      'partlycloudy': 'partly-cloudy-day',
-      'pouring': 'rain',
-      'rainy': 'drizzle',
-      'snowy': 'snow',
-      'snowy-rainy': 'sleet',
-      'sunny': 'clear-day',
-      'windy': 'wind',
-      'windy-variant': 'wind',
-      'exceptional': 'not-available',
-      // Add fallbacks for other possible weather states
-      'overcast': 'overcast-day',
-      'partly-cloudy': 'partly-cloudy-day',
-      'partly-cloudy-night': 'partly-cloudy-night',
-      'clear': 'clear-day',
-      'thunderstorm': 'thunderstorms',
-      'storm': 'thunderstorms',
-      'rain': 'rain',
-      'snow': 'snow',
-      'mist': 'fog',
-      'dust': 'dust',
-      'smoke': 'smoke',
-      'drizzle': 'drizzle',
-      'light-rain': 'drizzle'
-    };
-    
-    // Return the mapped icon or a fallback
-    return iconMapping[state] || 'not-available';
+  handleOverlayToggle(shouldShow) {
+    this.dispatchEvent(new CustomEvent('overlayToggle', {
+      detail: shouldShow,
+      bubbles: true,
+      composed: true,
+    }));
   }
 
-  getAqiColor(aqi) {
-    const aqiNum = parseInt(aqi);
+  renderBrightnessCard() {
+    const brightnessDisplayValue = this.getBrightnessDisplayValue();
     
-    // Handle non-numeric AQI
-    if (isNaN(aqiNum)) return '#999999';
-    
-    // Standard EPA AQI color scale
-    if (aqiNum <= 50) return '#68a03a';     // Good - Green
-    if (aqiNum <= 100) return '#f9bf33';    // Moderate - Yellow
-    if (aqiNum <= 150) return '#f47c06';    // Unhealthy for Sensitive Groups - Orange
-    if (aqiNum <= 200) return '#c43828';    // Unhealthy - Red
-    if (aqiNum <= 300) return '#ab1457';    // Very Unhealthy - Purple
-    return '#83104c';                       // Hazardous - Maroon
+    return html`
+      <div
+        class="brightness-card ${this.isBrightnessCardVisible ? 'show' : ''} ${this.isBrightnessCardTransitioning ? 'transitioning' : ''}"
+        @click="${(e) => e.stopPropagation()}"
+      >
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div
+              class="brightness-dots"
+              @click="${this.handleBrightnessChange}"
+              @mousedown="${this.handleBrightnessDragStart}"
+              @touchstart="${this.handleBrightnessDragStart}"
+            >
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
+                (value) => html`
+                  <div
+                    class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}"
+                    data-value="${value}"
+                  ></div>
+                `
+              )}
+            </div>
+          </div>
+          <span class="brightness-value">${brightnessDisplayValue}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderOverlay() {
+    return html`
+      <div 
+        class="overlay ${this.isOverlayVisible ? 'show' : ''} ${this.isOverlayTransitioning ? 'transitioning' : ''}"
+        @click="${(e) => e.stopPropagation()}"
+      >
+        <div class="icon-container">
+          <div class="icon-row">
+            <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+                style="color: var(--control-text-color);"
+              ></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+            </button>
+            <button
+              class="icon-button"
+              @touchstart="${this.handleSettingsIconTouchStart}"
+              @touchend="${this.handleSettingsIconTouchEnd}"
+              @touchcancel="${this.handleSettingsIconTouchEnd}"
+              @mousedown="${this.handleSettingsIconTouchStart}"
+              @mouseup="${this.handleSettingsIconTouchEnd}"
+              @mouseleave="${this.handleSettingsIconTouchEnd}"
+            >
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   render() {
-    // Only show AQI if we have a valid numeric value and config allows it
-    const hasValidAqi = this.aqi !== null && 
-                        this.config.show_aqi !== false && 
-                        !isNaN(parseFloat(this.aqi));
-    
-    if (hasValidAqi) {
-      console.log('Rendering AQI indicator with numeric value:', this.aqi);
-    } else {
-      console.log('Not showing AQI indicator, value:', this.aqi, 'show_aqi config:', this.config.show_aqi);
-    }
-    
     return html`
-      <div class="weather-component">
-        <div class="top-row">
-          <div class="left-column">
-            ${this.config.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
-            ${this.config.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
-          </div>
-          
-          ${this.config.show_weather !== false ? html`
-            <div class="weather-section">
-              <div class="weather-info">
-                <img
-                  src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
-                  class="weather-icon"
-                  alt="Weather icon"
-                  onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
-                />
-                <span class="temperature">${this.temperature}</span>
-              </div>
-              ${hasValidAqi ? html`
-                <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
-                  ${this.aqi} AQI
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-        </div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" async="false"></script>
+      <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
+        ${this.showOverlay ? this.renderOverlay() : ''}
+        ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
       </div>
     `;
   }
 }
-
-customElements.define('weather-clock', WeatherClock);
+customElements.define('google-controls', Controls);
