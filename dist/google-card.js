@@ -850,7 +850,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
   constructor() {
     super(), this.currentTime = "", this.brightness = 1, this.isInNightMode = !1, this.previousBrightness = 1, 
     this.isTransitioning = !1, this.error = null, this.nightModeSource = null, this.timeUpdateInterval = null, 
-    this.sensorCheckInterval = null, this.sensorCheckedTime = 0;
+    this.sensorCheckInterval = null, this.sensorCheckedTime = 0, this.nightModeReactivationTimer = null;
   }
   connectedCallback() {
     super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
@@ -860,7 +860,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
   disconnectedCallback() {
     super.disconnectedCallback(), this.timeUpdateInterval && clearInterval(this.timeUpdateInterval), 
-    this.sensorCheckInterval && clearInterval(this.sensorCheckInterval);
+    this.sensorCheckInterval && clearInterval(this.sensorCheckInterval), this.nightModeReactivationTimer && clearTimeout(this.nightModeReactivationTimer);
   }
   startTimeUpdates() {
     this.timeUpdateInterval = setInterval((() => {
@@ -936,14 +936,14 @@ customElements.define("night-mode", class NightMode extends LitElement {
       Date.now() - this.sensorCheckedTime > 5e3 && this.checkLightSensor();
     }
   }
-  checkLightSensor() {
+  checkLightSensor(force = !1) {
     if (!this.hass || !this.config) return;
     this.sensorCheckedTime = Date.now();
     const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor", lightSensor = this.hass.states[lightSensorEntity];
     if (lightSensor && "unavailable" !== lightSensor.state && "unknown" !== lightSensor.state) try {
       const shouldBeInNightMode = 0 === parseInt(lightSensor.state);
-      if (this.isInNightMode && "manual" === this.nightModeSource) return;
-      shouldBeInNightMode && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : !shouldBeInNightMode && this.isInNightMode && "sensor" === this.nightModeSource && (this.exitNightMode(), 
+      if (this.isInNightMode && "manual" === this.nightModeSource && !force) return;
+      shouldBeInNightMode && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : shouldBeInNightMode || !this.isInNightMode || "sensor" !== this.nightModeSource && !force || (this.exitNightMode(), 
       this.nightModeSource = null);
     } catch (error) {}
   }
@@ -952,16 +952,22 @@ customElements.define("night-mode", class NightMode extends LitElement {
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ""}
-        ${"manual" === this.nightModeSource ? html` <div class="tap-hint">Tap anywhere to exit night mode</div> ` : ""}
+
+        <div class="tap-hint">Tap anywhere to exit night mode</div>
       </div>
     `;
   }
   handleNightModeTap() {
-    this.isInNightMode && "manual" === this.nightModeSource && (this.exitNightMode(), 
-    this.dispatchEvent(new CustomEvent("nightModeExit", {
-      bubbles: !0,
-      composed: !0
-    })));
+    if (this.isInNightMode) {
+      const originalSource = this.nightModeSource;
+      this.exitNightMode(), this.dispatchEvent(new CustomEvent("nightModeExit", {
+        bubbles: !0,
+        composed: !0
+      })), "sensor" === originalSource && (this.nightModeReactivationTimer && clearTimeout(this.nightModeReactivationTimer), 
+      this.nightModeReactivationTimer = setTimeout((() => {
+        this.checkLightSensor(!0), this.nightModeReactivationTimer = null;
+      }), 3e4));
+    }
   }
 });
 
