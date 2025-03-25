@@ -105,7 +105,7 @@ export class WeatherClock extends LitElement {
     this.time = '';
     this.temperature = '--°';
     this.weatherIcon = 'not-available';
-    this.aqi = null; // Set to null initially
+    this.aqi = '--';
     this.weatherEntity = '';
     this.aqiEntity = '';
     this.error = null;
@@ -120,7 +120,18 @@ export class WeatherClock extends LitElement {
     
     // Add AQI polling every 15 seconds
     this.aqiPollInterval = setInterval(() => {
-      this.updateAqiData();
+      if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        if (aqiEntity.state !== 'unknown' && aqiEntity.state !== 'unavailable') {
+          // Only update if it's a valid numeric value
+          const aqiValue = parseFloat(aqiEntity.state);
+          if (!isNaN(aqiValue)) {
+            console.log('AQI poll detected numeric change:', aqiValue);
+            this.aqi = aqiEntity.state;
+            this.requestUpdate();
+          }
+        }
+      }
     }, 15000);
   }
 
@@ -149,7 +160,6 @@ export class WeatherClock extends LitElement {
     const now = new Date();
     this.updateDateTime(now);
     this.updateWeatherData();
-    this.updateAqiData();
     this.requestUpdate();
   }
 
@@ -172,7 +182,21 @@ export class WeatherClock extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('hass') && this.hass) {
       this.updateWeatherData();
-      this.updateAqiData();
+      
+      // Check if AQI entity has changed
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const oldState = changedProperties.get('hass')?.states?.[this.aqiEntity]?.state;
+        const newState = this.hass.states[this.aqiEntity].state;
+        
+        if (oldState !== newState) {
+          // Only update if it's a valid numeric value
+          const aqiValue = parseFloat(newState);
+          if (!isNaN(aqiValue)) {
+            console.log('AQI state changed from', oldState, 'to', newState);
+            this.requestUpdate(); // Force update when AQI changes
+          }
+        }
+      }
     }
     
     if (changedProperties.has('config') && this.config) {
@@ -201,50 +225,31 @@ export class WeatherClock extends LitElement {
         this.weatherIcon = 'not-available';
       }
       
+      // Fix for AQI display - only hide when unavailable
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        console.log('AQI Entity state:', aqiEntity.state, 'Entity:', this.aqiEntity);
+        
+        // Update behavior: Only check if state is "unavailable" or "unknown" 
+        // and set to null ONLY in that case
+        if (aqiEntity.state === 'unavailable' || aqiEntity.state === 'unknown') {
+          this.aqi = null;
+          console.log('AQI entity unavailable, not displaying');
+        } else {
+          // Valid value - store it even if not numeric
+          this.aqi = aqiEntity.state;
+          console.log('AQI value detected:', this.aqi);
+        }
+      } else {
+        this.aqi = null;
+        console.log('AQI entity not found, not displaying');
+      }
+      
       this.error = null;
+      this.requestUpdate();
     } catch (error) {
       console.error('Error updating weather data:', error);
       this.error = `Error: ${error.message}`;
-    }
-  }
-
-  updateAqiData() {
-    if (!this.hass || !this.config) return;
-    
-    try {
-      // Check if AQI should be shown based on config
-      if (this.config.show_aqi === false) {
-        this.aqi = null;
-        return;
-      }
-      
-      // Get AQI entity
-      const aqiEntityId = this.aqiEntity || this.config.aqi_entity || 'sensor.air_quality_index';
-      const aqiEntity = this.hass.states[aqiEntityId];
-      
-      if (!aqiEntity) {
-        this.aqi = null;
-        return;
-      }
-      
-      // Check if the entity state is a valid number
-      const aqiValue = parseFloat(aqiEntity.state);
-      
-      if (!isNaN(aqiValue)) {
-        // Valid numeric AQI value found
-        this.aqi = aqiEntity.state;
-      } else if (aqiEntity.state === 'unavailable' || aqiEntity.state === 'unknown') {
-        // Explicitly set to null when unavailable
-        this.aqi = null;
-      } else {
-        // Any other non-numeric states
-        this.aqi = null;
-      }
-      
-      this.requestUpdate();
-    } catch (error) {
-      console.error('Error updating AQI data:', error);
-      this.aqi = null;
     }
   }
 
@@ -302,17 +307,19 @@ export class WeatherClock extends LitElement {
   }
 
   render() {
-    // Simplified AQI visibility check
-    const showAqi = this.config?.show_aqi !== false && this.aqi !== null;
+    // Only show AQI if we have a non-null value and it's numeric
+    const hasValidAqi = this.aqi !== null && 
+                      this.config.show_aqi !== false && 
+                      !isNaN(parseFloat(this.aqi));
     
     return html`
       <div class="weather-component">
         <div class="left-column">
-          ${this.config?.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
-          ${this.config?.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
+          ${this.config.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
+          ${this.config.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
         </div>
         <div class="right-column">
-          ${this.config?.show_weather !== false ? html`
+          ${this.config.show_weather !== false ? html`
             <div class="weather-info">
               <img
                 src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
@@ -323,7 +330,7 @@ export class WeatherClock extends LitElement {
               <span class="temperature">${this.temperature}</span>
             </div>
           ` : ''}
-          ${showAqi ? html`
+          ${hasValidAqi ? html`
             <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
               ${this.aqi} AQI
             </div>
