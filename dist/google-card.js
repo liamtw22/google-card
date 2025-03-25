@@ -116,7 +116,27 @@ customElements.define("background-rotator", class BackgroundRotator extends LitE
     };
   }
   static get styles() {
-    return [ sharedStyles ];
+    return [ sharedStyles, css`
+        .background-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+        }
+
+        .background-image {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-position: center;
+          background-repeat: no-repeat;
+          transition: opacity var(--crossfade-time) ease;
+        }
+      ` ];
   }
   constructor() {
     super(), this.initializeProperties();
