@@ -69,6 +69,7 @@ export class WeatherClock extends LitElement {
           flex-direction: column;
           align-items: center;
           margin-top: 5px;
+          margin-left: 15px;
         }
 
         .weather-info {
