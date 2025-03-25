@@ -1,5 +1,6 @@
-//src/components/BackgroundRotator.js
-import { LitElement, html } from 'https://unpkg.com/lit-element@2.4.0/lit-element.js?module';
+// src/components/BackgroundRotator.js
+import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+
 import { sharedStyles } from '../styles/SharedStyles';
 import { TRANSITION_BUFFER } from '../constants';
 
@@ -24,7 +25,30 @@ export class BackgroundRotator extends LitElement {
   }
 
   static get styles() {
-    return [sharedStyles];
+    return [
+      sharedStyles,
+      css`
+        .background-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+        }
+
+        .background-image {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-position: center;
+          background-repeat: no-repeat;
+          transition: opacity var(--crossfade-time) ease;
+        }
+      `
+    ];
   }
 
   constructor() {
