@@ -1141,9 +1141,12 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       } else this.temperature = "--°", this.weatherIcon = "not-available";
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
-        console.log("AQI Entity state:", aqiEntity.state, "Entity:", this.aqiEntity), "unavailable" === aqiEntity.state || "unknown" === aqiEntity.state ? (this.aqi = null, 
-        console.log("AQI entity unavailable, not displaying")) : (this.aqi = aqiEntity.state, 
-        console.log("AQI value detected:", this.aqi));
+        if (console.log("AQI Entity state:", aqiEntity.state, "Entity:", this.aqiEntity), 
+        aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
+          const aqiValue = parseFloat(aqiEntity.state);
+          isNaN(aqiValue) ? (this.aqi = null, console.log("Non-numeric AQI value detected, not displaying")) : (this.aqi = aqiEntity.state, 
+          console.log("Valid numeric AQI value detected:", this.aqi));
+        } else this.aqi = null, console.log("Invalid AQI state, not displaying");
       } else this.aqi = null, console.log("AQI entity not found, not displaying");
       this.error = null, this.requestUpdate();
     } catch (error) {
@@ -1188,7 +1191,8 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
   render() {
     const hasValidAqi = null !== this.aqi && !1 !== this.config.show_aqi && !isNaN(parseFloat(this.aqi));
-    return html`
+    return hasValidAqi ? console.log("Rendering AQI indicator with numeric value:", this.aqi) : console.log("Not showing AQI indicator, value:", this.aqi, "show_aqi config:", this.config.show_aqi), 
+    html`
       <div class="weather-component">
         <div class="left-column">
           ${!1 !== this.config.show_date ? html`<div class="date">${this.date}</div>` : ""}
