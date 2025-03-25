@@ -1,5 +1,6 @@
 // src/components/Controls.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
 import { MIN_BRIGHTNESS, MAX_BRIGHTNESS, LONG_PRESS_TIMEOUT } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
@@ -126,13 +127,13 @@ export class Controls extends LitElement {
           bottom: 20px;
           left: 20px;
           right: 20px;
-          height: 70px;
+          height: 35px; /* Reduced from 70px */
           background-color: var(--overlay-background);
           -webkit-backdrop-filter: blur(var(--background-blur));
           backdrop-filter: blur(var(--background-blur));
           color: var(--control-text-color);
           border-radius: 20px;
-          padding: 40px 20px;
+          padding: 20px 20px; /* Reduced from 40px 20px */
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           z-index: 1002;
           transform: translateY(calc(100% + 20px));
@@ -202,18 +203,18 @@ export class Controls extends LitElement {
         .brightness-value {
           min-width: 60px;
           text-align: right;
-          font-size: 40px;
+          font-size: 36px; /* Slightly reduced from 40px */
           color: var(--control-text-color);
           font-weight: 300;
           margin-right: 20px;
           pointer-events: none;
-          font-family: 'Rubik', sans-serif;
+          font-family: 'Product Sans Regular', sans-serif;
         }
 
         iconify-icon {
-          font-size: 50px;
-          width: 50px;
-          height: 50px;
+          font-size: 40px; /* Reduced from 50px */
+          width: 40px; /* Reduced from 50px */
+          height: 40px; /* Reduced from 50px */
           display: block !important;
           color: var(--control-text-color) !important;
           pointer-events: none;
@@ -234,7 +235,7 @@ export class Controls extends LitElement {
           }
 
           .brightness-card {
-            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
             margin-bottom: env(safe-area-inset-bottom, 0);
           }
         }
@@ -251,7 +252,7 @@ export class Controls extends LitElement {
           }
 
           .brightness-card {
-            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
             margin-bottom: env(safe-area-inset-bottom, 0);
           }
         }
@@ -458,19 +459,18 @@ export class Controls extends LitElement {
         <div class="icon-container">
           <div class="icon-row">
             <button class="icon-button" @click="${(e) => this.toggleBrightnessCard(e)}">
-              <iconify-icon icon="material-symbols-light:sunny-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon
                 icon="material-symbols-light:do-not-disturb-on-outline-rounded"
-                style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
             <button class="icon-button">
-              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
             </button>
             <button
               class="icon-button"
@@ -481,7 +481,7 @@ export class Controls extends LitElement {
               @mouseup="${this.handleSettingsIconTouchEnd}"
               @mouseleave="${this.handleSettingsIconTouchEnd}"
             >
-              <iconify-icon icon="material-symbols-light:settings-outline-rounded" style="color: var(--control-text-color);"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
             </button>
           </div>
         </div>
@@ -491,7 +491,6 @@ export class Controls extends LitElement {
 
   render() {
     return html`
-      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" async="false"></script>
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ''}
         ${this.showBrightnessCard ? this.renderBrightnessCard() : ''}
