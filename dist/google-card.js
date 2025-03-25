@@ -704,33 +704,25 @@ customElements.define("google-controls", class Controls extends LitElement {
           <div class="icon-row">
             <button class="icon-button" @click="${e => this.toggleBrightnessCard(e)}">
               <iconify-icon
-                icon="material-symbols:sunny-outline-rounded"
-                width="50"
-                height="50"
+                icon="material-symbols-light:sunny-outline-rounded"
                 style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon
-                icon="material-symbols:volume-up-outline-rounded"
-                width="50"
-                height="50"
+                icon="material-symbols-light:volume-up-outline-rounded"
                 style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon
-                icon="material-symbols:do-not-disturb-on-outline-rounded"
-                width="50"
-                height="50"
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
                 style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
             <button class="icon-button">
               <iconify-icon
-                icon="material-symbols:alarm-add-outline-rounded"
-                width="50"
-                height="50"
+                icon="material-symbols-light:alarm-add-outline-rounded"
                 style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
@@ -744,9 +736,7 @@ customElements.define("google-controls", class Controls extends LitElement {
               @mouseleave="${this.handleSettingsIconTouchEnd}"
             >
               <iconify-icon
-                icon="material-symbols:settings-outline-rounded"
-                width="50"
-                height="50"
+                icon="material-symbols-light:settings-outline-rounded"
                 style="color: var(--control-text-color);"
               ></iconify-icon>
             </button>
@@ -757,6 +747,10 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   render() {
     return html`
+      <script
+        src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"
+        async="false"
+      ></script>
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ""}
         ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
