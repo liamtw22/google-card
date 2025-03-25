@@ -133,7 +133,7 @@ export class Controls extends LitElement {
           backdrop-filter: blur(var(--background-blur));
           color: var(--control-text-color);
           border-radius: 20px;
-          padding: 20px 20px; /* Reduced from 40px 20px */
+          padding: 25px 25px; /* Reduced from 40px 20px */
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           z-index: 1002;
           transform: translateY(calc(100% + 20px));
