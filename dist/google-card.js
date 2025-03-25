@@ -478,7 +478,7 @@ customElements.define("google-controls", class Controls extends LitElement {
           bottom: 20px;
           left: 20px;
           right: 20px;
-          height: 35px; /* Reduced from 70px */
+          height: 50px; /* Reduced from 70px */
           background-color: var(--overlay-background);
           -webkit-backdrop-filter: blur(var(--background-blur));
           backdrop-filter: blur(var(--background-blur));
@@ -560,9 +560,9 @@ customElements.define("google-controls", class Controls extends LitElement {
         }
 
         iconify-icon {
-          font-size: 40px; /* Reduced from 50px */
-          width: 40px; /* Reduced from 50px */
-          height: 40px; /* Reduced from 50px */
+          font-size: 50px;
+          width: 50px;
+          height: 50px;
           display: block !important;
           color: var(--control-text-color) !important;
           pointer-events: none;
