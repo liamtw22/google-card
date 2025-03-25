@@ -94,7 +94,7 @@ export class WeatherClock extends LitElement {
         .aqi {
           font-size: 20px;
           padding: 7px 15px 5px 15px;
-          border-radius: 10px;
+          border-radius: 8px;
           font-weight: 500;
           align-self: center;
           min-width: 60px;
