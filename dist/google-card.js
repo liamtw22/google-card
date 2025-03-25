@@ -15,7 +15,7 @@ const DEFAULT_CONFIG = {
   show_weather: !0,
   show_aqi: !0,
   weather_entity: "weather.forecast_home",
-  aqi_entity: "sensor.air_quality_index",
+  aqi_entity: "sensor.ridgewood_air_quality_index",
   light_sensor_entity: "sensor.liam_room_display_light_sensor",
   brightness_sensor_entity: "sensor.liam_room_display_brightness_sensor"
 }, sharedStyles = css`
