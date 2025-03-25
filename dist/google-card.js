@@ -1052,7 +1052,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
           display: flex;
           flex-direction: column;
           align-items: center;
-          margin-top: 5px;
+          margin-top: 8px;
           margin-left: 15px;
         }
 
@@ -1078,9 +1078,8 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
         .aqi {
           font-size: 20px;
           padding: 7px 15px 5px 15px;
-          border-radius: 6px;
+          border-radius: 10px;
           font-weight: 500;
-          margin-top: 5px;
           align-self: center;
           min-width: 60px;
           text-align: center;
