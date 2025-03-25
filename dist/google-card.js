@@ -1646,7 +1646,7 @@ class GoogleCard extends LitElement {
           ></google-controls>
         `;
     return html`
-      <!-- Import all required fonts and scripts -->
+      <!-- Import all required fonts -->
       <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
         rel="stylesheet"
@@ -1657,7 +1657,6 @@ class GoogleCard extends LitElement {
         rel="stylesheet"
         crossorigin="anonymous"
       />
-      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 
       <!-- Fallback font style for Product Sans -->
       <style>
