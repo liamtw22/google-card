@@ -1078,13 +1078,20 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
   constructor() {
     super(), this.date = "", this.time = "", this.temperature = "--°", this.weatherIcon = "not-available", 
-    this.aqi = null, this.weatherEntity = "", this.aqiEntity = "", this.error = null, 
+    this.aqi = "--", this.weatherEntity = "", this.aqiEntity = "", this.error = null, 
     this.updateTimer = null, this.aqiPollInterval = null;
   }
   connectedCallback() {
     super.connectedCallback(), this.updateWeather(), this.scheduleNextMinuteUpdate(), 
     this.aqiPollInterval = setInterval((() => {
-      this.updateAqiData();
+      if (this.hass && this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        if ("unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
+          const aqiValue = parseFloat(aqiEntity.state);
+          isNaN(aqiValue) || (console.log("AQI poll detected numeric change:", aqiValue), 
+          this.aqi = aqiEntity.state, this.requestUpdate());
+        }
+      }
     }), 15e3);
   }
   disconnectedCallback() {
@@ -1099,7 +1106,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
   updateWeather() {
     const now = new Date;
-    this.updateDateTime(now), this.updateWeatherData(), this.updateAqiData(), this.requestUpdate();
+    this.updateDateTime(now), this.updateWeatherData(), this.requestUpdate();
   }
   updateDateTime(now) {
     this.date = now.toLocaleDateString("en-US", {
@@ -1113,7 +1120,14 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     }).replace(/\s?[AP]M/, "");
   }
   updated(changedProperties) {
-    changedProperties.has("hass") && this.hass && (this.updateWeatherData(), this.updateAqiData()), 
+    if (changedProperties.has("hass") && this.hass && (this.updateWeatherData(), this.aqiEntity && this.hass.states[this.aqiEntity])) {
+      const oldState = changedProperties.get("hass")?.states?.[this.aqiEntity]?.state, newState = this.hass.states[this.aqiEntity].state;
+      if (oldState !== newState) {
+        const aqiValue = parseFloat(newState);
+        isNaN(aqiValue) || (console.log("AQI state changed from", oldState, "to", newState), 
+        this.requestUpdate());
+      }
+    }
     changedProperties.has("config") && this.config && (this.weatherEntity = this.config.weather_entity || "weather.forecast_home", 
     this.aqiEntity = this.config.aqi_entity || "sensor.air_quality_index", this.requestUpdate());
   }
@@ -1125,21 +1139,15 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
         this.weatherIcon = this.getWeatherIcon(weatherEntity.state)) : (this.temperature = "--°", 
         this.weatherIcon = "not-available");
       } else this.temperature = "--°", this.weatherIcon = "not-available";
-      this.error = null;
+      if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
+        const aqiEntity = this.hass.states[this.aqiEntity];
+        console.log("AQI Entity state:", aqiEntity.state, "Entity:", this.aqiEntity), "unavailable" === aqiEntity.state || "unknown" === aqiEntity.state ? (this.aqi = null, 
+        console.log("AQI entity unavailable, not displaying")) : (this.aqi = aqiEntity.state, 
+        console.log("AQI value detected:", this.aqi));
+      } else this.aqi = null, console.log("AQI entity not found, not displaying");
+      this.error = null, this.requestUpdate();
     } catch (error) {
       console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
-    }
-  }
-  updateAqiData() {
-    if (this.hass && this.config) try {
-      if (!1 === this.config.show_aqi) return void (this.aqi = null);
-      const aqiEntityId = this.aqiEntity || this.config.aqi_entity || "sensor.air_quality_index", aqiEntity = this.hass.states[aqiEntityId];
-      if (!aqiEntity) return void (this.aqi = null);
-      const aqiValue = parseFloat(aqiEntity.state);
-      isNaN(aqiValue) ? ("unavailable" === aqiEntity.state || aqiEntity.state, this.aqi = null) : this.aqi = aqiEntity.state, 
-      this.requestUpdate();
-    } catch (error) {
-      console.error("Error updating AQI data:", error), this.aqi = null;
     }
   }
   getWeatherIcon(state) {
@@ -1179,15 +1187,15 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
     return isNaN(aqiNum) ? "#999999" : aqiNum <= 50 ? "#68a03a" : aqiNum <= 100 ? "#f9bf33" : aqiNum <= 150 ? "#f47c06" : aqiNum <= 200 ? "#c43828" : aqiNum <= 300 ? "#ab1457" : "#83104c";
   }
   render() {
-    const showAqi = !1 !== this.config?.show_aqi && null !== this.aqi;
+    const hasValidAqi = null !== this.aqi && !1 !== this.config.show_aqi && !isNaN(parseFloat(this.aqi));
     return html`
       <div class="weather-component">
         <div class="left-column">
-          ${!1 !== this.config?.show_date ? html`<div class="date">${this.date}</div>` : ""}
-          ${!1 !== this.config?.show_time ? html`<div class="time">${this.time}</div>` : ""}
+          ${!1 !== this.config.show_date ? html`<div class="date">${this.date}</div>` : ""}
+          ${!1 !== this.config.show_time ? html`<div class="time">${this.time}</div>` : ""}
         </div>
         <div class="right-column">
-          ${!1 !== this.config?.show_weather ? html`
+          ${!1 !== this.config.show_weather ? html`
                 <div class="weather-info">
                   <img
                     src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
@@ -1198,7 +1206,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
                   <span class="temperature">${this.temperature}</span>
                 </div>
               ` : ""}
-          ${showAqi ? html`
+          ${hasValidAqi ? html`
                 <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
                   ${this.aqi} AQI
                 </div>
