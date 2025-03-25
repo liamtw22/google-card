@@ -709,9 +709,10 @@ export class GoogleCard extends LitElement {
     `;
 
     return html`
-      <!-- Import all required fonts -->
+      <!-- Import all required fonts and scripts -->
       <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
       <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+      <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
       
       <!-- Fallback font style for Product Sans -->
       <style>
