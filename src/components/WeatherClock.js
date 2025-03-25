@@ -28,26 +28,25 @@ export class WeatherClock extends LitElement {
           bottom: 30px;
           left: 40px;
           display: flex;
-          justify-content: start;
-          align-items: center;
+          flex-direction: column;
+          align-items: flex-start;
           color: white;
           font-family: 'Product Sans Regular', sans-serif;
           width: 100%;
           max-width: 400px;
         }
 
+        .top-row {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          width: 100%;
+        }
+
         .left-column {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-        }
-
-        .right-column {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          margin-left: 10px; /* Reduced from auto to bring closer */
-          margin-right: 20px; /* Reduced from 40px */
         }
 
         .date {
@@ -65,12 +64,18 @@ export class WeatherClock extends LitElement {
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
+        .weather-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-top: 5px;
+        }
+
         .weather-info {
           display: flex;
           align-items: center;
-          margin-top: 10px; /* Reduced from 10px */
           font-weight: 500;
-          margin-right: 20px; /* Reduced from 40px */
+          margin-right: 0px;
         }
 
         .weather-icon {
@@ -90,8 +95,8 @@ export class WeatherClock extends LitElement {
           padding: 7px 15px 5px 15px;
           border-radius: 6px;
           font-weight: 500;
-          margin-left: 30px;
-          align-self: flex-end;
+          margin-top: 5px;
+          align-self: center;
           min-width: 60px;
           text-align: center;
         }
@@ -105,7 +110,7 @@ export class WeatherClock extends LitElement {
     this.time = '';
     this.temperature = '--°';
     this.weatherIcon = 'not-available';
-    this.aqi = '--';
+    this.aqi = null;
     this.weatherEntity = '';
     this.aqiEntity = '';
     this.error = null;
@@ -329,25 +334,28 @@ export class WeatherClock extends LitElement {
     
     return html`
       <div class="weather-component">
-        <div class="left-column">
-          ${this.config.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
-          ${this.config.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
-        </div>
-        <div class="right-column">
+        <div class="top-row">
+          <div class="left-column">
+            ${this.config.show_date !== false ? html`<div class="date">${this.date}</div>` : ''}
+            ${this.config.show_time !== false ? html`<div class="time">${this.time}</div>` : ''}
+          </div>
+          
           ${this.config.show_weather !== false ? html`
-            <div class="weather-info">
-              <img
-                src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
-                class="weather-icon"
-                alt="Weather icon"
-                onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
-              />
-              <span class="temperature">${this.temperature}</span>
-            </div>
-          ` : ''}
-          ${hasValidAqi ? html`
-            <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
-              ${this.aqi} AQI
+            <div class="weather-section">
+              <div class="weather-info">
+                <img
+                  src="https://basmilius.github.io/weather-icons/production/fill/all/${this.weatherIcon}.svg"
+                  class="weather-icon"
+                  alt="Weather icon"
+                  onerror="this.src='https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg'; if(this.src.includes('not-available')) this.onerror=null;"
+                />
+                <span class="temperature">${this.temperature}</span>
+              </div>
+              ${hasValidAqi ? html`
+                <div class="aqi" style="background-color: ${this.getAqiColor(this.aqi)}">
+                  ${this.aqi} AQI
+                </div>
+              ` : ''}
             </div>
           ` : ''}
         </div>
