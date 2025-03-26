@@ -7,7 +7,7 @@ import './components/BackgroundRotator';
 import './components/Controls';
 import './components/NightMode';
 import './components/WeatherClock';
-import './editor'; // Import the editor component
+import './editor';
 
 class GoogleCard extends LitElement {
   static get properties() {
@@ -68,14 +68,16 @@ class GoogleCard extends LitElement {
           width: 100%;
           height: 100%;
         }
-        
-        /* Editor mode styles */
+
         .editor-placeholder {
-          display: block;
-          padding: 8px;
-          font-family: var(--primary-font-family);
+          padding: 16px;
+          font-family: var(--primary-font-family, Roboto);
           font-size: 14px;
           color: var(--primary-text-color);
+          background: var(--card-background-color, #fff);
+          border-radius: var(--ha-card-border-radius, 4px);
+          box-shadow: var(--ha-card-box-shadow, 0 2px 2px 0 rgba(0,0,0,0.14));
+          margin: 8px;
         }
       `
     ];
@@ -87,13 +89,9 @@ class GoogleCard extends LitElement {
     this.boundUpdateScreenSize = this.updateScreenSize.bind(this);
     this.brightnessUpdateQueue = [];
     this.isProcessingBrightnessUpdate = false;
-    
-    // Theme detection
     this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
-    
-    // Bind event handler methods to preserve 'this' context
     this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
     this.handleDebugToggle = this.handleDebugToggle.bind(this);
@@ -129,7 +127,6 @@ class GoogleCard extends LitElement {
     this.updateTime();
   }
 
-  // Home Assistant configuration
   static async getConfigElement() {
     return document.createElement('google-card-editor');
   }
@@ -153,129 +150,122 @@ class GoogleCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.image_url) {
-      throw new Error('You need to define an image_url');
-    }
-
-    this.config = {
-      ...DEFAULT_CONFIG,
-      ...config,
-      sensor_update_delay: config.sensor_update_delay || DEFAULT_CONFIG.sensor_update_delay
-    };
-
+    if (!config.image_url) throw new Error('Image URL required');
+    this.config = { ...DEFAULT_CONFIG, ...config };
     this.showDebugInfo = this.config.show_debug;
     this.updateCssVariables();
   }
-  
-  updateCssVariables() {
-    if (!this.config) return;
-    
-    this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
-    this.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
-    this.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
-    this.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
-    
-    document.documentElement.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
-    document.documentElement.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
-    document.documentElement.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
-  }
 
-  handleThemeChange(e) {
-    const newIsDarkMode = e.matches;
-    if (this.isDarkMode !== newIsDarkMode) {
-      this.isDarkMode = newIsDarkMode;
-      this.updateCssVariables();
-      this.refreshComponents();
-      this.requestUpdate();
+  render() {
+    if (this._inEditor()) {
+      return html`
+        <div class="editor-placeholder">
+          <h3>Google Card</h3>
+          <div>Image Source: ${this.config?.image_url || 'Not configured'}</div>
+          <div>Current Mode: ${this.config?.image_fit || 'contain'}</div>
+        </div>
+      `;
     }
+
+    const mainContent = this.isNightMode ? html`
+      <night-mode 
+        .currentTime=${this.currentTime}
+        .hass=${this.hass}
+        .config=${this.config}
+        .brightness=${this.brightness}
+        .previousBrightness=${this.previousBrightness}
+        .isInNightMode=${this.isInNightMode}
+        .nightModeSource=${this.nightModeSource}
+        @nightModeExit=${this.handleNightModeExit}
+      ></night-mode>
+    ` : html`
+      <background-rotator
+        .hass=${this.hass}
+        .config=${this.config}
+        .screenWidth=${this.screenWidth}
+        .screenHeight=${this.screenHeight}
+      ></background-rotator>
+
+      <weather-clock .hass=${this.hass} .config=${this.config}></weather-clock>
+
+      <google-controls
+        .hass=${this.hass}
+        .config=${this.config}
+        .showOverlay=${this.showOverlay}
+        .isOverlayVisible=${this.isOverlayVisible}
+        .isOverlayTransitioning=${this.isOverlayTransitioning}
+        .showBrightnessCard=${this.showBrightnessCard}
+        .isBrightnessCardVisible=${this.isBrightnessCardVisible}
+        .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
+        .brightness=${this.brightness}
+        .visualBrightness=${this.visualBrightness}
+        .isAdjustingBrightness=${this.isAdjustingBrightness}
+        @overlayToggle=${this.handleOverlayToggle}
+        @brightnessCardToggle=${this.handleBrightnessCardToggle}
+        @brightnessChange=${this.handleBrightnessChange}
+        @debugToggle=${this.handleDebugToggle}
+      ></google-controls>
+    `;
+
+    return html`
+      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet">
+      <style>
+        @font-face {
+          font-family: 'Product Sans Regular';
+          src: local('Product Sans'), local('ProductSans-Regular'),
+            url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+      </style>
+
+      <div class="touch-container">
+        <div class="content-wrapper">${mainContent}</div>
+      </div>
+    `;
   }
 
-  refreshComponents() {
-    if (this._inEditor()) return; // Skip refresh if in editor mode
-    
-    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
-    
-    // Force refresh of key components
-    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
-    const weatherClock = this.shadowRoot.querySelector('weather-clock');
-    const controls = this.shadowRoot.querySelector('google-controls');
-    
-    if (backgroundRotator) backgroundRotator.requestUpdate();
-    if (weatherClock) weatherClock.requestUpdate();
-    if (controls) controls.requestUpdate();
+  _inEditor() {
+    if (window.location.pathname.includes('/lovelace/') && 
+       (window.location.pathname.includes('/edit/') || 
+        window.location.search.includes('edit=1'))) return true;
+
+    let parent = this.parentNode;
+    while (parent) {
+      if (parent.tagName) {
+        const tag = parent.tagName.toLowerCase();
+        const classes = Array.from(parent.classList || []);
+        if (tag.includes('-editor') || classes.some(c => c.includes('editor'))) return true;
+      }
+      parent = parent.parentNode || parent.host;
+    }
+    return false;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    
-    if (this._inEditor()) return; // Don't set up anything if in editor
+    if (this._inEditor()) {
+      this.style.position = 'static';
+      this.style.height = 'auto';
+      return;
+    }
     
     this.startTimeUpdates();
-    // Delay initial night mode check to ensure hass is available
     setTimeout(() => this.updateNightMode(), 1000);
     window.addEventListener('resize', this.boundUpdateScreenSize);
-    
-    // Add theme change detection
     this.themeMediaQuery.addEventListener('change', this.boundHandleThemeChange);
-    
-    // Apply current theme on initial load
     document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
-    
-    // Force initial refresh to ensure everything loads properly
-    setTimeout(() => {
-      this.updateCssVariables();
-      this.refreshComponents();
-    }, 100);
-  }
-
-  // Check if this component is being rendered in an editor context - same style as mini-media-player
-  _inEditor() {
-    // Check if we're on an editor page
-    if (window.location.pathname.includes('lovelace/edit') || 
-        window.location.pathname.includes('lovelace/dashboard/edit')) {
-      return true;
-    }
-    
-    // Check for other editor parent elements
-    if (this.parentNode) {
-      // Check for direct parent indicators
-      const parentTagName = this.parentNode.tagName.toLowerCase();
-      const parentClassList = this.parentNode.classList ? 
-                             Array.from(this.parentNode.classList) : [];
-
-      if (parentTagName === 'hui-card-editor' || 
-          parentTagName === 'hui-card-element-editor' ||
-          parentTagName === 'hui-card-picker' ||
-          parentTagName === 'hui-dialog' ||
-          parentTagName.includes('editor') ||
-          parentClassList.includes('editor') ||
-          parentClassList.includes('card-editor')) {
-        return true;
-      }
-      
-      // Check for __editors property - matches mini-media-player approach
-      if (this.parentElement && this.parentElement.__card) {
-        return true;
-      }
-    }
-    
-    return false;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    
-    // Don't do cleanup if in editor
-    if (this._inEditor()) {
-      return;
-    }
+    if (this._inEditor()) return;
     
     this.clearAllTimers();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
-    
-    // Remove theme change listener
     this.themeMediaQuery.removeEventListener('change', this.boundHandleThemeChange);
-    
     const touchContainer = this.shadowRoot?.querySelector('.touch-container');
     if (touchContainer) {
       touchContainer.removeEventListener('touchstart', this.handleTouchStart);
@@ -285,11 +275,15 @@ class GoogleCard extends LitElement {
   }
 
   firstUpdated() {
-    super.firstUpdated();
+    if (this._inEditor()) return;
     
-    if (this._inEditor()) {
-      return;
+    const touchContainer = this.shadowRoot.querySelector('.touch-container');
+    if (touchContainer) {
+      touchContainer.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
+      touchContainer.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+      touchContainer.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
     }
+  }
     
     const touchContainer = this.shadowRoot.querySelector('.touch-container');
     if (touchContainer) {
