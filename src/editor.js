@@ -1,25 +1,36 @@
 // src/editor.js
-import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import { fireEvent } from "custom-card-helpers";
-
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { DEFAULT_CONFIG } from './constants';
+
+// Define fireEvent function directly to avoid dependency issues
+const fireEvent = (node, type, detail = {}, options = {}) => {
+  const event = new Event(type, {
+    bubbles: options.bubbles === undefined ? true : options.bubbles,
+    cancelable: Boolean(options.cancelable),
+    composed: options.composed === undefined ? true : options.composed,
+  });
+
+  event.detail = detail;
+  node.dispatchEvent(event);
+  return event;
+};
 
 export class GoogleCardEditor extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      config: { type: Object },
+      _config: { type: Object },
     };
   }
 
   constructor() {
     super();
-    this.config = { ...DEFAULT_CONFIG };
+    this._config = { ...DEFAULT_CONFIG };
   }
 
   // Called by Home Assistant when the configuration changes
   setConfig(config) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this._config = { ...DEFAULT_CONFIG, ...config };
   }
 
   // Validate configuration values
@@ -45,8 +56,8 @@ export class GoogleCardEditor extends LitElement {
   }
 
   // Handle value changes for all input types
-  _valueChanged(ev) {
-    if (!this.config || !this.hass) {
+  valueChanged(ev) {
+    if (!this._config || !this.hass) {
       return;
     }
     
@@ -70,15 +81,15 @@ export class GoogleCardEditor extends LitElement {
     
     if (value === '' || value === undefined) {
       // Clear the key from config when empty
-      const newConfig = { ...this.config };
+      const newConfig = { ...this._config };
       delete newConfig[key];
-      this.config = newConfig;
+      this._config = newConfig;
     } else {
-      this.config = { ...this.config, [key]: value };
+      this._config = { ...this._config, [key]: value };
     }
     
     // Dispatch the config-changed event
-    fireEvent(this, 'config-changed', { detail: { config: this.config } });
+    fireEvent(this, 'config-changed', { config: this._config });
   }
 
   render() {
@@ -86,7 +97,7 @@ export class GoogleCardEditor extends LitElement {
       return html`<div>Loading...</div>`;
     }
 
-    // Destructure config with defaults
+    // Destructure config with defaults for proper initialization
     const {
       image_url = '',
       display_time = 15,
@@ -95,7 +106,7 @@ export class GoogleCardEditor extends LitElement {
       image_list_update_interval = 3600,
       image_order = 'sorted',
       show_debug = false,
-      sensor_update_delay = DEFAULT_CONFIG.sensor_update_delay,
+      sensor_update_delay = DEFAULT_CONFIG.sensor_update_delay || 500,
       device_name = 'mobile_app_liam_s_room_display',
       show_date = true,
       show_time = true,
@@ -105,7 +116,7 @@ export class GoogleCardEditor extends LitElement {
       aqi_entity = 'sensor.ridgewood_air_quality_index',
       light_sensor_entity = 'sensor.liam_room_display_light_sensor',
       brightness_sensor_entity = 'sensor.liam_room_display_brightness_sensor',
-    } = this.config;
+    } = this._config;
 
     return html`
       <div class="form-container">
@@ -117,12 +128,12 @@ export class GoogleCardEditor extends LitElement {
             <div class="section-header">Image Source</div>
             <div class="row">
               <div class="input-group full-width">
-                <label class="input-label" for="image_url">Image URL</label>
+                <label class="input-label" for="image_url">Image URL (required)</label>
                 <ha-textfield
                   id="image_url"
                   .value=${image_url}
                   .configValue=${'image_url'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                   placeholder="https://source.unsplash.com/random/1920x1080/?nature"
                 ></ha-textfield>
                 <div class="input-desc">
@@ -139,8 +150,7 @@ export class GoogleCardEditor extends LitElement {
                   id="image_fit"
                   .value=${image_fit}
                   .configValue=${'image_fit'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   <ha-list-item value="contain">Contain (Fit entire image)</ha-list-item>
                   <ha-list-item value="cover">Cover (Fill screen)</ha-list-item>
@@ -153,8 +163,7 @@ export class GoogleCardEditor extends LitElement {
                   id="image_order"
                   .value=${image_order}
                   .configValue=${'image_order'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   <ha-list-item value="sorted">Sorted</ha-list-item>
                   <ha-list-item value="random">Random</ha-list-item>
@@ -171,7 +180,7 @@ export class GoogleCardEditor extends LitElement {
                   min="1"
                   .value=${display_time}
                   .configValue=${'display_time'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                 ></ha-textfield>
               </div>
               
@@ -184,19 +193,19 @@ export class GoogleCardEditor extends LitElement {
                   step="0.5"
                   .value=${crossfade_time}
                   .configValue=${'crossfade_time'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                 ></ha-textfield>
               </div>
               
               <div class="input-group">
-                <label class="input-label" for="image_list_update_interval">Image List Update Interval (seconds)</label>
+                <label class="input-label" for="image_list_update_interval">Update Interval (seconds)</label>
                 <ha-textfield
                   id="image_list_update_interval"
                   type="number"
                   min="60"
                   .value=${image_list_update_interval}
                   .configValue=${'image_list_update_interval'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                 ></ha-textfield>
               </div>
             </div>
@@ -212,7 +221,7 @@ export class GoogleCardEditor extends LitElement {
                   id="device_name"
                   .value=${device_name}
                   .configValue=${'device_name'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                   placeholder="mobile_app_device"
                 ></ha-textfield>
                 <div class="input-desc">
@@ -229,7 +238,7 @@ export class GoogleCardEditor extends LitElement {
                   step="100"
                   .value=${sensor_update_delay}
                   .configValue=${'sensor_update_delay'}
-                  @input=${this._valueChanged}
+                  @input=${this.valueChanged}
                 ></ha-textfield>
               </div>
             </div>
@@ -241,8 +250,7 @@ export class GoogleCardEditor extends LitElement {
                   id="light_sensor_entity"
                   .value=${light_sensor_entity}
                   .configValue=${'light_sensor_entity'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   <ha-list-item value="">Default (sensor.liam_room_display_light_sensor)</ha-list-item>
                   ${this.getEntitySuggestions('sensor').map(
@@ -260,8 +268,7 @@ export class GoogleCardEditor extends LitElement {
                   id="brightness_sensor_entity"
                   .value=${brightness_sensor_entity}
                   .configValue=${'brightness_sensor_entity'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   <ha-list-item value="">Default (sensor.liam_room_display_brightness_sensor)</ha-list-item>
                   ${this.getEntitySuggestions('sensor').map(
@@ -276,40 +283,44 @@ export class GoogleCardEditor extends LitElement {
           <div class="card-section">
             <div class="section-header">Weather & Clock Settings</div>
             <div class="row">
-              <div class="input-group">
-                <label class="input-label">Show Date</label>
-                <ha-switch
-                  .checked=${show_date}
-                  .configValue=${'show_date'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
+              <div class="switch-group">
+                <ha-formfield label="Show Date">
+                  <ha-switch
+                    .checked=${show_date}
+                    .configValue=${'show_date'}
+                    @change=${this.valueChanged}
+                  ></ha-switch>
+                </ha-formfield>
               </div>
               
-              <div class="input-group">
-                <label class="input-label">Show Time</label>
-                <ha-switch
-                  .checked=${show_time}
-                  .configValue=${'show_time'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
+              <div class="switch-group">
+                <ha-formfield label="Show Time">
+                  <ha-switch
+                    .checked=${show_time}
+                    .configValue=${'show_time'}
+                    @change=${this.valueChanged}
+                  ></ha-switch>
+                </ha-formfield>
               </div>
               
-              <div class="input-group">
-                <label class="input-label">Show Weather</label>
-                <ha-switch
-                  .checked=${show_weather}
-                  .configValue=${'show_weather'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
+              <div class="switch-group">
+                <ha-formfield label="Show Weather">
+                  <ha-switch
+                    .checked=${show_weather}
+                    .configValue=${'show_weather'}
+                    @change=${this.valueChanged}
+                  ></ha-switch>
+                </ha-formfield>
               </div>
               
-              <div class="input-group">
-                <label class="input-label">Show AQI (when available)</label>
-                <ha-switch
-                  .checked=${show_aqi}
-                  .configValue=${'show_aqi'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
+              <div class="switch-group">
+                <ha-formfield label="Show AQI">
+                  <ha-switch
+                    .checked=${show_aqi}
+                    .configValue=${'show_aqi'}
+                    @change=${this.valueChanged}
+                  ></ha-switch>
+                </ha-formfield>
               </div>
             </div>
             
@@ -320,8 +331,7 @@ export class GoogleCardEditor extends LitElement {
                   id="weather_entity"
                   .value=${weather_entity}
                   .configValue=${'weather_entity'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   ${this.getEntitySuggestions('weather').map(
                     entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
@@ -335,8 +345,7 @@ export class GoogleCardEditor extends LitElement {
                   id="aqi_entity"
                   .value=${aqi_entity}
                   .configValue=${'aqi_entity'}
-                  @selected=${this._valueChanged}
-                  @closed=${(ev) => ev.stopPropagation()}
+                  @selected=${this.valueChanged}
                 >
                   <ha-list-item value="">None</ha-list-item>
                   ${this.getEntitySuggestions('sensor').map(
@@ -351,13 +360,14 @@ export class GoogleCardEditor extends LitElement {
           <div class="card-section">
             <div class="section-header">Debug Settings</div>
             <div class="row">
-              <div class="input-group">
-                <label class="input-label">Show Debug Info</label>
-                <ha-switch
-                  .checked=${show_debug}
-                  .configValue=${'show_debug'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
+              <div class="switch-group">
+                <ha-formfield label="Show Debug Info">
+                  <ha-switch
+                    .checked=${show_debug}
+                    .configValue=${'show_debug'}
+                    @change=${this.valueChanged}
+                  ></ha-switch>
+                </ha-formfield>
                 <div class="input-desc">
                   Long press settings icon to toggle debug mode
                 </div>
@@ -441,15 +451,23 @@ export class GoogleCardEditor extends LitElement {
         margin-top: 4px;
       }
       
+      .switch-group {
+        padding: 8px 16px 8px 0;
+        box-sizing: border-box;
+      }
+      
       ha-textfield,
-      ha-select,
-      ha-switch {
+      ha-select {
         width: 100%;
       }
       
-      ha-alert {
-        display: block;
-        margin: 8px 0;
+      ha-formfield {
+        display: flex;
+        align-items: center;
+      }
+      
+      ha-switch {
+        --mdc-theme-secondary: var(--switch-checked-color, var(--primary-color));
       }
     `;
   }
