@@ -35,6 +35,7 @@ export class GoogleCard extends LitElement {
       touchStartX: { type: Number },
       touchStartTime: { type: Number },
       isDarkMode: { type: Boolean },
+      editMode: { type: Boolean },
     };
   }
 
@@ -113,6 +114,7 @@ export class GoogleCard extends LitElement {
     this.brightnessStabilizeTimer = null;
     this.timeUpdateInterval = null;
     this.nightModeSource = null;
+    this.editMode = false;
 
     this.updateScreenSize();
     this.updateTime();
@@ -194,6 +196,15 @@ export class GoogleCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    
+    // Check if this element is being used in an editor context
+    this.checkEditorMode();
+    
+    // Don't set up interaction handlers if in editor mode
+    if (this.editMode) {
+      return;
+    }
+    
     this.startTimeUpdates();
     // Delay initial night mode check to ensure hass is available
     setTimeout(() => this.updateNightMode(), 1000);
@@ -212,8 +223,27 @@ export class GoogleCard extends LitElement {
     }, 100);
   }
 
+  // Check if this component is being rendered in an editor context
+  checkEditorMode() {
+    // Check if the element has a parent that's an editor component
+    if (this.parentNode) {
+      const parentTagName = this.parentNode.tagName.toLowerCase();
+      const parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
+      
+      this.editMode = parentTagName === 'huicard-editor' || 
+                      parentTagName === 'hui-card-picker' ||
+                      parentClassList.includes('editor') ||
+                      parentTagName.includes('editor');
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    
+    if (this.editMode) {
+      return;
+    }
+    
     this.clearAllTimers();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
     
@@ -230,6 +260,13 @@ export class GoogleCard extends LitElement {
 
   firstUpdated() {
     super.firstUpdated();
+    
+    // Double-check editor mode after first update
+    this.checkEditorMode();
+    
+    if (this.editMode) {
+      return;
+    }
     
     const touchContainer = this.shadowRoot.querySelector('.touch-container');
     if (touchContainer) {
@@ -657,6 +694,13 @@ export class GoogleCard extends LitElement {
   }
 
   updated(changedProperties) {
+    // Re-check editor mode after each update
+    this.checkEditorMode();
+    
+    if (this.editMode) {
+      return;
+    }
+    
     if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
@@ -666,6 +710,15 @@ export class GoogleCard extends LitElement {
   }
 
   render() {
+    // Check if this card is being rendered in editor mode
+    this.checkEditorMode();
+    
+    // If in editor mode, render minimal content to avoid conflicts
+    if (this.editMode) {
+      return html`<div style="display: none;"></div>`;
+    }
+    
+    // Normal rendering for actual card display
     const mainContent = this.isNightMode ? html`
       <night-mode 
         .currentTime=${this.currentTime}
