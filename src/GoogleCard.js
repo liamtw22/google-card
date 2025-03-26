@@ -539,15 +539,62 @@ export class GoogleCard extends LitElement {
   async handleNightModeTransition(newNightMode, source = 'sensor') {
     if (newNightMode === this.isInNightMode && this.nightModeSource === source) return;
     
+    // Use a single try/catch for the entire operation
     try {
+      // Choose the appropriate action based on the target night mode state
       if (newNightMode) {
-        await this.enterNightMode();
+        // Save current brightness, but only if it's not already saved and reasonable
+        if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
+          this.previousBrightness = this.brightness;
+        }
+        
+        const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
+        
+        // First disable auto brightness
+        await this.hass.callService('notify', deviceName, {
+          message: 'command_auto_screen_brightness',
+          data: {
+            command: 'turn_off'
+          }
+        });
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Set to minimum brightness
+        await this.setBrightness(MIN_BRIGHTNESS);
+        
+        // Then enable auto brightness for night mode
+        await new Promise(resolve => setTimeout(resolve, 200));
+        await this.hass.callService('notify', deviceName, {
+          message: 'command_auto_screen_brightness',
+          data: {
+            command: 'turn_on'
+          }
+        });
+        
         this.nightModeSource = source;
       } else {
-        await this.exitNightMode();
+        const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
+        
+        // First disable auto brightness
+        await this.hass.callService('notify', deviceName, {
+          message: 'command_auto_screen_brightness',
+          data: {
+            command: 'turn_off'
+          }
+        });
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Restore previous brightness or use a reasonable default
+        const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+          ? this.previousBrightness 
+          : 128;
+        
+        await this.setBrightness(restoreBrightness);
+        
         this.nightModeSource = null;
       }
       
+      // Update state variables after successful operation
       this.isInNightMode = newNightMode;
       this.isNightMode = newNightMode;
       
@@ -561,72 +608,12 @@ export class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
-      // Restore previous state on error
+      // On error, restore the previous state and add error handling
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
       this.requestUpdate();
-    }
-  }
-
-  async enterNightMode() {
-    // Save current brightness, but only if it's not already saved and reasonable
-    if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
-      this.previousBrightness = this.brightness;
-    }
-    
-    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-    
-    try {
-      // First disable auto brightness
-      await this.hass.callService('notify', deviceName, {
-        message: 'command_auto_screen_brightness',
-        data: {
-          command: 'turn_off'
-        }
-      });
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Set to minimum brightness
-      await this.setBrightness(MIN_BRIGHTNESS);
-      
-      // Then enable auto brightness for night mode
-      await new Promise(resolve => setTimeout(resolve, 200));
-      await this.hass.callService('notify', deviceName, {
-        message: 'command_auto_screen_brightness',
-        data: {
-          command: 'turn_on'
-        }
-      });
-    } catch (error) {
-      // Handle error silently
-      throw error;
-    }
-  }
-
-  async exitNightMode() {
-    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-    
-    try {
-      // First disable auto brightness
-      await this.hass.callService('notify', deviceName, {
-        message: 'command_auto_screen_brightness',
-        data: {
-          command: 'turn_off'
-        }
-      });
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Restore previous brightness or use a reasonable default
-      const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
-        ? this.previousBrightness 
-        : 128;
-      
-      await this.setBrightness(restoreBrightness);
-      
-      // Keep auto brightness disabled after exiting night mode
-    } catch (error) {
-      // Handle error silently
-      throw error;
+      // For better error reporting, you could add a property to track errors
+      // this.lastError = `Night mode transition failed: ${error.message}`;
     }
   }
 
