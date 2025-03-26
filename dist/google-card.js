@@ -1784,7 +1784,7 @@ class GoogleCard extends LitElement {
     this.brightnessCardDismissTimer = null, this.brightnessStabilizeTimer = null, this.timeUpdateInterval = null, 
     this.nightModeSource = null, this.editMode = !1, this.updateScreenSize(), this.updateTime();
   }
-  static getConfigElement() {
+  static async getConfigElement() {
     return document.createElement("google-card-editor");
   }
   static getStubConfig() {
@@ -1827,28 +1827,31 @@ class GoogleCard extends LitElement {
     this.refreshComponents(), this.requestUpdate());
   }
   refreshComponents() {
-    if (this.editMode) return;
+    if (this._inEditor()) return;
     document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
     const backgroundRotator = this.shadowRoot.querySelector("background-rotator"), weatherClock = this.shadowRoot.querySelector("weather-clock"), controls = this.shadowRoot.querySelector("google-controls");
     backgroundRotator && backgroundRotator.requestUpdate(), weatherClock && weatherClock.requestUpdate(), 
     controls && controls.requestUpdate();
   }
   connectedCallback() {
-    super.connectedCallback(), this.checkEditorMode(), this.editMode || (this.startTimeUpdates(), 
-    setTimeout((() => this.updateNightMode()), 1e3), window.addEventListener("resize", this.boundUpdateScreenSize), 
-    this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light"), 
+    super.connectedCallback(), this._inEditor() || (this.startTimeUpdates(), setTimeout((() => this.updateNightMode()), 1e3), 
+    window.addEventListener("resize", this.boundUpdateScreenSize), this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), 
+    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light"), 
     setTimeout((() => {
       this.updateCssVariables(), this.refreshComponents();
     }), 100));
   }
-  checkEditorMode() {
+  _inEditor() {
+    if (window.location.pathname.includes("lovelace/edit") || window.location.pathname.includes("lovelace/dashboard/edit")) return !0;
     if (this.parentNode) {
       const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
-      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor") || "hui-card-element-editor" === parentTagName || "hui-dialog" === parentTagName || parentClassList.includes("card-editor") || parentTagName.includes("card-editor");
+      if ("hui-card-editor" === parentTagName || "hui-card-element-editor" === parentTagName || "hui-card-picker" === parentTagName || "hui-dialog" === parentTagName || parentTagName.includes("editor") || parentClassList.includes("editor") || parentClassList.includes("card-editor")) return !0;
+      if (this.parentElement && this.parentElement.__card) return !0;
     }
+    return !1;
   }
   disconnectedCallback() {
-    if (super.disconnectedCallback(), this.editMode) return;
+    if (super.disconnectedCallback(), this._inEditor()) return;
     this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
     this.themeMediaQuery.removeEventListener("change", this.boundHandleThemeChange);
     const touchContainer = this.shadowRoot?.querySelector(".touch-container");
@@ -1856,7 +1859,7 @@ class GoogleCard extends LitElement {
     touchContainer.removeEventListener("touchmove", this.handleTouchMove), touchContainer.removeEventListener("touchend", this.handleTouchEnd));
   }
   firstUpdated() {
-    if (super.firstUpdated(), this.checkEditorMode(), this.editMode) return;
+    if (super.firstUpdated(), this._inEditor()) return;
     const touchContainer = this.shadowRoot.querySelector(".touch-container");
     touchContainer && (touchContainer.addEventListener("touchstart", this.handleTouchStart.bind(this), {
       passive: !0
@@ -2039,14 +2042,17 @@ class GoogleCard extends LitElement {
     this.isInNightMode && "manual" === this.nightModeSource || shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
   updated(changedProperties) {
-    if (this.checkEditorMode(), !this.editMode && changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
+    if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness && !this._inEditor()) {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
     }
   }
   render() {
-    if (this.checkEditorMode(), this.editMode) return html`
-        <div class="editor-placeholder">
-          Google Card configured with image source: ${this.config?.image_url || "Not specified"}
+    if (this._inEditor()) return html`
+        <div style="padding: 8px; font-size: 14px;">
+          <div>
+            Google Card:
+            ${this.config?.image_url ? `Image source: ${this.config.image_url}` : "No image source configured"}
+          </div>
         </div>
       `;
     const mainContent = this.isNightMode ? html`
@@ -2118,6 +2124,9 @@ class GoogleCard extends LitElement {
         <div class="content-wrapper">${mainContent}</div>
       </div>
     `;
+  }
+  getCardSize() {
+    return 1;
   }
 }
 
