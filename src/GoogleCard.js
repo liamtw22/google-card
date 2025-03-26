@@ -1,4 +1,4 @@
-//src/GoogleCard.js
+// src/GoogleCard.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 import { DEFAULT_CONFIG, MIN_BRIGHTNESS } from './constants';
@@ -67,6 +67,15 @@ export class GoogleCard extends LitElement {
           position: relative;
           width: 100%;
           height: 100%;
+        }
+        
+        /* Editor mode styles */
+        .editor-placeholder {
+          display: block;
+          padding: 8px;
+          font-family: var(--primary-font-family);
+          font-size: 14px;
+          color: var(--primary-text-color);
         }
       `
     ];
@@ -182,6 +191,8 @@ export class GoogleCard extends LitElement {
   }
 
   refreshComponents() {
+    if (this.editMode) return; // Skip refresh if in editor mode
+    
     document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
     
     // Force refresh of key components
@@ -223,41 +234,21 @@ export class GoogleCard extends LitElement {
     }, 100);
   }
 
-  // Updated: Enhanced editor mode detection method
+  // Check if this component is being rendered in an editor context
   checkEditorMode() {
-    // Enhanced editor mode detection
+    // Check if the element has a parent that's an editor component
     if (this.parentNode) {
       const parentTagName = this.parentNode.tagName.toLowerCase();
       const parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
-      const grandParentNode = this.parentNode.parentNode;
-      const grandParentTagName = grandParentNode ? grandParentNode.tagName.toLowerCase() : '';
-      const grandParentClassList = grandParentNode && grandParentNode.classList ? Array.from(grandParentNode.classList) : [];
       
       this.editMode = parentTagName === 'huicard-editor' || 
                       parentTagName === 'hui-card-picker' ||
                       parentClassList.includes('editor') ||
                       parentTagName.includes('editor') ||
-                      grandParentTagName.includes('editor') ||
-                      grandParentClassList.includes('editor') ||
-                      document.location.pathname.includes('edit') ||
-                      // Check if within a dialog that contains 'editor'
-                      (document.querySelector('ha-dialog') && 
-                       document.querySelector('ha-dialog').shadowRoot && 
-                       document.querySelector('ha-dialog').shadowRoot.querySelector('.content') &&
-                       document.querySelector('ha-dialog').shadowRoot.querySelector('.content').innerHTML.includes('editor'));
-    }
-    
-    // Also check if we're in a dialog with card-editor
-    if (!this.editMode && document.querySelector('dialog')) {
-      const dialogs = document.querySelectorAll('dialog');
-      for (const dialog of dialogs) {
-        if (dialog.querySelector('ha-yaml-editor') || 
-            dialog.querySelector('[id*="editor"]') ||
-            dialog.innerHTML.includes('editor')) {
-          this.editMode = true;
-          break;
-        }
-      }
+                      parentTagName === 'hui-card-element-editor' ||
+                      parentTagName === 'hui-dialog' ||
+                      parentClassList.includes('card-editor') ||
+                      parentTagName.includes('card-editor');
     }
   }
 
@@ -282,15 +273,13 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  // Updated: firstUpdated method with early exit for editor mode
   firstUpdated() {
     super.firstUpdated();
     
-    // Run editor mode check after elements are fully attached
+    // Double-check editor mode after first update
     this.checkEditorMode();
     
     if (this.editMode) {
-      // If in editor mode, don't set up any interactions
       return;
     }
     
@@ -525,7 +514,7 @@ export class GoogleCard extends LitElement {
   async setBrightness(value) {
     if (!this.hass) return;
     
-    const brightness = Math.max(1, Math.min(255, Math.round(value)));
+    const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
     const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
     
     await this.hass.callService('notify', deviceName, {
@@ -609,7 +598,7 @@ export class GoogleCard extends LitElement {
         }
       });
     } catch (error) {
-      console.error("Error entering night mode:", error);
+      // Handle error silently
       throw error;
     }
   }
@@ -636,7 +625,7 @@ export class GoogleCard extends LitElement {
       
       // Keep auto brightness disabled after exiting night mode
     } catch (error) {
-      console.error("Error exiting night mode:", error);
+      // Handle error silently
       throw error;
     }
   }
@@ -735,15 +724,17 @@ export class GoogleCard extends LitElement {
     }
   }
 
-  // Updated: render method with improved editor mode handling
   render() {
-    // Always check editor mode before rendering
+    // Re-check editor mode before rendering
     this.checkEditorMode();
     
-    // Completely hide in editor mode
+    // If in editor mode, render a simple placeholder instead
     if (this.editMode) {
-      // Return just an empty div with no styles or content
-      return html`<div></div>`;
+      return html`
+        <div class="editor-placeholder">
+          Google Card configured with image source: ${this.config?.image_url || 'Not specified'}
+        </div>
+      `;
     }
     
     // Normal rendering for actual card display
@@ -792,8 +783,16 @@ export class GoogleCard extends LitElement {
 
     return html`
       <!-- Import all required fonts -->
-      <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous">
-      <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+        crossorigin="anonymous"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+        crossorigin="anonymous"
+      />
       
       <!-- Fallback font style for Product Sans -->
       <style>
