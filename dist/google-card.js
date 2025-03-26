@@ -1761,6 +1761,15 @@ class GoogleCard extends LitElement {
           width: 100%;
           height: 100%;
         }
+
+        /* Editor mode styles */
+        .editor-placeholder {
+          display: block;
+          padding: 8px;
+          font-family: var(--primary-font-family);
+          font-size: 14px;
+          color: var(--primary-text-color);
+        }
       ` ];
   }
   constructor() {
@@ -1823,6 +1832,7 @@ class GoogleCard extends LitElement {
     this.refreshComponents(), this.requestUpdate());
   }
   refreshComponents() {
+    if (this.editMode) return;
     document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
     const backgroundRotator = this.shadowRoot.querySelector("background-rotator"), weatherClock = this.shadowRoot.querySelector("weather-clock"), controls = this.shadowRoot.querySelector("google-controls");
     backgroundRotator && backgroundRotator.requestUpdate(), weatherClock && weatherClock.requestUpdate(), 
@@ -1838,15 +1848,8 @@ class GoogleCard extends LitElement {
   }
   checkEditorMode() {
     if (this.parentNode) {
-      const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [], grandParentNode = this.parentNode.parentNode, grandParentTagName = grandParentNode ? grandParentNode.tagName.toLowerCase() : "", grandParentClassList = grandParentNode && grandParentNode.classList ? Array.from(grandParentNode.classList) : [];
-      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor") || grandParentTagName.includes("editor") || grandParentClassList.includes("editor") || document.location.pathname.includes("edit") || document.querySelector("ha-dialog") && document.querySelector("ha-dialog").shadowRoot && document.querySelector("ha-dialog").shadowRoot.querySelector(".content") && document.querySelector("ha-dialog").shadowRoot.querySelector(".content").innerHTML.includes("editor");
-    }
-    if (!this.editMode && document.querySelector("dialog")) {
-      const dialogs = document.querySelectorAll("dialog");
-      for (const dialog of dialogs) if (dialog.querySelector("ha-yaml-editor") || dialog.querySelector('[id*="editor"]') || dialog.innerHTML.includes("editor")) {
-        this.editMode = !0;
-        break;
-      }
+      const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
+      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor") || "hui-card-element-editor" === parentTagName || "hui-dialog" === parentTagName || parentClassList.includes("card-editor") || parentTagName.includes("card-editor");
     }
   }
   disconnectedCallback() {
@@ -1977,48 +1980,38 @@ class GoogleCard extends LitElement {
   }
   async handleNightModeTransition(newNightMode, source = "sensor") {
     if (newNightMode !== this.isInNightMode || this.nightModeSource !== source) try {
-      newNightMode ? (await this.enterNightMode(), this.nightModeSource = source) : (await this.exitNightMode(), 
-      this.nightModeSource = null), this.isInNightMode = newNightMode, this.isNightMode = newNightMode;
+      if (newNightMode) {
+        !this.isInNightMode && this.brightness > 1 && (this.previousBrightness = this.brightness);
+        const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
+        await this.hass.callService("notify", deviceName, {
+          message: "command_auto_screen_brightness",
+          data: {
+            command: "turn_off"
+          }
+        }), await new Promise((resolve => setTimeout(resolve, 200))), await this.setBrightness(1), 
+        await new Promise((resolve => setTimeout(resolve, 200))), await this.hass.callService("notify", deviceName, {
+          message: "command_auto_screen_brightness",
+          data: {
+            command: "turn_on"
+          }
+        }), this.nightModeSource = source;
+      } else {
+        const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
+        await this.hass.callService("notify", deviceName, {
+          message: "command_auto_screen_brightness",
+          data: {
+            command: "turn_off"
+          }
+        }), await new Promise((resolve => setTimeout(resolve, 200)));
+        const restoreBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
+        await this.setBrightness(restoreBrightness), this.nightModeSource = null;
+      }
+      this.isInNightMode = newNightMode, this.isNightMode = newNightMode;
       const nightModeComponent = this.shadowRoot.querySelector("night-mode");
       nightModeComponent && (nightModeComponent.isInNightMode = newNightMode, nightModeComponent.previousBrightness = this.previousBrightness, 
       nightModeComponent.nightModeSource = this.nightModeSource), this.requestUpdate();
     } catch (error) {
       this.isInNightMode = !newNightMode, this.isNightMode = !newNightMode, this.requestUpdate();
-    }
-  }
-  async enterNightMode() {
-    !this.isInNightMode && this.brightness > 1 && (this.previousBrightness = this.brightness);
-    const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
-    try {
-      await this.hass.callService("notify", deviceName, {
-        message: "command_auto_screen_brightness",
-        data: {
-          command: "turn_off"
-        }
-      }), await new Promise((resolve => setTimeout(resolve, 200))), await this.setBrightness(1), 
-      await new Promise((resolve => setTimeout(resolve, 200))), await this.hass.callService("notify", deviceName, {
-        message: "command_auto_screen_brightness",
-        data: {
-          command: "turn_on"
-        }
-      });
-    } catch (error) {
-      throw console.error("Error entering night mode:", error), error;
-    }
-  }
-  async exitNightMode() {
-    const deviceName = this.config.device_name || "mobile_app_liam_s_room_display";
-    try {
-      await this.hass.callService("notify", deviceName, {
-        message: "command_auto_screen_brightness",
-        data: {
-          command: "turn_off"
-        }
-      }), await new Promise((resolve => setTimeout(resolve, 200)));
-      const restoreBrightness = this.previousBrightness && this.previousBrightness > 1 ? this.previousBrightness : 128;
-      await this.setBrightness(restoreBrightness);
-    } catch (error) {
-      throw console.error("Error exiting night mode:", error), error;
     }
   }
   handleBrightnessCardToggle(event) {
@@ -2056,7 +2049,11 @@ class GoogleCard extends LitElement {
     }
   }
   render() {
-    if (this.checkEditorMode(), this.editMode) return html`<div></div>`;
+    if (this.checkEditorMode(), this.editMode) return html`
+        <div class="editor-placeholder">
+          Google Card configured with image source: ${this.config?.image_url || "Not specified"}
+        </div>
+      `;
     const mainContent = this.isNightMode ? html`
           <night-mode
             .currentTime=${this.currentTime}
