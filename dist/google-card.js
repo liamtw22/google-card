@@ -1838,8 +1838,15 @@ class GoogleCard extends LitElement {
   }
   checkEditorMode() {
     if (this.parentNode) {
-      const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
-      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor");
+      const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [], grandParentNode = this.parentNode.parentNode, grandParentTagName = grandParentNode ? grandParentNode.tagName.toLowerCase() : "", grandParentClassList = grandParentNode && grandParentNode.classList ? Array.from(grandParentNode.classList) : [];
+      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor") || grandParentTagName.includes("editor") || grandParentClassList.includes("editor") || document.location.pathname.includes("edit") || document.querySelector("ha-dialog") && document.querySelector("ha-dialog").shadowRoot && document.querySelector("ha-dialog").shadowRoot.querySelector(".content") && document.querySelector("ha-dialog").shadowRoot.querySelector(".content").innerHTML.includes("editor");
+    }
+    if (!this.editMode && document.querySelector("dialog")) {
+      const dialogs = document.querySelectorAll("dialog");
+      for (const dialog of dialogs) if (dialog.querySelector("ha-yaml-editor") || dialog.querySelector('[id*="editor"]') || dialog.innerHTML.includes("editor")) {
+        this.editMode = !0;
+        break;
+      }
     }
   }
   disconnectedCallback() {
@@ -2049,7 +2056,7 @@ class GoogleCard extends LitElement {
     }
   }
   render() {
-    if (this.checkEditorMode(), this.editMode) return html`<div style="display: none;"></div>`;
+    if (this.checkEditorMode(), this.editMode) return html`<div></div>`;
     const mainContent = this.isNightMode ? html`
           <night-mode
             .currentTime=${this.currentTime}
