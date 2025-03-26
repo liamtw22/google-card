@@ -1,5 +1,6 @@
 // src/editor.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { fireEvent } from "custom-card-helpers";
 
 import { DEFAULT_CONFIG } from './constants';
 
@@ -11,6 +12,363 @@ export class GoogleCardEditor extends LitElement {
     };
   }
 
+  constructor() {
+    super();
+    this.config = { ...DEFAULT_CONFIG };
+  }
+
+  // Called by Home Assistant when the configuration changes
+  setConfig(config) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  // Validate configuration values
+  validate(key, value) {
+    switch (key) {
+      case 'display_time':
+      case 'crossfade_time':
+        return Math.max(1, parseInt(value) || DEFAULT_CONFIG[key]);
+      case 'image_list_update_interval':
+        return Math.max(60, parseInt(value) || DEFAULT_CONFIG[key]);
+      default:
+        return value;
+    }
+  }
+
+  // Get entity suggestions filtered by domain
+  getEntitySuggestions(domain) {
+    if (!this.hass) return [];
+    
+    return Object.keys(this.hass.states)
+      .filter(entityId => entityId.startsWith(`${domain}.`))
+      .sort();
+  }
+
+  // Handle value changes for all input types
+  _valueChanged(ev) {
+    if (!this.config || !this.hass) {
+      return;
+    }
+    
+    const target = ev.target;
+    const key = target.configValue;
+    
+    if (!key) return;
+    
+    let value;
+    if (target.type === 'checkbox' || target.tagName === 'HA-SWITCH') {
+      value = target.checked;
+    } else if (target.type === 'number' || 
+              key === 'display_time' || 
+              key === 'crossfade_time' ||
+              key === 'image_list_update_interval' ||
+              key === 'sensor_update_delay') {
+      value = this.validate(key, target.value);
+    } else {
+      value = target.value;
+    }
+    
+    if (value === '' || value === undefined) {
+      // Clear the key from config when empty
+      const newConfig = { ...this.config };
+      delete newConfig[key];
+      this.config = newConfig;
+    } else {
+      this.config = { ...this.config, [key]: value };
+    }
+    
+    // Dispatch the config-changed event
+    fireEvent(this, 'config-changed', { detail: { config: this.config } });
+  }
+
+  render() {
+    if (!this.hass) {
+      return html`<div>Loading...</div>`;
+    }
+
+    // Destructure config with defaults
+    const {
+      image_url = '',
+      display_time = 15,
+      crossfade_time = 3,
+      image_fit = 'contain',
+      image_list_update_interval = 3600,
+      image_order = 'sorted',
+      show_debug = false,
+      sensor_update_delay = DEFAULT_CONFIG.sensor_update_delay,
+      device_name = 'mobile_app_liam_s_room_display',
+      show_date = true,
+      show_time = true,
+      show_weather = true,
+      show_aqi = true,
+      weather_entity = 'weather.forecast_home',
+      aqi_entity = 'sensor.ridgewood_air_quality_index',
+      light_sensor_entity = 'sensor.liam_room_display_light_sensor',
+      brightness_sensor_entity = 'sensor.liam_room_display_brightness_sensor',
+    } = this.config;
+
+    return html`
+      <div class="form-container">
+        <div class="card">
+          <div class="card-header">Google Card Configuration</div>
+          
+          <!-- Image Source Settings -->
+          <div class="card-section">
+            <div class="section-header">Image Source</div>
+            <div class="row">
+              <div class="input-group full-width">
+                <label class="input-label" for="image_url">Image URL</label>
+                <ha-textfield
+                  id="image_url"
+                  .value=${image_url}
+                  .configValue=${'image_url'}
+                  @input=${this._valueChanged}
+                  placeholder="https://source.unsplash.com/random/1920x1080/?nature"
+                ></ha-textfield>
+                <div class="input-desc">
+                  Supported formats: Direct URL, Media Source (media-source://media_source/...), 
+                  Unsplash API, Immich API, Picsum (https://picsum.photos/...)
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label" for="image_fit">Image Fit</label>
+                <ha-select
+                  id="image_fit"
+                  .value=${image_fit}
+                  .configValue=${'image_fit'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  <ha-list-item value="contain">Contain (Fit entire image)</ha-list-item>
+                  <ha-list-item value="cover">Cover (Fill screen)</ha-list-item>
+                </ha-select>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="image_order">Image Order</label>
+                <ha-select
+                  id="image_order"
+                  .value=${image_order}
+                  .configValue=${'image_order'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  <ha-list-item value="sorted">Sorted</ha-list-item>
+                  <ha-list-item value="random">Random</ha-list-item>
+                </ha-select>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label" for="display_time">Display Time (seconds)</label>
+                <ha-textfield
+                  id="display_time"
+                  type="number"
+                  min="1"
+                  .value=${display_time}
+                  .configValue=${'display_time'}
+                  @input=${this._valueChanged}
+                ></ha-textfield>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="crossfade_time">Crossfade Time (seconds)</label>
+                <ha-textfield
+                  id="crossfade_time"
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  .value=${crossfade_time}
+                  .configValue=${'crossfade_time'}
+                  @input=${this._valueChanged}
+                ></ha-textfield>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="image_list_update_interval">Image List Update Interval (seconds)</label>
+                <ha-textfield
+                  id="image_list_update_interval"
+                  type="number"
+                  min="60"
+                  .value=${image_list_update_interval}
+                  .configValue=${'image_list_update_interval'}
+                  @input=${this._valueChanged}
+                ></ha-textfield>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Display Settings -->
+          <div class="card-section">
+            <div class="section-header">Display Settings</div>
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label" for="device_name">Device Name</label>
+                <ha-textfield
+                  id="device_name"
+                  .value=${device_name}
+                  .configValue=${'device_name'}
+                  @input=${this._valueChanged}
+                  placeholder="mobile_app_device"
+                ></ha-textfield>
+                <div class="input-desc">
+                  The mobile device name for brightness control
+                </div>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="sensor_update_delay">Sensor Update Delay (ms)</label>
+                <ha-textfield
+                  id="sensor_update_delay"
+                  type="number"
+                  min="100"
+                  step="100"
+                  .value=${sensor_update_delay}
+                  .configValue=${'sensor_update_delay'}
+                  @input=${this._valueChanged}
+                ></ha-textfield>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label" for="light_sensor_entity">Light Sensor Entity</label>
+                <ha-select
+                  id="light_sensor_entity"
+                  .value=${light_sensor_entity}
+                  .configValue=${'light_sensor_entity'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  <ha-list-item value="">Default (sensor.liam_room_display_light_sensor)</ha-list-item>
+                  ${this.getEntitySuggestions('sensor').map(
+                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
+                  )}
+                </ha-select>
+                <div class="input-desc">
+                  Sensor used for night mode detection
+                </div>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="brightness_sensor_entity">Brightness Sensor Entity</label>
+                <ha-select
+                  id="brightness_sensor_entity"
+                  .value=${brightness_sensor_entity}
+                  .configValue=${'brightness_sensor_entity'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  <ha-list-item value="">Default (sensor.liam_room_display_brightness_sensor)</ha-list-item>
+                  ${this.getEntitySuggestions('sensor').map(
+                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
+                  )}
+                </ha-select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Weather Clock Settings -->
+          <div class="card-section">
+            <div class="section-header">Weather & Clock Settings</div>
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label">Show Date</label>
+                <ha-switch
+                  .checked=${show_date}
+                  .configValue=${'show_date'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label">Show Time</label>
+                <ha-switch
+                  .checked=${show_time}
+                  .configValue=${'show_time'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label">Show Weather</label>
+                <ha-switch
+                  .checked=${show_weather}
+                  .configValue=${'show_weather'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label">Show AQI (when available)</label>
+                <ha-switch
+                  .checked=${show_aqi}
+                  .configValue=${'show_aqi'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label" for="weather_entity">Weather Entity</label>
+                <ha-select
+                  id="weather_entity"
+                  .value=${weather_entity}
+                  .configValue=${'weather_entity'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  ${this.getEntitySuggestions('weather').map(
+                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
+                  )}
+                </ha-select>
+              </div>
+              
+              <div class="input-group">
+                <label class="input-label" for="aqi_entity">AQI Entity</label>
+                <ha-select
+                  id="aqi_entity"
+                  .value=${aqi_entity}
+                  .configValue=${'aqi_entity'}
+                  @selected=${this._valueChanged}
+                  @closed=${(ev) => ev.stopPropagation()}
+                >
+                  <ha-list-item value="">None</ha-list-item>
+                  ${this.getEntitySuggestions('sensor').map(
+                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
+                  )}
+                </ha-select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Debug Settings -->
+          <div class="card-section">
+            <div class="section-header">Debug Settings</div>
+            <div class="row">
+              <div class="input-group">
+                <label class="input-label">Show Debug Info</label>
+                <ha-switch
+                  .checked=${show_debug}
+                  .configValue=${'show_debug'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+                <div class="input-desc">
+                  Long press settings icon to toggle debug mode
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   static get styles() {
     return css`
       .form-container {
@@ -19,7 +377,7 @@ export class GoogleCardEditor extends LitElement {
       
       .card {
         margin-bottom: 16px;
-        background: var(--card-background-color, #fff);
+        background: var(--card-background-color, var(--ha-card-background));
         border-radius: var(--ha-card-border-radius, 4px);
         box-shadow: var(--ha-card-box-shadow, 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2));
         color: var(--primary-text-color);
@@ -93,335 +451,6 @@ export class GoogleCardEditor extends LitElement {
         display: block;
         margin: 8px 0;
       }
-    `;
-  }
-
-  constructor() {
-    super();
-    this.config = { ...DEFAULT_CONFIG };
-  }
-
-  // The component has been first updated
-  firstUpdated() {
-    // Initialize any components or fetch data if needed
-  }
-
-  // Called by Home Assistant when the configuration changes
-  setConfig(config) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
-  }
-
-  // Validate configuration values
-  validate(key, value) {
-    switch (key) {
-      case 'display_time':
-      case 'crossfade_time':
-        return Math.max(1, parseInt(value) || DEFAULT_CONFIG[key]);
-      case 'image_list_update_interval':
-        return Math.max(60, parseInt(value) || DEFAULT_CONFIG[key]);
-      default:
-        return value;
-    }
-  }
-
-  // Get entity suggestions filtered by domain
-  getEntitySuggestions(domain) {
-    if (!this.hass) return [];
-    
-    return Object.keys(this.hass.states)
-      .filter(entityId => entityId.startsWith(`${domain}.`))
-      .sort();
-  }
-
-  // Handle value changes
-  handleValueChange(e) {
-    if (!this.config || !this.hass) return;
-    
-    const target = e.target;
-    const key = target.configValue;
-    
-    if (!key) return;
-    
-    let value;
-    if (target.type === 'checkbox') {
-      value = target.checked;
-    } else if (target.type === 'number') {
-      value = this.validate(key, target.value);
-    } else {
-      value = target.value;
-    }
-    
-    if (value === '' || value === undefined) {
-      // Clear the key from config when empty
-      const newConfig = { ...this.config };
-      delete newConfig[key];
-      this.config = newConfig;
-    } else {
-      this.config = { ...this.config, [key]: value };
-    }
-    
-    // Dispatch the config-changed event
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
-  }
-
-  render() {
-    if (!this.hass) {
-      return html`<div>Loading...</div>`;
-    }
-
-    return html`
-      <div class="form-container">
-        <div class="card">
-          <div class="card-header">Google Card Configuration</div>
-          
-          <!-- Image Source Settings -->
-          <div class="card-section">
-            <div class="section-header">Image Source</div>
-            <div class="row">
-              <div class="input-group full-width">
-                <label class="input-label" for="image_url">Image URL</label>
-                <ha-textfield
-                  id="image_url"
-                  .value=${this.config.image_url || ''}
-                  .configValue=${'image_url'}
-                  @change=${this.handleValueChange}
-                  placeholder="https://source.unsplash.com/random/1920x1080/?nature"
-                ></ha-textfield>
-                <div class="input-desc">
-                  Supported formats: Direct URL, Media Source (media-source://media_source/...), 
-                  Unsplash API, Immich API, Picsum (https://picsum.photos/...)
-                </div>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label" for="image_fit">Image Fit</label>
-                <ha-select
-                  id="image_fit"
-                  .value=${this.config.image_fit || 'contain'}
-                  .configValue=${'image_fit'}
-                  @change=${this.handleValueChange}
-                >
-                  <ha-list-item value="contain">Contain (Fit entire image)</ha-list-item>
-                  <ha-list-item value="cover">Cover (Fill screen)</ha-list-item>
-                </ha-select>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="image_order">Image Order</label>
-                <ha-select
-                  id="image_order"
-                  .value=${this.config.image_order || 'sorted'}
-                  .configValue=${'image_order'}
-                  @change=${this.handleValueChange}
-                >
-                  <ha-list-item value="sorted">Sorted</ha-list-item>
-                  <ha-list-item value="random">Random</ha-list-item>
-                </ha-select>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label" for="display_time">Display Time (seconds)</label>
-                <ha-textfield
-                  id="display_time"
-                  type="number"
-                  min="1"
-                  .value=${this.config.display_time || 15}
-                  .configValue=${'display_time'}
-                  @change=${this.handleValueChange}
-                ></ha-textfield>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="crossfade_time">Crossfade Time (seconds)</label>
-                <ha-textfield
-                  id="crossfade_time"
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  .value=${this.config.crossfade_time || 3}
-                  .configValue=${'crossfade_time'}
-                  @change=${this.handleValueChange}
-                ></ha-textfield>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="image_list_update_interval">Image List Update Interval (seconds)</label>
-                <ha-textfield
-                  id="image_list_update_interval"
-                  type="number"
-                  min="60"
-                  .value=${this.config.image_list_update_interval || 3600}
-                  .configValue=${'image_list_update_interval'}
-                  @change=${this.handleValueChange}
-                ></ha-textfield>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Display Settings -->
-          <div class="card-section">
-            <div class="section-header">Display Settings</div>
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label" for="device_name">Device Name</label>
-                <ha-textfield
-                  id="device_name"
-                  .value=${this.config.device_name || 'mobile_app_liam_s_room_display'}
-                  .configValue=${'device_name'}
-                  @change=${this.handleValueChange}
-                  placeholder="mobile_app_device"
-                ></ha-textfield>
-                <div class="input-desc">
-                  The mobile device name for brightness control
-                </div>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="sensor_update_delay">Sensor Update Delay (ms)</label>
-                <ha-textfield
-                  id="sensor_update_delay"
-                  type="number"
-                  min="100"
-                  step="100"
-                  .value=${this.config.sensor_update_delay || 500}
-                  .configValue=${'sensor_update_delay'}
-                  @change=${this.handleValueChange}
-                ></ha-textfield>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label" for="light_sensor_entity">Light Sensor Entity</label>
-                <ha-select
-                  id="light_sensor_entity"
-                  .value=${this.config.light_sensor_entity || ''}
-                  .configValue=${'light_sensor_entity'}
-                  @change=${this.handleValueChange}
-                >
-                  <ha-list-item value="">Default (sensor.liam_room_display_light_sensor)</ha-list-item>
-                  ${this.getEntitySuggestions('sensor').map(
-                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
-                  )}
-                </ha-select>
-                <div class="input-desc">
-                  Sensor used for night mode detection
-                </div>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="brightness_sensor_entity">Brightness Sensor Entity</label>
-                <ha-select
-                  id="brightness_sensor_entity"
-                  .value=${this.config.brightness_sensor_entity || ''}
-                  .configValue=${'brightness_sensor_entity'}
-                  @change=${this.handleValueChange}
-                >
-                  <ha-list-item value="">Default (sensor.liam_room_display_brightness_sensor)</ha-list-item>
-                  ${this.getEntitySuggestions('sensor').map(
-                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
-                  )}
-                </ha-select>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Weather Clock Settings -->
-          <div class="card-section">
-            <div class="section-header">Weather & Clock Settings</div>
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label">Show Date</label>
-                <ha-switch
-                  .checked=${this.config.show_date !== false}
-                  .configValue=${'show_date'}
-                  @change=${this.handleValueChange}
-                ></ha-switch>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label">Show Time</label>
-                <ha-switch
-                  .checked=${this.config.show_time !== false}
-                  .configValue=${'show_time'}
-                  @change=${this.handleValueChange}
-                ></ha-switch>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label">Show Weather</label>
-                <ha-switch
-                  .checked=${this.config.show_weather !== false}
-                  .configValue=${'show_weather'}
-                  @change=${this.handleValueChange}
-                ></ha-switch>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label">Show AQI (when available)</label>
-                <ha-switch
-                  .checked=${this.config.show_aqi !== false}
-                  .configValue=${'show_aqi'}
-                  @change=${this.handleValueChange}
-                ></ha-switch>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label" for="weather_entity">Weather Entity</label>
-                <ha-select
-                  id="weather_entity"
-                  .value=${this.config.weather_entity || 'weather.forecast_home'}
-                  .configValue=${'weather_entity'}
-                  @change=${this.handleValueChange}
-                >
-                  ${this.getEntitySuggestions('weather').map(
-                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
-                  )}
-                </ha-select>
-              </div>
-              
-              <div class="input-group">
-                <label class="input-label" for="aqi_entity">AQI Entity</label>
-                <ha-select
-                  id="aqi_entity"
-                  .value=${this.config.aqi_entity || 'sensor.air_quality_index'}
-                  .configValue=${'aqi_entity'}
-                  @change=${this.handleValueChange}
-                >
-                  <ha-list-item value="">None</ha-list-item>
-                  ${this.getEntitySuggestions('sensor').map(
-                    entityId => html`<ha-list-item value="${entityId}">${entityId}</ha-list-item>`
-                  )}
-                </ha-select>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Debug Settings -->
-          <div class="card-section">
-            <div class="section-header">Debug Settings</div>
-            <div class="row">
-              <div class="input-group">
-                <label class="input-label">Show Debug Info</label>
-                <ha-switch
-                  .checked=${this.config.show_debug || false}
-                  .configValue=${'show_debug'}
-                  @change=${this.handleValueChange}
-                ></ha-switch>
-                <div class="input-desc">
-                  Long press settings icon to toggle debug mode
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     `;
   }
 }
