@@ -1098,8 +1098,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
         const aqiEntity = this.hass.states[this.aqiEntity];
         if ("unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
           const aqiValue = parseFloat(aqiEntity.state);
-          isNaN(aqiValue) || (console.log("AQI poll detected numeric change:", aqiValue), 
-          this.aqi = aqiEntity.state, this.requestUpdate());
+          isNaN(aqiValue) || (this.aqi = aqiEntity.state, this.requestUpdate());
         }
       }
     }), 15e3);
@@ -1134,8 +1133,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       const oldState = changedProperties.get("hass")?.states?.[this.aqiEntity]?.state, newState = this.hass.states[this.aqiEntity].state;
       if (oldState !== newState) {
         const aqiValue = parseFloat(newState);
-        isNaN(aqiValue) || (console.log("AQI state changed from", oldState, "to", newState), 
-        this.requestUpdate());
+        isNaN(aqiValue) || this.requestUpdate();
       }
     }
     changedProperties.has("config") && this.config && (this.weatherEntity = this.config.weather_entity || "weather.forecast_home", 
@@ -1151,16 +1149,14 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
       } else this.temperature = "--°", this.weatherIcon = "not-available";
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
-        if (console.log("AQI Entity state:", aqiEntity.state, "Entity:", this.aqiEntity), 
-        aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
+        if (aqiEntity.state && "unknown" !== aqiEntity.state && "unavailable" !== aqiEntity.state) {
           const aqiValue = parseFloat(aqiEntity.state);
-          isNaN(aqiValue) ? (this.aqi = null, console.log("Non-numeric AQI value detected, not displaying")) : (this.aqi = aqiEntity.state, 
-          console.log("Valid numeric AQI value detected:", this.aqi));
-        } else this.aqi = null, console.log("Invalid AQI state, not displaying");
-      } else this.aqi = null, console.log("AQI entity not found, not displaying");
+          isNaN(aqiValue) ? this.aqi = null : this.aqi = aqiEntity.state;
+        } else this.aqi = null;
+      } else this.aqi = null;
       this.error = null, this.requestUpdate();
     } catch (error) {
-      console.error("Error updating weather data:", error), this.error = `Error: ${error.message}`;
+      this.error = `Error: ${error.message}`;
     }
   }
   getWeatherIcon(state) {
@@ -1201,8 +1197,7 @@ customElements.define("weather-clock", class WeatherClock extends LitElement {
   }
   render() {
     const hasValidAqi = null !== this.aqi && !1 !== this.config.show_aqi && !isNaN(parseFloat(this.aqi));
-    return hasValidAqi ? console.log("Rendering AQI indicator with numeric value:", this.aqi) : console.log("Not showing AQI indicator, value:", this.aqi, "show_aqi config:", this.config.show_aqi), 
-    html`
+    return html`
       <div class="weather-component">
         <div class="top-row">
           <div class="left-column">
