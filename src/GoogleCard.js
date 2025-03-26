@@ -9,7 +9,7 @@ import './components/NightMode';
 import './components/WeatherClock';
 import './editor'; // Import the editor component
 
-export class GoogleCard extends LitElement {
+class GoogleCard extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
@@ -130,7 +130,7 @@ export class GoogleCard extends LitElement {
   }
 
   // Home Assistant configuration
-  static getConfigElement() {
+  static async getConfigElement() {
     return document.createElement('google-card-editor');
   }
 
@@ -191,7 +191,7 @@ export class GoogleCard extends LitElement {
   }
 
   refreshComponents() {
-    if (this.editMode) return; // Skip refresh if in editor mode
+    if (this._inEditor()) return; // Skip refresh if in editor mode
     
     document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
     
@@ -208,13 +208,7 @@ export class GoogleCard extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     
-    // Check if this element is being used in an editor context
-    this.checkEditorMode();
-    
-    // Don't set up interaction handlers if in editor mode
-    if (this.editMode) {
-      return;
-    }
+    if (this._inEditor()) return; // Don't set up anything if in editor
     
     this.startTimeUpdates();
     // Delay initial night mode check to ensure hass is available
@@ -234,28 +228,45 @@ export class GoogleCard extends LitElement {
     }, 100);
   }
 
-  // Check if this component is being rendered in an editor context
-  checkEditorMode() {
-    // Check if the element has a parent that's an editor component
-    if (this.parentNode) {
-      const parentTagName = this.parentNode.tagName.toLowerCase();
-      const parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
-      
-      this.editMode = parentTagName === 'huicard-editor' || 
-                      parentTagName === 'hui-card-picker' ||
-                      parentClassList.includes('editor') ||
-                      parentTagName.includes('editor') ||
-                      parentTagName === 'hui-card-element-editor' ||
-                      parentTagName === 'hui-dialog' ||
-                      parentClassList.includes('card-editor') ||
-                      parentTagName.includes('card-editor');
+  // Check if this component is being rendered in an editor context - same style as mini-media-player
+  _inEditor() {
+    // Check if we're on an editor page
+    if (window.location.pathname.includes('lovelace/edit') || 
+        window.location.pathname.includes('lovelace/dashboard/edit')) {
+      return true;
     }
+    
+    // Check for other editor parent elements
+    if (this.parentNode) {
+      // Check for direct parent indicators
+      const parentTagName = this.parentNode.tagName.toLowerCase();
+      const parentClassList = this.parentNode.classList ? 
+                             Array.from(this.parentNode.classList) : [];
+
+      if (parentTagName === 'hui-card-editor' || 
+          parentTagName === 'hui-card-element-editor' ||
+          parentTagName === 'hui-card-picker' ||
+          parentTagName === 'hui-dialog' ||
+          parentTagName.includes('editor') ||
+          parentClassList.includes('editor') ||
+          parentClassList.includes('card-editor')) {
+        return true;
+      }
+      
+      // Check for __editors property - matches mini-media-player approach
+      if (this.parentElement && this.parentElement.__card) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     
-    if (this.editMode) {
+    // Don't do cleanup if in editor
+    if (this._inEditor()) {
       return;
     }
     
@@ -276,10 +287,7 @@ export class GoogleCard extends LitElement {
   firstUpdated() {
     super.firstUpdated();
     
-    // Double-check editor mode after first update
-    this.checkEditorMode();
-    
-    if (this.editMode) {
+    if (this._inEditor()) {
       return;
     }
     
@@ -696,14 +704,7 @@ export class GoogleCard extends LitElement {
   }
 
   updated(changedProperties) {
-    // Re-check editor mode after each update
-    this.checkEditorMode();
-    
-    if (this.editMode) {
-      return;
-    }
-    
-    if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness) {
+    if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness && !this._inEditor()) {
       const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
@@ -712,14 +713,11 @@ export class GoogleCard extends LitElement {
   }
 
   render() {
-    // Re-check editor mode before rendering
-    this.checkEditorMode();
-    
-    // If in editor mode, render a simple placeholder instead
-    if (this.editMode) {
+    // Most importantly, check if in editor mode and render virtually nothing if so
+    if (this._inEditor()) {
       return html`
-        <div class="editor-placeholder">
-          Google Card configured with image source: ${this.config?.image_url || 'Not specified'}
+        <div style="padding: 8px; font-size: 14px;">
+          <div>Google Card: ${this.config?.image_url ? `Image source: ${this.config.image_url}` : 'No image source configured'}</div>
         </div>
       `;
     }
@@ -799,6 +797,10 @@ export class GoogleCard extends LitElement {
       </div>
     `;
   }
+
+  getCardSize() {
+    return 1;
+  }
 }
 
 customElements.define('google-card', GoogleCard);
@@ -811,3 +813,5 @@ window.customCards.push({
   description: "A card that mimics Google's UI for photo frame displays",
   preview: true
 });
+
+export { GoogleCard };
