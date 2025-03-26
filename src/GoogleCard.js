@@ -7,6 +7,7 @@ import './components/BackgroundRotator';
 import './components/Controls';
 import './components/NightMode';
 import './components/WeatherClock';
+import './editor'; // Import the editor component
 
 export class GoogleCard extends LitElement {
   static get properties() {
