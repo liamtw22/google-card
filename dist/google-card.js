@@ -1728,6 +1728,9 @@ class GoogleCard extends LitElement {
       },
       isDarkMode: {
         type: Boolean
+      },
+      editMode: {
+        type: Boolean
       }
     };
   }
@@ -1775,7 +1778,7 @@ class GoogleCard extends LitElement {
     this.isInNightMode = !1, this.isAdjustingBrightness = !1, this.lastBrightnessUpdateTime = 0, 
     this.touchStartY = 0, this.touchStartX = 0, this.touchStartTime = 0, this.overlayDismissTimer = null, 
     this.brightnessCardDismissTimer = null, this.brightnessStabilizeTimer = null, this.timeUpdateInterval = null, 
-    this.nightModeSource = null, this.updateScreenSize(), this.updateTime();
+    this.nightModeSource = null, this.editMode = !1, this.updateScreenSize(), this.updateTime();
   }
   static getConfigElement() {
     return document.createElement("google-card-editor");
@@ -1826,22 +1829,29 @@ class GoogleCard extends LitElement {
     controls && controls.requestUpdate();
   }
   connectedCallback() {
-    super.connectedCallback(), this.startTimeUpdates(), setTimeout((() => this.updateNightMode()), 1e3), 
-    window.addEventListener("resize", this.boundUpdateScreenSize), this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), 
-    document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light"), 
+    super.connectedCallback(), this.checkEditorMode(), this.editMode || (this.startTimeUpdates(), 
+    setTimeout((() => this.updateNightMode()), 1e3), window.addEventListener("resize", this.boundUpdateScreenSize), 
+    this.themeMediaQuery.addEventListener("change", this.boundHandleThemeChange), document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light"), 
     setTimeout((() => {
       this.updateCssVariables(), this.refreshComponents();
-    }), 100);
+    }), 100));
+  }
+  checkEditorMode() {
+    if (this.parentNode) {
+      const parentTagName = this.parentNode.tagName.toLowerCase(), parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
+      this.editMode = "huicard-editor" === parentTagName || "hui-card-picker" === parentTagName || parentClassList.includes("editor") || parentTagName.includes("editor");
+    }
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
+    if (super.disconnectedCallback(), this.editMode) return;
+    this.clearAllTimers(), window.removeEventListener("resize", this.boundUpdateScreenSize), 
     this.themeMediaQuery.removeEventListener("change", this.boundHandleThemeChange);
     const touchContainer = this.shadowRoot?.querySelector(".touch-container");
     touchContainer && (touchContainer.removeEventListener("touchstart", this.handleTouchStart), 
     touchContainer.removeEventListener("touchmove", this.handleTouchMove), touchContainer.removeEventListener("touchend", this.handleTouchEnd));
   }
   firstUpdated() {
-    super.firstUpdated();
+    if (super.firstUpdated(), this.checkEditorMode(), this.editMode) return;
     const touchContainer = this.shadowRoot.querySelector(".touch-container");
     touchContainer && (touchContainer.addEventListener("touchstart", this.handleTouchStart.bind(this), {
       passive: !0
@@ -2034,11 +2044,12 @@ class GoogleCard extends LitElement {
     this.isInNightMode && "manual" === this.nightModeSource || shouldBeInNightMode !== this.isInNightMode && this.handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
   updated(changedProperties) {
-    if (changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
+    if (this.checkEditorMode(), !this.editMode && changedProperties.has("hass") && this.hass && !this.isAdjustingBrightness) {
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
     }
   }
   render() {
+    if (this.checkEditorMode(), this.editMode) return html`<div style="display: none;"></div>`;
     const mainContent = this.isNightMode ? html`
           <night-mode
             .currentTime=${this.currentTime}
