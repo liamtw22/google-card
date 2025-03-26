@@ -131,7 +131,6 @@ export class WeatherClock extends LitElement {
           // Only update if it's a valid numeric value
           const aqiValue = parseFloat(aqiEntity.state);
           if (!isNaN(aqiValue)) {
-            console.log('AQI poll detected numeric change:', aqiValue);
             this.aqi = aqiEntity.state;
             this.requestUpdate();
           }
@@ -197,7 +196,6 @@ export class WeatherClock extends LitElement {
           // Only update if it's a valid numeric value
           const aqiValue = parseFloat(newState);
           if (!isNaN(aqiValue)) {
-            console.log('AQI state changed from', oldState, 'to', newState);
             this.requestUpdate(); // Force update when AQI changes
           }
         }
@@ -233,7 +231,6 @@ export class WeatherClock extends LitElement {
       // Improved AQI detection - only accept numeric values
       if (this.aqiEntity && this.hass.states[this.aqiEntity]) {
         const aqiEntity = this.hass.states[this.aqiEntity];
-        console.log('AQI Entity state:', aqiEntity.state, 'Entity:', this.aqiEntity);
         
         if (aqiEntity.state && 
             aqiEntity.state !== 'unknown' && 
@@ -244,25 +241,20 @@ export class WeatherClock extends LitElement {
           if (!isNaN(aqiValue)) {
             // Valid numeric value
             this.aqi = aqiEntity.state;
-            console.log('Valid numeric AQI value detected:', this.aqi);
           } else {
             // Non-numeric - don't display
             this.aqi = null;
-            console.log('Non-numeric AQI value detected, not displaying');
           }
         } else {
           this.aqi = null;
-          console.log('Invalid AQI state, not displaying');
         }
       } else {
         this.aqi = null;
-        console.log('AQI entity not found, not displaying');
       }
       
       this.error = null;
       this.requestUpdate(); // Force update after AQI changes
     } catch (error) {
-      console.error('Error updating weather data:', error);
       this.error = `Error: ${error.message}`;
     }
   }
@@ -325,12 +317,6 @@ export class WeatherClock extends LitElement {
     const hasValidAqi = this.aqi !== null && 
                         this.config.show_aqi !== false && 
                         !isNaN(parseFloat(this.aqi));
-    
-    if (hasValidAqi) {
-      console.log('Rendering AQI indicator with numeric value:', this.aqi);
-    } else {
-      console.log('Not showing AQI indicator, value:', this.aqi, 'show_aqi config:', this.config.show_aqi);
-    }
     
     return html`
       <div class="weather-component">
