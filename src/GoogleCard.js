@@ -223,17 +223,41 @@ export class GoogleCard extends LitElement {
     }, 100);
   }
 
-  // Check if this component is being rendered in an editor context
+  // Updated: Enhanced editor mode detection method
   checkEditorMode() {
-    // Check if the element has a parent that's an editor component
+    // Enhanced editor mode detection
     if (this.parentNode) {
       const parentTagName = this.parentNode.tagName.toLowerCase();
       const parentClassList = this.parentNode.classList ? Array.from(this.parentNode.classList) : [];
+      const grandParentNode = this.parentNode.parentNode;
+      const grandParentTagName = grandParentNode ? grandParentNode.tagName.toLowerCase() : '';
+      const grandParentClassList = grandParentNode && grandParentNode.classList ? Array.from(grandParentNode.classList) : [];
       
       this.editMode = parentTagName === 'huicard-editor' || 
                       parentTagName === 'hui-card-picker' ||
                       parentClassList.includes('editor') ||
-                      parentTagName.includes('editor');
+                      parentTagName.includes('editor') ||
+                      grandParentTagName.includes('editor') ||
+                      grandParentClassList.includes('editor') ||
+                      document.location.pathname.includes('edit') ||
+                      // Check if within a dialog that contains 'editor'
+                      (document.querySelector('ha-dialog') && 
+                       document.querySelector('ha-dialog').shadowRoot && 
+                       document.querySelector('ha-dialog').shadowRoot.querySelector('.content') &&
+                       document.querySelector('ha-dialog').shadowRoot.querySelector('.content').innerHTML.includes('editor'));
+    }
+    
+    // Also check if we're in a dialog with card-editor
+    if (!this.editMode && document.querySelector('dialog')) {
+      const dialogs = document.querySelectorAll('dialog');
+      for (const dialog of dialogs) {
+        if (dialog.querySelector('ha-yaml-editor') || 
+            dialog.querySelector('[id*="editor"]') ||
+            dialog.innerHTML.includes('editor')) {
+          this.editMode = true;
+          break;
+        }
+      }
     }
   }
 
@@ -258,13 +282,15 @@ export class GoogleCard extends LitElement {
     }
   }
 
+  // Updated: firstUpdated method with early exit for editor mode
   firstUpdated() {
     super.firstUpdated();
     
-    // Double-check editor mode after first update
+    // Run editor mode check after elements are fully attached
     this.checkEditorMode();
     
     if (this.editMode) {
+      // If in editor mode, don't set up any interactions
       return;
     }
     
@@ -709,13 +735,15 @@ export class GoogleCard extends LitElement {
     }
   }
 
+  // Updated: render method with improved editor mode handling
   render() {
-    // Check if this card is being rendered in editor mode
+    // Always check editor mode before rendering
     this.checkEditorMode();
     
-    // If in editor mode, render minimal content to avoid conflicts
+    // Completely hide in editor mode
     if (this.editMode) {
-      return html`<div style="display: none;"></div>`;
+      // Return just an empty div with no styles or content
+      return html`<div></div>`;
     }
     
     // Normal rendering for actual card display
