@@ -1,7 +1,7 @@
 // src/GoogleCard.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-import { DEFAULT_CONFIG, MIN_BRIGHTNESS } from './constants';
+import { DEFAULT_CONFIG } from './constants';
 import { sharedStyles } from './styles/SharedStyles';
 import './components/BackgroundRotator';
 import './components/Controls';
