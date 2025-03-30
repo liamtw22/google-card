@@ -1989,13 +1989,19 @@ class GoogleCard extends LitElement {
       }), 300);
     })));
   }
-  async handleBrightnessChange(event) {
+  handleBrightnessChange(event) {
     const brightness = event.detail;
-    this.hass && this.hass.callService("number", "set_value", {
+    this.isAdjustingBrightness = !0, this.visualBrightness = brightness, this.brightness = brightness, 
+    this.requestUpdate(), this.hass && this.hass.callService("number", "set_value", {
       entity_id: "number.liam_display_screen_brightness",
       value: brightness
-    }), this.brightness = brightness, this.visualBrightness = brightness, this.isNightMode || (this.previousBrightness = brightness), 
-    this.startBrightnessCardDismissTimer(), this.lastBrightnessUpdateTime = Date.now();
+    }).catch((err => {
+      console.error("Error updating brightness:", err);
+    })), this.isNightMode || (this.previousBrightness = brightness), this.startBrightnessCardDismissTimer(), 
+    this.lastBrightnessUpdateTime = Date.now(), this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), 
+    this.brightnessStabilizeTimer = setTimeout((() => {
+      this.isAdjustingBrightness = !1, this.requestUpdate();
+    }), 2e3);
   }
   handleDebugToggle() {
     this.showDebugInfo = !this.showDebugInfo, this.requestUpdate();
