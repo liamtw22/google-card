@@ -502,23 +502,27 @@ class GoogleCard extends LitElement {
     });
   }
 
-  // Updated to use number entity
-  async handleBrightnessChange(event) {
+  // Updated for immediate visual feedback with background entity update
+  handleBrightnessChange(event) {
     const brightness = event.detail;
     
-    // Use the number entity for brightness
+    // Update visual state immediately for responsive UI
+    this.isAdjustingBrightness = true;
+    this.visualBrightness = brightness;
+    this.brightness = brightness;
+    this.requestUpdate();
+    
+    // Update the entity in the background
     if (this.hass) {
       this.hass.callService('number', 'set_value', {
         entity_id: 'number.liam_display_screen_brightness',
         value: brightness
+      }).catch(err => {
+        console.error('Error updating brightness:', err);
       });
     }
     
-    // Update local state
-    this.brightness = brightness;
-    this.visualBrightness = brightness;
-    
-    // If not in night mode, store this as the previous brightness
+    // Store as previous brightness if not in night mode
     if (!this.isNightMode) {
       this.previousBrightness = brightness;
     }
@@ -526,6 +530,16 @@ class GoogleCard extends LitElement {
     // Reset dismiss timer when user interacts with brightness
     this.startBrightnessCardDismissTimer();
     this.lastBrightnessUpdateTime = Date.now();
+    
+    // Allow entity updates after a short delay
+    if (this.brightnessStabilizeTimer) {
+      clearTimeout(this.brightnessStabilizeTimer);
+    }
+    
+    this.brightnessStabilizeTimer = setTimeout(() => {
+      this.isAdjustingBrightness = false;
+      this.requestUpdate();
+    }, 2000);
   }
 
   handleDebugToggle() {
@@ -634,7 +648,7 @@ class GoogleCard extends LitElement {
     }
   }
 
-  // Updated to monitor entity changes
+  // Updated to monitor entity changes and show visual changes immediately
   updated(changedProperties) {
     if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness && !this._inEditor()) {
       // Monitor brightness entity changes
