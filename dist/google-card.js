@@ -615,15 +615,19 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
+  firstUpdated() {
+    this.requestUpdate(), "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
+  }
   disconnectedCallback() {
     super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer), 
     this.removeBrightnessDragListeners();
   }
   updated(changedProperties) {
     changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness), 
-    changedProperties.has("hass") && this.hass && this.updateFromEntity();
+    changedProperties.has("hass") && this.hass && this.updateFromEntity(), "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
   }
   updateFromEntity() {
+    if (this.isAdjustingBrightness) return;
     if (this.hass.states["number.liam_display_screen_brightness"]) {
       const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
       isNaN(entityValue) || entityValue === this.brightness || (this.brightness = entityValue, 
@@ -638,8 +642,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.updateBrightnessValue(brightness);
   }
   handleBrightnessDragStart(e) {
-    e.stopPropagation(), this.isDraggingBrightness = !0, document.addEventListener("mousemove", this.handleBrightnessDrag), 
-    document.addEventListener("mouseup", this.handleBrightnessDragEnd), document.addEventListener("touchmove", this.handleBrightnessDrag, {
+    e.stopPropagation(), this.isDraggingBrightness = !0, this.isAdjustingBrightness = !0, 
+    document.addEventListener("mousemove", this.handleBrightnessDrag), document.addEventListener("mouseup", this.handleBrightnessDragEnd), 
+    document.addEventListener("touchmove", this.handleBrightnessDrag, {
       passive: !1
     }), document.addEventListener("touchend", this.handleBrightnessDragEnd), this.handleBrightnessDrag(e);
   }
@@ -654,7 +659,9 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   handleBrightnessDragEnd(e) {
     e && (e.preventDefault(), e.stopPropagation()), this.isDraggingBrightness = !1, 
-    this.removeBrightnessDragListeners();
+    setTimeout((() => {
+      this.isAdjustingBrightness = !1;
+    }), 500), this.removeBrightnessDragListeners();
   }
   removeBrightnessDragListeners() {
     document.removeEventListener("mousemove", this.handleBrightnessDrag), document.removeEventListener("mouseup", this.handleBrightnessDragEnd), 
@@ -662,17 +669,13 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   updateBrightnessValue(value) {
     const brightness = Math.max(0, Math.min(255, Math.round(value)));
-    this.visualBrightness = brightness, this.dispatchEvent(new CustomEvent("brightnessChange", {
+    this.visualBrightness = brightness, this.requestUpdate(), this.dispatchEvent(new CustomEvent("brightnessChange", {
       detail: brightness,
       bubbles: !0,
       composed: !0
     }));
   }
   getBrightnessDisplayValue() {
-    if (this.hass && this.hass.states["number.liam_display_screen_brightness"]) {
-      const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
-      if (!isNaN(entityValue)) return Math.max(1, Math.min(10, Math.round(entityValue / 255 * 10)));
-    }
     return Math.max(1, Math.min(10, Math.round(this.visualBrightness / 255 * 10))) || 1;
   }
   toggleBrightnessCard(e) {
@@ -768,7 +771,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     `;
   }
   render() {
-    return html`
+    const isDark = "dark" === document.documentElement.getAttribute("data-theme");
+    return this.shadowRoot.host.setAttribute("data-theme", isDark ? "dark" : "light"), 
+    html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ""}
         ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
