@@ -294,15 +294,37 @@ export class Controls extends LitElement {
     if (changedProperties.has('brightness') && !this.isAdjustingBrightness) {
       this.visualBrightness = this.brightness;
     }
+    
+    // Check for entity updates
+    if (changedProperties.has('hass') && this.hass) {
+      this.updateFromEntity();
+    }
+  }
+  
+  // New method to get brightness from entity
+  updateFromEntity() {
+    const brightnessEntity = 'number.liam_display_screen_brightness';
+    if (this.hass.states[brightnessEntity]) {
+      const entityValue = parseFloat(this.hass.states[brightnessEntity].state);
+      if (!isNaN(entityValue) && entityValue !== this.brightness) {
+        this.brightness = entityValue;
+        this.visualBrightness = entityValue;
+        this.requestUpdate();
+      }
+    }
   }
 
+  // Updated to handle brightness with the entity
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
     if (!clickedDot) return;
 
-    const newBrightness = parseInt(clickedDot.dataset.value);
-    this.updateBrightnessValue(newBrightness * 25.5);
+    const dotValue = parseInt(clickedDot.dataset.value);
+    // Convert 1-10 range to 0-255 range
+    const brightness = Math.round((dotValue / 10) * 255);
+    
+    this.updateBrightnessValue(brightness);
   }
 
   handleBrightnessDragStart(e) {
@@ -319,6 +341,7 @@ export class Controls extends LitElement {
     this.handleBrightnessDrag(e);
   }
 
+  // Updated to map to 0-255 range
   handleBrightnessDrag(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -336,11 +359,12 @@ export class Controls extends LitElement {
     if (clientX === undefined) return;
     
     const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const newValue = Math.round((relativeX / rect.width) * 10);
+    const percentage = relativeX / rect.width;
     
-    // Limit to range 1-10
-    const cappedValue = Math.max(1, Math.min(10, newValue));
-    this.updateBrightnessValue(cappedValue * 25.5);
+    // Map directly to 0-255 range
+    const brightness = Math.round(percentage * 255);
+    
+    this.updateBrightnessValue(brightness);
   }
 
   handleBrightnessDragEnd(e) {
@@ -360,17 +384,32 @@ export class Controls extends LitElement {
     document.removeEventListener('touchend', this.handleBrightnessDragEnd);
   }
 
+  // Updated to work with 0-255 range
   updateBrightnessValue(value) {
-    this.visualBrightness = value;
+    // Ensure the value is within 0-255 range
+    const brightness = Math.max(0, Math.min(255, Math.round(value)));
+    
+    this.visualBrightness = brightness;
     this.dispatchEvent(new CustomEvent('brightnessChange', {
-      detail: Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value))),
+      detail: brightness,
       bubbles: true,
       composed: true,
     }));
   }
 
+  // Updated to convert from entity value to display value
   getBrightnessDisplayValue() {
-    return Math.round(this.visualBrightness / 25.5);
+    // Check if we have the entity available
+    if (this.hass && this.hass.states['number.liam_display_screen_brightness']) {
+      const entityValue = parseFloat(this.hass.states['number.liam_display_screen_brightness'].state);
+      if (!isNaN(entityValue)) {
+        // Convert 0-255 range to 1-10 display scale
+        return Math.max(1, Math.min(10, Math.round((entityValue / 255) * 10)));
+      }
+    }
+    
+    // Fallback to visual brightness
+    return Math.max(1, Math.min(10, Math.round((this.visualBrightness / 255) * 10))) || 1;
   }
 
   toggleBrightnessCard(e) {
