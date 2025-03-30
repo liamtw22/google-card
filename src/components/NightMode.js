@@ -1,7 +1,7 @@
 // src/components/NightMode.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-import { NIGHT_MODE_TRANSITION_DELAY, MIN_BRIGHTNESS, DEFAULT_SENSOR_UPDATE_DELAY } from '../constants';
+import { NIGHT_MODE_TRANSITION_DELAY } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
 export class NightMode extends LitElement {
@@ -44,25 +44,6 @@ export class NightMode extends LitElement {
           font-weight: 400;
           font-family: 'Product Sans Regular', sans-serif;
         }
-        
-        .tap-hint {
-          position: fixed;
-          bottom: 40px;
-          left: 0;
-          right: 0;
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 16px;
-          text-align: center;
-          font-family: 'Rubik', sans-serif;
-          font-weight: 300;
-          animation: pulse 3s infinite;
-        }
-        
-        @keyframes pulse {
-          0% { opacity: 0.3; }
-          50% { opacity: 0.7; }
-          100% { opacity: 0.3; }
-        }
       `
     ];
   }
@@ -70,16 +51,16 @@ export class NightMode extends LitElement {
   constructor() {
     super();
     this.currentTime = '';
-    this.brightness = MIN_BRIGHTNESS;
+    this.brightness = 0;
     this.isInNightMode = false;
-    this.previousBrightness = MIN_BRIGHTNESS;
+    this.previousBrightness = 128;
     this.isTransitioning = false;
     this.error = null;
     this.nightModeSource = null; // Can be 'sensor' or 'manual'
     this.timeUpdateInterval = null;
     this.sensorCheckInterval = null;
     this.sensorCheckedTime = 0;
-    this.nightModeReactivationTimer = null; // New property for reactivation timer
+    this.nightModeReactivationTimer = null;
   }
 
   connectedCallback() {
@@ -92,9 +73,9 @@ export class NightMode extends LitElement {
       this.enterNightMode();
     }
     
-    // Set up periodic sensor checks
+    // Set up periodic sensor checks for sun-based detection
     this.sensorCheckInterval = setInterval(() => {
-      this.checkLightSensor();
+      this.checkSunEntities();
     }, 30000); // Check every 30 seconds
   }
 
@@ -131,21 +112,18 @@ export class NightMode extends LitElement {
     this.isTransitioning = true;
     
     try {
+      const brightnessEntity = 'number.liam_display_screen_brightness';
+      
       // Store current brightness before entering night mode
-      if (this.brightness > MIN_BRIGHTNESS) {
-        this.previousBrightness = this.brightness;
+      if (this.hass.states[brightnessEntity]) {
+        this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state);
       }
       
-      // Disable auto brightness first
-      await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
-      
-      // Set to minimum brightness
-      await this.setBrightness(MIN_BRIGHTNESS);
-      
-      // Enable auto brightness for night mode
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
-      await this.toggleAutoBrightness(true);
+      // Set to minimum brightness (0)
+      await this.hass.callService('number', 'set_value', {
+        entity_id: brightnessEntity,
+        value: 0
+      });
       
       this.isInNightMode = true;
       this.error = null;
@@ -162,18 +140,17 @@ export class NightMode extends LitElement {
     this.isTransitioning = true;
 
     try {
-      // Ensure auto-brightness is disabled
-      await this.toggleAutoBrightness(false);
-      await new Promise(resolve => setTimeout(resolve, NIGHT_MODE_TRANSITION_DELAY));
+      const brightnessEntity = 'number.liam_display_screen_brightness';
       
       // Restore previous brightness or use a reasonable default
-      const targetBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+      const targetBrightness = (this.previousBrightness && this.previousBrightness > 0) 
         ? this.previousBrightness 
         : 128; // Default to middle brightness if no previous value
       
-      await this.setBrightness(targetBrightness);
-      
-      // Keep auto brightness disabled after exiting
+      await this.hass.callService('number', 'set_value', {
+        entity_id: brightnessEntity,
+        value: targetBrightness
+      });
       
       this.isInNightMode = false;
       this.error = null;
@@ -191,86 +168,56 @@ export class NightMode extends LitElement {
     }
   }
 
-  async setBrightness(value) {
-    if (!this.hass || !this.config) return;
-
-    const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
-    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-      
-    await this.hass.callService('notify', deviceName, {
-      message: 'command_screen_brightness_level',
-      data: {
-        command: brightness,
-      },
-    });
-
-    await this.hass.callService('notify', deviceName, {
-      message: 'command_update_sensors',
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 
-      this.config.sensor_update_delay || DEFAULT_SENSOR_UPDATE_DELAY));
-
-    this.brightness = brightness;
-    this.requestUpdate();
-  }
-
-  async toggleAutoBrightness(enabled) {
-    if (!this.hass || !this.config) return;
-    
-    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-
-    await this.hass.callService('notify', deviceName, {
-      message: 'command_auto_screen_brightness',
-      data: {
-        command: enabled ? 'turn_on' : 'turn_off',
-      },
-    });
-  }
-
   updated(changedProperties) {
     // Check if hass was just connected
     if (changedProperties.has('hass') && this.hass) {
       const timeSinceLastCheck = Date.now() - this.sensorCheckedTime;
       // Only check if we haven't checked recently
       if (timeSinceLastCheck > 5000) {
-        this.checkLightSensor();
+        this.checkSunEntities();
+      }
+      
+      // Update brightness from entity
+      const brightnessEntity = 'number.liam_display_screen_brightness';
+      if (this.hass.states[brightnessEntity]) {
+        this.brightness = parseFloat(this.hass.states[brightnessEntity].state);
       }
     }
   }
 
-  checkLightSensor(force = false) {
-    if (!this.hass || !this.config) return;
+  checkSunEntities() {
+    if (!this.hass) return;
     
     this.sensorCheckedTime = Date.now();
 
-    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
-    const lightSensor = this.hass.states[lightSensorEntity];
+    // Get sun state entities
+    const sunRisingEntity = this.hass.states['sensor.sun_next_rising'];
+    const sunSettingEntity = this.hass.states['sensor.sun_next_setting'];
     
-    if (!lightSensor) {
+    if (!sunRisingEntity || !sunSettingEntity) {
       return;
     }
     
-    if (lightSensor.state === 'unavailable' || lightSensor.state === 'unknown') {
-      return;
-    }
-
     try {
-      const lightLevel = parseInt(lightSensor.state);
-      const shouldBeInNightMode = lightLevel === 0;
-
-      // If night mode was manually activated and this is not a forced check, 
-      // don't let sensor readings deactivate it
-      if (this.isInNightMode && this.nightModeSource === 'manual' && !force) {
-        // Keep night mode on regardless of sensor
+      // Parse the timestamp strings into Date objects
+      const nextRising = new Date(sunRisingEntity.state);
+      const nextSetting = new Date(sunSettingEntity.state);
+      
+      // If the next sun event is rising, then it's currently night
+      // If the next sun event is setting, then it's currently day
+      const isDarkTime = nextRising < nextSetting;
+      
+      // If night mode was manually activated, don't let sensor readings deactivate it
+      if (this.isInNightMode && this.nightModeSource === 'manual') {
+        // Keep night mode on regardless of sun state
         return;
       }
       
-      // For sensor-based night mode, follow the sensor readings
-      if (shouldBeInNightMode && !this.isInNightMode) {
+      // For sensor-based night mode, follow the sun state
+      if (isDarkTime && !this.isInNightMode) {
         this.enterNightMode();
         this.nightModeSource = 'sensor';
-      } else if (!shouldBeInNightMode && this.isInNightMode && (this.nightModeSource === 'sensor' || force)) {
+      } else if (!isDarkTime && this.isInNightMode && this.nightModeSource === 'sensor') {
         this.exitNightMode();
         this.nightModeSource = null;
       }
@@ -284,8 +231,6 @@ export class NightMode extends LitElement {
       <div class="night-mode" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ''}
-        
-        <div class="tap-hint">Tap anywhere to exit night mode</div>
       </div>
     `;
   }
@@ -298,12 +243,6 @@ export class NightMode extends LitElement {
       // Exit night mode
       this.exitNightMode();
       
-      // Notify parent that night mode has been exited
-      this.dispatchEvent(new CustomEvent('nightModeExit', {
-        bubbles: true,
-        composed: true,
-      }));
-      
       // If this was enabled by a sensor, set a timer to re-check after 30 seconds
       if (originalSource === 'sensor') {
         // Clear any existing timer
@@ -311,10 +250,9 @@ export class NightMode extends LitElement {
           clearTimeout(this.nightModeReactivationTimer);
         }
         
-        // Set a new timer to re-check light sensor after 30 seconds
+        // Set a new timer to re-check sun state after 30 seconds
         this.nightModeReactivationTimer = setTimeout(() => {
-          // Force a sensor re-check
-          this.checkLightSensor(true); 
+          this.checkSunEntities();
           this.nightModeReactivationTimer = null;
         }, 30000); // 30 seconds
       }
