@@ -283,6 +283,18 @@ export class Controls extends LitElement {
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
 
+  firstUpdated() {
+    // Force a re-render to ensure dark mode styles are applied
+    this.requestUpdate();
+    
+    // Apply theme attribute for better dark mode detection
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      this.shadowRoot.host.setAttribute('data-theme', 'dark');
+    } else {
+      this.shadowRoot.host.setAttribute('data-theme', 'light');
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
@@ -299,10 +311,19 @@ export class Controls extends LitElement {
     if (changedProperties.has('hass') && this.hass) {
       this.updateFromEntity();
     }
+    
+    // Ensure proper dark mode
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      this.shadowRoot.host.setAttribute('data-theme', 'dark');
+    } else {
+      this.shadowRoot.host.setAttribute('data-theme', 'light');
+    }
   }
   
-  // New method to get brightness from entity
+  // Update from entity but don't override visual feedback during adjustment
   updateFromEntity() {
+    if (this.isAdjustingBrightness) return;
+    
     const brightnessEntity = 'number.liam_display_screen_brightness';
     if (this.hass.states[brightnessEntity]) {
       const entityValue = parseFloat(this.hass.states[brightnessEntity].state);
@@ -314,7 +335,7 @@ export class Controls extends LitElement {
     }
   }
 
-  // Updated to handle brightness with the entity
+  // Updated to handle brightness with immediate visual feedback
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
@@ -330,6 +351,7 @@ export class Controls extends LitElement {
   handleBrightnessDragStart(e) {
     e.stopPropagation();
     this.isDraggingBrightness = true;
+    this.isAdjustingBrightness = true;
     
     // Add global event listeners
     document.addEventListener('mousemove', this.handleBrightnessDrag);
@@ -341,7 +363,7 @@ export class Controls extends LitElement {
     this.handleBrightnessDrag(e);
   }
 
-  // Updated to map to 0-255 range
+  // Updated to provide immediate visual feedback
   handleBrightnessDrag(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -374,6 +396,12 @@ export class Controls extends LitElement {
     }
     
     this.isDraggingBrightness = false;
+    
+    // Small delay before allowing entity updates again
+    setTimeout(() => {
+      this.isAdjustingBrightness = false;
+    }, 500);
+    
     this.removeBrightnessDragListeners();
   }
 
@@ -384,12 +412,18 @@ export class Controls extends LitElement {
     document.removeEventListener('touchend', this.handleBrightnessDragEnd);
   }
 
-  // Updated to work with 0-255 range
+  // Updated for immediate visual feedback
   updateBrightnessValue(value) {
     // Ensure the value is within 0-255 range
     const brightness = Math.max(0, Math.min(255, Math.round(value)));
     
+    // Update visual state immediately
     this.visualBrightness = brightness;
+    
+    // Allow visual changes to render immediately
+    this.requestUpdate();
+    
+    // Trigger entity update in background
     this.dispatchEvent(new CustomEvent('brightnessChange', {
       detail: brightness,
       bubbles: true,
@@ -397,18 +431,9 @@ export class Controls extends LitElement {
     }));
   }
 
-  // Updated to convert from entity value to display value
+  // Use visualBrightness for immediate feedback
   getBrightnessDisplayValue() {
-    // Check if we have the entity available
-    if (this.hass && this.hass.states['number.liam_display_screen_brightness']) {
-      const entityValue = parseFloat(this.hass.states['number.liam_display_screen_brightness'].state);
-      if (!isNaN(entityValue)) {
-        // Convert 0-255 range to 1-10 display scale
-        return Math.max(1, Math.min(10, Math.round((entityValue / 255) * 10)));
-      }
-    }
-    
-    // Fallback to visual brightness
+    // Use visualBrightness for immediate feedback
     return Math.max(1, Math.min(10, Math.round((this.visualBrightness / 255) * 10))) || 1;
   }
 
@@ -529,6 +554,10 @@ export class Controls extends LitElement {
   }
 
   render() {
+    // Ensure proper dark mode application
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    this.shadowRoot.host.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    
     return html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ''}
