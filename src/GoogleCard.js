@@ -156,6 +156,49 @@ class GoogleCard extends LitElement {
     this.updateCssVariables();
   }
 
+  updateCssVariables() {
+    if (this.config) {
+      this.style.setProperty('--crossfade-time', `${this.config.crossfade_time || 3}s`);
+      this.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
+      this.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
+      this.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
+      
+      document.documentElement.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
+      document.documentElement.style.setProperty('--theme-background', this.isDarkMode ? '#121212' : '#ffffff');
+      document.documentElement.style.setProperty('--theme-text', this.isDarkMode ? '#ffffff' : '#333333');
+    }
+  }
+
+  handleThemeChange(e) {
+    const newIsDarkMode = e.matches;
+    if (this.isDarkMode !== newIsDarkMode) {
+      this.isDarkMode = newIsDarkMode;
+      this.updateCssVariables();
+      this.refreshComponents();
+      this.requestUpdate();
+    }
+  }
+
+  refreshComponents() {
+    if (this._inEditor()) return;
+    
+    document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+    
+    const backgroundRotator = this.shadowRoot.querySelector('background-rotator');
+    const weatherClock = this.shadowRoot.querySelector('weather-clock');
+    const controls = this.shadowRoot.querySelector('google-controls');
+    
+    if (backgroundRotator) {
+      backgroundRotator.requestUpdate();
+    }
+    if (weatherClock) {
+      weatherClock.requestUpdate();
+    }
+    if (controls) {
+      controls.requestUpdate();
+    }
+  }
+
   render() {
     if (this._inEditor()) {
       return html`
@@ -266,6 +309,7 @@ class GoogleCard extends LitElement {
     this.clearAllTimers();
     window.removeEventListener('resize', this.boundUpdateScreenSize);
     this.themeMediaQuery.removeEventListener('change', this.boundHandleThemeChange);
+    
     const touchContainer = this.shadowRoot?.querySelector('.touch-container');
     if (touchContainer) {
       touchContainer.removeEventListener('touchstart', this.handleTouchStart);
@@ -276,14 +320,6 @@ class GoogleCard extends LitElement {
 
   firstUpdated() {
     if (this._inEditor()) return;
-    
-    const touchContainer = this.shadowRoot.querySelector('.touch-container');
-    if (touchContainer) {
-      touchContainer.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
-      touchContainer.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-      touchContainer.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
-    }
-  }
     
     const touchContainer = this.shadowRoot.querySelector('.touch-container');
     if (touchContainer) {
@@ -466,137 +502,118 @@ class GoogleCard extends LitElement {
     });
   }
 
-  // Implement a queue-based approach to prevent rapid brightness updates
-  async updateBrightnessValue(value) {
-    this.isAdjustingBrightness = true;
-    this.visualBrightness = Math.max(1, Math.min(255, Math.round(value)));
+  // Updated to use number entity
+  async handleBrightnessChange(event) {
+    const brightness = event.detail;
     
-    // Add to update queue
-    this.brightnessUpdateQueue.push(value);
-    
-    // Start processing if not already in progress
-    if (!this.isProcessingBrightnessUpdate) {
-      this.processBrightnessUpdateQueue();
+    // Use the number entity for brightness
+    if (this.hass) {
+      this.hass.callService('number', 'set_value', {
+        entity_id: 'number.liam_display_screen_brightness',
+        value: brightness
+      });
     }
     
-    if (this.brightnessStabilizeTimer) {
-      clearTimeout(this.brightnessStabilizeTimer);
-    }
-    
-    this.brightnessStabilizeTimer = setTimeout(() => {
-      this.isAdjustingBrightness = false;
-      this.requestUpdate();
-    }, 2000);
-  }
-
-  async processBrightnessUpdateQueue() {
-    if (this.brightnessUpdateQueue.length === 0) {
-      this.isProcessingBrightnessUpdate = false;
-      return;
-    }
-    
-    this.isProcessingBrightnessUpdate = true;
-    
-    // Take the last value in the queue to skip intermediate values
-    const lastValue = this.brightnessUpdateQueue[this.brightnessUpdateQueue.length - 1];
-    this.brightnessUpdateQueue = [];
-    
-    try {
-      await this.setBrightness(lastValue);
-      this.lastBrightnessUpdateTime = Date.now();
-    } catch (error) {
-      // Error handling without console log
-      this.visualBrightness = this.brightness;
-    }
-    
-    // Process remaining updates after a short delay to prevent rapid updates
-    setTimeout(() => this.processBrightnessUpdateQueue(), 250);
-  }
-
-  async setBrightness(value) {
-    if (!this.hass) return;
-    
-    const brightness = Math.max(MIN_BRIGHTNESS, Math.min(255, Math.round(value)));
-    const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-    
-    await this.hass.callService('notify', deviceName, {
-      message: 'command_screen_brightness_level',
-      data: {
-        command: brightness
-      }
-    });
-
-    await this.hass.callService('notify', deviceName, {
-      message: 'command_update_sensors'
-    });
-
-    await new Promise(resolve => setTimeout(resolve, this.config.sensor_update_delay));
-    
+    // Update local state
     this.brightness = brightness;
+    this.visualBrightness = brightness;
+    
+    // If not in night mode, store this as the previous brightness
     if (!this.isNightMode) {
       this.previousBrightness = brightness;
     }
+    
+    // Reset dismiss timer when user interacts with brightness
+    this.startBrightnessCardDismissTimer();
+    this.lastBrightnessUpdateTime = Date.now();
   }
 
+  handleDebugToggle() {
+    this.showDebugInfo = !this.showDebugInfo;
+    this.requestUpdate();
+  }
+
+  handleNightModeExit() {
+    this.isNightMode = false;
+    this.requestUpdate();
+  }
+
+  // Updated to use sun entities
+  updateNightMode() {
+    if (!this.hass) return;
+    
+    // Get sun state entities
+    const sunRisingEntity = this.hass.states['sensor.sun_next_rising'];
+    const sunSettingEntity = this.hass.states['sensor.sun_next_setting'];
+    
+    if (!sunRisingEntity || !sunSettingEntity) {
+      return;
+    }
+    
+    // Parse the timestamp strings into Date objects
+    const nextRising = new Date(sunRisingEntity.state);
+    const nextSetting = new Date(sunSettingEntity.state);
+    
+    // If the next sun event is rising, then it's currently night
+    // If the next sun event is setting, then it's currently day
+    const isDarkTime = nextRising < nextSetting;
+    
+    // Set dark mode based on sun state
+    if (isDarkTime !== this.isDarkMode) {
+      this.isDarkMode = isDarkTime;
+      document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+      this.updateCssVariables();
+      this.refreshComponents();
+      this.requestUpdate();
+    }
+    
+    // If night mode was manually activated, don't let sensor readings deactivate it
+    if (this.isInNightMode && this.nightModeSource === 'manual') {
+      // Keep night mode on regardless of sun state
+      return;
+    }
+    
+    // Otherwise, follow sun state for automatic night mode
+    if (isDarkTime !== this.isInNightMode) {
+      this.handleNightModeTransition(isDarkTime, 'sensor');
+    }
+  }
+
+  // Updated to use number entity for night mode brightness
   async handleNightModeTransition(newNightMode, source = 'sensor') {
     if (newNightMode === this.isInNightMode && this.nightModeSource === source) return;
     
-    // Use a single try/catch for the entire operation
     try {
-      // Choose the appropriate action based on the target night mode state
+      const brightnessEntity = 'number.liam_display_screen_brightness';
+      
       if (newNightMode) {
-        // Save current brightness, but only if it's not already saved and reasonable
-        if (!this.isInNightMode && this.brightness > MIN_BRIGHTNESS) {
-          this.previousBrightness = this.brightness;
+        // Save current brightness before entering night mode
+        if (!this.isInNightMode && this.hass.states[brightnessEntity]) {
+          this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state);
         }
         
-        const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-        
-        // First disable auto brightness
-        await this.hass.callService('notify', deviceName, {
-          message: 'command_auto_screen_brightness',
-          data: {
-            command: 'turn_off'
-          }
-        });
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Set to minimum brightness
-        await this.setBrightness(MIN_BRIGHTNESS);
-        
-        // Then enable auto brightness for night mode
-        await new Promise(resolve => setTimeout(resolve, 200));
-        await this.hass.callService('notify', deviceName, {
-          message: 'command_auto_screen_brightness',
-          data: {
-            command: 'turn_on'
-          }
+        // Set brightness to 0
+        await this.hass.callService('number', 'set_value', {
+          entity_id: brightnessEntity,
+          value: 0
         });
         
         this.nightModeSource = source;
       } else {
-        const deviceName = this.config.device_name || 'mobile_app_liam_s_room_display';
-        
-        // First disable auto brightness
-        await this.hass.callService('notify', deviceName, {
-          message: 'command_auto_screen_brightness',
-          data: {
-            command: 'turn_off'
-          }
-        });
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
         // Restore previous brightness or use a reasonable default
-        const restoreBrightness = (this.previousBrightness && this.previousBrightness > MIN_BRIGHTNESS) 
+        const restoreBrightness = (this.previousBrightness && this.previousBrightness > 0) 
           ? this.previousBrightness 
           : 128;
         
-        await this.setBrightness(restoreBrightness);
+        await this.hass.callService('number', 'set_value', {
+          entity_id: brightnessEntity,
+          value: restoreBrightness
+        });
         
         this.nightModeSource = null;
       }
       
-      // Update state variables after successful operation
+      // Update state variables
       this.isInNightMode = newNightMode;
       this.isNightMode = newNightMode;
       
@@ -610,12 +627,32 @@ class GoogleCard extends LitElement {
       
       this.requestUpdate();
     } catch (error) {
-      // On error, restore the previous state and add error handling
+      // On error, restore the previous state
       this.isInNightMode = !newNightMode;
       this.isNightMode = !newNightMode;
       this.requestUpdate();
-      // For better error reporting, you could add a property to track errors
-      // this.lastError = `Night mode transition failed: ${error.message}`;
+    }
+  }
+
+  // Updated to monitor entity changes
+  updated(changedProperties) {
+    if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness && !this._inEditor()) {
+      // Monitor brightness entity changes
+      const brightnessEntity = 'number.liam_display_screen_brightness';
+      if (this.hass.states[brightnessEntity]) {
+        const newBrightness = parseFloat(this.hass.states[brightnessEntity].state);
+        if (this.brightness !== newBrightness) {
+          this.brightness = newBrightness;
+          this.visualBrightness = newBrightness;
+          this.requestUpdate();
+        }
+      }
+      
+      // Check if it's time to update night mode
+      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
+      if (timeSinceLastUpdate > 2000) {
+        this.updateNightMode();
+      }
     }
   }
 
@@ -651,145 +688,6 @@ class GoogleCard extends LitElement {
     } else if (!shouldShow && this.showBrightnessCard) {
       this.dismissBrightnessCard();
     }
-  }
-
-  handleBrightnessChange(event) {
-    this.updateBrightnessValue(event.detail);
-    // Reset dismiss timer when user interacts with brightness
-    this.startBrightnessCardDismissTimer();
-  }
-
-  handleDebugToggle() {
-    this.showDebugInfo = !this.showDebugInfo;
-    this.requestUpdate();
-  }
-
-  handleNightModeExit() {
-    this.isNightMode = false;
-    this.requestUpdate();
-  }
-
-  updateNightMode() {
-    if (!this.hass) return;
-    
-    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
-    const lightSensor = this.hass.states[lightSensorEntity];
-    if (!lightSensor) {
-      return;
-    }
-
-    const sensorState = lightSensor.state;
-    if (sensorState === 'unavailable' || sensorState === 'unknown') {
-      return;
-    }
-
-    const shouldBeInNightMode = parseInt(sensorState) === 0;
-    
-    // If night mode was manually activated, don't let sensor readings deactivate it
-    if (this.isInNightMode && this.nightModeSource === 'manual') {
-      // Keep night mode on regardless of sensor
-      return;
-    }
-    
-    // Otherwise, follow sensor readings for automatic night mode
-    if (shouldBeInNightMode !== this.isInNightMode) {
-      this.handleNightModeTransition(shouldBeInNightMode, 'sensor');
-    }
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('hass') && this.hass && !this.isAdjustingBrightness && !this._inEditor()) {
-      const timeSinceLastUpdate = Date.now() - this.lastBrightnessUpdateTime;
-      if (timeSinceLastUpdate > 2000) {
-        this.updateNightMode();
-      }
-    }
-  }
-
-  render() {
-    // Most importantly, check if in editor mode and render virtually nothing if so
-    if (this._inEditor()) {
-      return html`
-        <div style="padding: 8px; font-size: 14px;">
-          <div>Google Card: ${this.config?.image_url ? `Image source: ${this.config.image_url}` : 'No image source configured'}</div>
-        </div>
-      `;
-    }
-    
-    // Normal rendering for actual card display
-    const mainContent = this.isNightMode ? html`
-      <night-mode 
-        .currentTime=${this.currentTime}
-        .hass=${this.hass}
-        .config=${this.config}
-        .brightness=${this.brightness}
-        .previousBrightness=${this.previousBrightness}
-        .isInNightMode=${this.isInNightMode}
-        .nightModeSource=${this.nightModeSource}
-        @nightModeExit=${this.handleNightModeExit}
-      ></night-mode>
-    ` : html`
-      <background-rotator
-        .hass=${this.hass}
-        .config=${this.config}
-        .screenWidth=${this.screenWidth}
-        .screenHeight=${this.screenHeight}
-      ></background-rotator>
-
-      <weather-clock 
-        .hass=${this.hass}
-        .config=${this.config}
-      ></weather-clock>
-
-      <google-controls
-        .hass=${this.hass}
-        .config=${this.config}
-        .showOverlay=${this.showOverlay}
-        .isOverlayVisible=${this.isOverlayVisible}
-        .isOverlayTransitioning=${this.isOverlayTransitioning}
-        .showBrightnessCard=${this.showBrightnessCard}
-        .isBrightnessCardVisible=${this.isBrightnessCardVisible}
-        .isBrightnessCardTransitioning=${this.isBrightnessCardTransitioning}
-        .brightness=${this.brightness}
-        .visualBrightness=${this.visualBrightness}
-        .isAdjustingBrightness=${this.isAdjustingBrightness}
-        @overlayToggle=${this.handleOverlayToggle}
-        @brightnessCardToggle=${this.handleBrightnessCardToggle}
-        @brightnessChange=${this.handleBrightnessChange}
-        @debugToggle=${this.handleDebugToggle}
-      ></google-controls>
-    `;
-
-    return html`
-      <!-- Import all required fonts -->
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
-        rel="stylesheet"
-        crossorigin="anonymous"
-      />
-      
-      <!-- Fallback font style for Product Sans -->
-      <style>
-        @font-face {
-          font-family: 'Product Sans Regular';
-          src: local('Product Sans'), local('Product Sans Regular'), local('ProductSans-Regular'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
-        }
-      </style>
-      
-      <div class="touch-container">
-        <div class="content-wrapper">
-          ${mainContent}
-        </div>
-      </div>
-    `;
   }
 
   getCardSize() {
