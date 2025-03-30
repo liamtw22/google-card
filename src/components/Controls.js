@@ -2,7 +2,7 @@
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import "https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js";
 
-import { MIN_BRIGHTNESS, MAX_BRIGHTNESS, LONG_PRESS_TIMEOUT } from '../constants';
+import { LONG_PRESS_TIMEOUT } from '../constants';
 import { sharedStyles } from '../styles/SharedStyles';
 
 export class Controls extends LitElement {
