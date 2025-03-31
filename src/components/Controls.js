@@ -345,7 +345,8 @@ export class Controls extends LitElement {
     // Convert 1-10 range to 0-255 range
     const brightness = Math.round((dotValue / 10) * 255);
     
-    this.updateBrightnessValue(brightness);
+    // For clicks, immediately send the final value since it's not a drag operation
+    this.updateBrightnessValue(brightness, false);
   }
 
   handleBrightnessDragStart(e) {
@@ -363,7 +364,7 @@ export class Controls extends LitElement {
     this.handleBrightnessDrag(e);
   }
 
-  // Updated to provide immediate visual feedback
+  // Updated to provide immediate visual feedback only during dragging
   handleBrightnessDrag(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -386,16 +387,27 @@ export class Controls extends LitElement {
     // Map directly to 0-255 range
     const brightness = Math.round(percentage * 255);
     
-    this.updateBrightnessValue(brightness);
+    // During dragging, only update visual state, don't send value yet
+    this.updateBrightnessValue(brightness, true);
   }
 
+  // Updated to send the final value only when dragging ends
   handleBrightnessDragEnd(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
+    if (!this.isDraggingBrightness) return;
+    
     this.isDraggingBrightness = false;
+    
+    // Now that dragging has ended, send the final value
+    this.dispatchEvent(new CustomEvent('brightnessChangeComplete', {
+      detail: this.visualBrightness,
+      bubbles: true,
+      composed: true,
+    }));
     
     // Small delay before allowing entity updates again
     setTimeout(() => {
@@ -412,23 +424,32 @@ export class Controls extends LitElement {
     document.removeEventListener('touchend', this.handleBrightnessDragEnd);
   }
 
-  // Updated for immediate visual feedback
-  updateBrightnessValue(value) {
+  // Updated to handle both visual updates and entity updates
+  updateBrightnessValue(value, isDragging = false) {
     // Ensure the value is within 0-255 range
     const brightness = Math.max(0, Math.min(255, Math.round(value)));
     
-    // Update visual state immediately
+    // Always update visual state immediately
     this.visualBrightness = brightness;
     
     // Allow visual changes to render immediately
     this.requestUpdate();
     
-    // Trigger entity update in background
-    this.dispatchEvent(new CustomEvent('brightnessChange', {
-      detail: brightness,
-      bubbles: true,
-      composed: true,
-    }));
+    if (isDragging) {
+      // During dragging, only update visual representation
+      this.dispatchEvent(new CustomEvent('brightnessChange', {
+        detail: brightness,
+        bubbles: true,
+        composed: true,
+      }));
+    } else {
+      // For clicks or after dragging ends, send the final value
+      this.dispatchEvent(new CustomEvent('brightnessChangeComplete', {
+        detail: brightness,
+        bubbles: true,
+        composed: true,
+      }));
+    }
   }
 
   // Use visualBrightness for immediate feedback
