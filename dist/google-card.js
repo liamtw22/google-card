@@ -376,6 +376,9 @@ customElements.define("google-controls", class Controls extends LitElement {
       },
       isDraggingBrightness: {
         type: Boolean
+      },
+      lastSetBrightness: {
+        type: Number
       }
     };
   }
@@ -617,10 +620,11 @@ customElements.define("google-controls", class Controls extends LitElement {
   constructor() {
     super(), this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
     this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
-    this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.longPressTimer = null, this.isDraggingBrightness = !1, this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
-    this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this), this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), 
-    this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
+    this.brightness = 128, this.visualBrightness = 128, this.lastSetBrightness = null, 
+    this.isAdjustingBrightness = !1, this.longPressTimer = null, this.isDraggingBrightness = !1, 
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this), this.handleBrightnessDragStart = this.handleBrightnessDragStart.bind(this), 
+    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), this.handleBrightnessDragEnd = this.handleBrightnessDragEnd.bind(this), 
+    this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
   firstUpdated() {
@@ -631,27 +635,36 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.removeBrightnessDragListeners();
   }
   updated(changedProperties) {
-    changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness), 
-    changedProperties.has("hass") && this.hass && this.updateFromEntity(), this.syncDarkMode();
+    !changedProperties.has("brightness") || this.isAdjustingBrightness || null === this.lastSetBrightness || this.brightness === this.lastSetBrightness ? (changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness, 
+    this.lastSetBrightness = null), changedProperties.has("hass") && this.hass && this.updateFromEntity(), 
+    this.syncDarkMode()) : this.updateHABrightness(this.lastSetBrightness);
   }
   syncDarkMode() {
     "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
   }
   updateFromEntity() {
-    if (this.isAdjustingBrightness) return;
+    if (this.isAdjustingBrightness || null !== this.lastSetBrightness) return;
     if (this.hass.states["number.liam_display_screen_brightness"]) {
       const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
       isNaN(entityValue) || entityValue === this.brightness || (this.brightness = entityValue, 
       this.visualBrightness = entityValue, this.requestUpdate());
     }
   }
+  async updateHABrightness(value) {
+    if (this.hass) try {
+      await this.hass.callService("number", "set_value", {
+        entity_id: "number.liam_display_screen_brightness",
+        value: value
+      }), this.brightness = value, this.visualBrightness = value, this.requestUpdate();
+    } catch (err) {
+      console.error("Error updating brightness:", err);
+    }
+  }
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
-    const dotValue = parseInt(clickedDot.dataset.value);
-    if (1 === dotValue && 0 === this.visualBrightness) return void this.updateBrightnessValue(1, !1);
-    const brightness = Math.round(dotValue / 10 * 255);
+    const dotValue = parseInt(clickedDot.dataset.value), brightness = 0 === dotValue ? 0 : Math.round(dotValue / 10 * 255);
     this.updateBrightnessValue(brightness, !1);
   }
   handleBrightnessDragStart(e) {
@@ -676,7 +689,8 @@ customElements.define("google-controls", class Controls extends LitElement {
       detail: this.visualBrightness,
       bubbles: !0,
       composed: !0
-    })), setTimeout((() => {
+    })), this.updateHABrightness(this.visualBrightness), this.lastSetBrightness = this.visualBrightness, 
+    setTimeout((() => {
       this.isAdjustingBrightness = !1;
     }), 500), this.removeBrightnessDragListeners());
   }
@@ -690,11 +704,12 @@ customElements.define("google-controls", class Controls extends LitElement {
       detail: brightness,
       bubbles: !0,
       composed: !0
-    })) : this.dispatchEvent(new CustomEvent("brightnessChangeComplete", {
+    })) : (this.updateHABrightness(brightness), this.lastSetBrightness = brightness, 
+    this.dispatchEvent(new CustomEvent("brightnessChangeComplete", {
       detail: brightness,
       bubbles: !0,
       composed: !0
-    }));
+    })));
   }
   getBrightnessDisplayValue() {
     return 0 === this.visualBrightness ? 0 : Math.max(1, Math.min(10, Math.round(this.visualBrightness / 255 * 10))) || 1;
