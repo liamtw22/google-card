@@ -604,6 +604,14 @@ customElements.define("google-controls", class Controls extends LitElement {
             margin-bottom: env(safe-area-inset-bottom, 0);
           }
         }
+
+        /* Added explicit dark mode support */
+        :host([data-theme='dark']) {
+          --overlay-background: rgba(32, 33, 36, 0.95);
+          --control-text-color: #ffffff;
+          --brightness-dot-color: #5f6368;
+          --brightness-dot-active: #ffffff;
+        }
       ` ];
   }
   constructor() {
@@ -616,7 +624,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
   firstUpdated() {
-    this.requestUpdate(), "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
+    this.requestUpdate(), this.syncDarkMode();
   }
   disconnectedCallback() {
     super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer), 
@@ -624,7 +632,10 @@ customElements.define("google-controls", class Controls extends LitElement {
   }
   updated(changedProperties) {
     changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness), 
-    changedProperties.has("hass") && this.hass && this.updateFromEntity(), "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
+    changedProperties.has("hass") && this.hass && this.updateFromEntity(), this.syncDarkMode();
+  }
+  syncDarkMode() {
+    "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
   }
   updateFromEntity() {
     if (this.isAdjustingBrightness) return;
@@ -638,7 +649,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     e.stopPropagation();
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
-    const dotValue = parseInt(clickedDot.dataset.value), brightness = Math.round(dotValue / 10 * 255);
+    const dotValue = parseInt(clickedDot.dataset.value);
+    if (0 === dotValue) return void this.updateBrightnessValue(0, !1);
+    const brightness = Math.round(dotValue / 10 * 255);
     this.updateBrightnessValue(brightness, !1);
   }
   handleBrightnessDragStart(e) {
@@ -684,7 +697,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     }));
   }
   getBrightnessDisplayValue() {
-    return Math.max(1, Math.min(10, Math.round(this.visualBrightness / 255 * 10))) || 1;
+    return 0 === this.visualBrightness ? 0 : Math.max(1, Math.min(10, Math.round(this.visualBrightness / 255 * 10))) || 1;
   }
   toggleBrightnessCard(e) {
     e && e.stopPropagation(), this.dispatchEvent(new CustomEvent("brightnessCardToggle", {
@@ -727,9 +740,14 @@ customElements.define("google-controls", class Controls extends LitElement {
               @mousedown="${this.handleBrightnessDragStart}"
               @touchstart="${this.handleBrightnessDragStart}"
             >
+              <!-- Add a zero dot first -->
+              <div
+                class="brightness-dot ${0 === brightnessDisplayValue ? "active" : ""}"
+                data-value="0"
+              ></div>
               ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
                   <div
-                    class="brightness-dot ${value <= brightnessDisplayValue ? "active" : ""}"
+                    class="brightness-dot ${value <= brightnessDisplayValue && 0 !== brightnessDisplayValue ? "active" : ""}"
                     data-value="${value}"
                   ></div>
                 `))}
@@ -779,9 +797,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     `;
   }
   render() {
-    const isDark = "dark" === document.documentElement.getAttribute("data-theme");
-    return this.shadowRoot.host.setAttribute("data-theme", isDark ? "dark" : "light"), 
-    html`
+    return this.syncDarkMode(), html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
         ${this.showOverlay ? this.renderOverlay() : ""}
         ${this.showBrightnessCard ? this.renderBrightnessCard() : ""}
