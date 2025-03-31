@@ -233,9 +233,6 @@ export class NightMode extends LitElement {
   
   handleNightModeTap() {
     if (this.isInNightMode) {
-      // Save the original source
-      const originalSource = this.nightModeSource;
-      
       // Exit night mode
       this.exitNightMode();
       
