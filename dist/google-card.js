@@ -377,8 +377,11 @@ customElements.define("google-controls", class Controls extends LitElement {
       longPressTimer: {
         type: Object
       },
-      ignoreEntityUpdatesUntil: {
+      userSetBrightness: {
         type: Number
+      },
+      hasUserSetBrightness: {
+        type: Boolean
       }
     };
   }
@@ -621,8 +624,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     super(), this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
     this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.longPressTimer = null, this.ignoreEntityUpdatesUntil = 0, this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
-    this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
+    this.longPressTimer = null, this.userSetBrightness = null, this.hasUserSetBrightness = !1, 
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this), this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), 
+    this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
   firstUpdated() {
@@ -632,27 +636,28 @@ customElements.define("google-controls", class Controls extends LitElement {
     super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer);
   }
   updated(changedProperties) {
-    const now = Date.now();
-    changedProperties.has("hass") && this.hass && now > this.ignoreEntityUpdatesUntil && this.updateFromEntity(), 
-    this.syncDarkMode();
+    changedProperties.has("hass") && this.hass && this.updateFromEntity(), this.syncDarkMode();
   }
   syncDarkMode() {
     "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
   }
   updateFromEntity() {
-    if (this.isAdjustingBrightness) return;
-    if (this.hass.states["number.liam_display_screen_brightness"]) {
-      const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
-      isNaN(entityValue) || entityValue === this.brightness || (console.log("Entity update:", entityValue), 
-      this.brightness = entityValue, this.visualBrightness = entityValue, this.requestUpdate());
+    if (!this.hass.states["number.liam_display_screen_brightness"]) return;
+    const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
+    if (!isNaN(entityValue)) {
+      if (this.brightness = entityValue, this.hasUserSetBrightness) {
+        Math.round(this.userSetBrightness / 25.5) === Math.round(entityValue / 25.5) && (this.visualBrightness = entityValue, 
+        this.hasUserSetBrightness = !1, this.userSetBrightness = null);
+      } else this.visualBrightness = entityValue;
+      this.requestUpdate();
     }
   }
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
-    const dotValue = parseInt(clickedDot.dataset.value), newBrightness = 0 === dotValue ? 0 : Math.round(25.5 * dotValue);
-    this.updateBrightnessValue(newBrightness);
+    const dotValue = parseInt(clickedDot.dataset.value), newBrightness = Math.round(25.5 * dotValue);
+    this.userSetBrightness = newBrightness, this.hasUserSetBrightness = !0, this.updateBrightnessValue(newBrightness);
   }
   handleBrightnessDrag(e) {
     e.stopPropagation(), e.type.includes("touch") && e.preventDefault();
@@ -661,14 +666,14 @@ customElements.define("google-controls", class Controls extends LitElement {
     const rect = container.getBoundingClientRect(), clientX = e.type.includes("touch") ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
     if (void 0 === clientX) return;
     const percentage = Math.max(0, Math.min(clientX - rect.left, rect.width)) / rect.width, dotValue = Math.round(10 * percentage), newBrightness = Math.round(25.5 * dotValue);
-    this.isAdjustingBrightness = !0, this.updateBrightnessValue(newBrightness), setTimeout((() => {
+    this.userSetBrightness = newBrightness, this.hasUserSetBrightness = !0, this.isAdjustingBrightness = !0, 
+    this.updateBrightnessValue(newBrightness), setTimeout((() => {
       this.isAdjustingBrightness = !1;
-    }), 1e3);
+    }), 300);
   }
   updateBrightnessValue(value) {
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
-    this.visualBrightness = brightness, this.brightness = brightness, this.ignoreEntityUpdatesUntil = Date.now() + 3e3, 
-    this.hass && this.hass.callService("number", "set_value", {
+    this.visualBrightness = brightness, this.hass && this.hass.callService("number", "set_value", {
       entity_id: "number.liam_display_screen_brightness",
       value: brightness
     }).catch((err => {
