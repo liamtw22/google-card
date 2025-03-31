@@ -1815,7 +1815,7 @@ class GoogleCard extends LitElement {
     document.documentElement.setAttribute("data-theme", this.isDarkMode ? "dark" : "light");
     const backgroundRotator = this.shadowRoot.querySelector("background-rotator"), weatherClock = this.shadowRoot.querySelector("weather-clock"), controls = this.shadowRoot.querySelector("google-controls");
     backgroundRotator && backgroundRotator.requestUpdate(), weatherClock && weatherClock.requestUpdate(), 
-    controls && controls.requestUpdate();
+    controls && (controls.requestUpdate(), controls.syncDarkMode && controls.syncDarkMode());
   }
   render() {
     if (this._inEditor()) return html`
@@ -1933,7 +1933,18 @@ class GoogleCard extends LitElement {
       passive: !1
     }), touchContainer.addEventListener("touchend", this.handleTouchEnd.bind(this), {
       passive: !0
-    }));
+    })), this.refreshComponents(), this.updateFromEntity();
+  }
+  updateFromEntity() {
+    if (this.hass) {
+      const brightnessEntity = "number.liam_display_screen_brightness";
+      if (this.hass.states[brightnessEntity]) {
+        const newBrightness = parseFloat(this.hass.states[brightnessEntity].state);
+        isNaN(newBrightness) || (this.brightness = newBrightness, this.visualBrightness = newBrightness, 
+        !this.isNightMode && newBrightness > 0 && (this.previousBrightness = newBrightness), 
+        this.requestUpdate());
+      }
+    }
   }
   clearAllTimers() {
     this.overlayDismissTimer && clearTimeout(this.overlayDismissTimer), this.brightnessCardDismissTimer && clearTimeout(this.brightnessCardDismissTimer), 
@@ -2022,8 +2033,8 @@ class GoogleCard extends LitElement {
       value: brightness
     }).catch((err => {
       console.error("Error updating brightness:", err);
-    })), this.isNightMode || (this.previousBrightness = brightness), this.brightness = brightness, 
-    this.startBrightnessCardDismissTimer(), this.lastBrightnessUpdateTime = Date.now(), 
+    })), !this.isNightMode && brightness > 0 && (this.previousBrightness = brightness), 
+    this.brightness = brightness, this.startBrightnessCardDismissTimer(), this.lastBrightnessUpdateTime = Date.now(), 
     this.brightnessStabilizeTimer && clearTimeout(this.brightnessStabilizeTimer), this.brightnessStabilizeTimer = setTimeout((() => {
       this.isAdjustingBrightness = !1, this.requestUpdate();
     }), 2e3);
@@ -2040,7 +2051,15 @@ class GoogleCard extends LitElement {
         this.updateNightMode();
       }), 3e4));
     }
-    this.requestUpdate();
+    this.restorePreviousBrightness(), this.requestUpdate();
+  }
+  async restorePreviousBrightness() {
+    if (!this.hass) return;
+    const restoreBrightness = this.previousBrightness && this.previousBrightness > 0 ? this.previousBrightness : 128;
+    await this.hass.callService("number", "set_value", {
+      entity_id: "number.liam_display_screen_brightness",
+      value: restoreBrightness
+    }), this.brightness = restoreBrightness, this.visualBrightness = restoreBrightness;
   }
   updateNightMode() {
     if (!this.hass) return;
@@ -2055,11 +2074,16 @@ class GoogleCard extends LitElement {
   async handleNightModeTransition(newNightMode, source = "sensor") {
     if (newNightMode !== this.isInNightMode || this.nightModeSource !== source) try {
       const brightnessEntity = "number.liam_display_screen_brightness";
-      if (newNightMode) !this.isInNightMode && this.hass.states[brightnessEntity] && (this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state)), 
-      await this.hass.callService("number", "set_value", {
-        entity_id: brightnessEntity,
-        value: 0
-      }), this.nightModeSource = source; else {
+      if (newNightMode) {
+        if (!this.isInNightMode && this.hass.states[brightnessEntity]) {
+          const currentValue = parseFloat(this.hass.states[brightnessEntity].state);
+          currentValue > 0 && (this.previousBrightness = currentValue);
+        }
+        await this.hass.callService("number", "set_value", {
+          entity_id: brightnessEntity,
+          value: 0
+        }), this.nightModeSource = source;
+      } else {
         const restoreBrightness = this.previousBrightness && this.previousBrightness > 0 ? this.previousBrightness : 128;
         await this.hass.callService("number", "set_value", {
           entity_id: brightnessEntity,
@@ -2080,10 +2104,12 @@ class GoogleCard extends LitElement {
       if (this.hass.states[brightnessEntity]) {
         const newBrightness = parseFloat(this.hass.states[brightnessEntity].state);
         this.brightness !== newBrightness && (this.brightness = newBrightness, this.visualBrightness = newBrightness, 
+        !this.isNightMode && newBrightness > 0 && (this.previousBrightness = newBrightness), 
         this.requestUpdate());
       }
       Date.now() - this.lastBrightnessUpdateTime > 2e3 && this.updateNightMode();
     }
+    (changedProperties.has("isDarkMode") || changedProperties.has("hass")) && this.refreshComponents();
   }
   handleBrightnessCardToggle(event) {
     const shouldShow = event.detail;
