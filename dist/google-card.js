@@ -880,8 +880,11 @@ customElements.define("night-mode", class NightMode extends LitElement {
       this.isTransitioning = !0;
       try {
         const brightnessEntity = "number.liam_display_screen_brightness";
-        this.hass.states[brightnessEntity] && (this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state)), 
-        await this.hass.callService("number", "set_value", {
+        if (this.hass && this.hass.states[brightnessEntity]) {
+          const currentValue = parseFloat(this.hass.states[brightnessEntity].state);
+          currentValue > 0 && (this.previousBrightness = currentValue);
+        }
+        this.hass && await this.hass.callService("number", "set_value", {
           entity_id: brightnessEntity,
           value: 0
         }), this.isInNightMode = !0, this.error = null;
@@ -897,7 +900,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
       this.isTransitioning = !0;
       try {
         const brightnessEntity = "number.liam_display_screen_brightness", targetBrightness = this.previousBrightness && this.previousBrightness > 0 ? this.previousBrightness : 128;
-        await this.hass.callService("number", "set_value", {
+        this.hass && await this.hass.callService("number", "set_value", {
           entity_id: brightnessEntity,
           value: targetBrightness
         }), this.isInNightMode = !1, this.error = null, this.dispatchEvent(new CustomEvent("nightModeExit", {
