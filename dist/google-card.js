@@ -855,7 +855,7 @@ customElements.define("night-mode", class NightMode extends LitElement {
   connectedCallback() {
     super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
     this.sensorCheckInterval = setInterval((() => {
-      this.checkSunEntities();
+      this.checkLightSensor();
     }), 3e4);
   }
   disconnectedCallback() {
@@ -913,19 +913,19 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
   updated(changedProperties) {
     if (changedProperties.has("hass") && this.hass) {
-      Date.now() - this.sensorCheckedTime > 5e3 && this.checkSunEntities();
+      Date.now() - this.sensorCheckedTime > 5e3 && this.checkLightSensor();
       const brightnessEntity = "number.liam_display_screen_brightness";
       this.hass.states[brightnessEntity] && (this.brightness = parseFloat(this.hass.states[brightnessEntity].state));
     }
   }
-  checkSunEntities() {
-    if (!this.hass) return;
+  checkLightSensor(force = !1) {
+    if (!this.hass || !this.config) return;
     this.sensorCheckedTime = Date.now();
-    const sunRisingEntity = this.hass.states["sensor.sun_next_rising"], sunSettingEntity = this.hass.states["sensor.sun_next_setting"];
-    if (sunRisingEntity && sunSettingEntity) try {
-      const nextRising = new Date(sunRisingEntity.state), isDarkTime = nextRising < new Date(sunSettingEntity.state);
-      if (this.isInNightMode && "manual" === this.nightModeSource) return;
-      isDarkTime && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : !isDarkTime && this.isInNightMode && "sensor" === this.nightModeSource && (this.exitNightMode(), 
+    const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor", lightSensor = this.hass.states[lightSensorEntity];
+    if (lightSensor && "unavailable" !== lightSensor.state && "unknown" !== lightSensor.state) try {
+      const shouldBeInNightMode = 0 === parseInt(lightSensor.state);
+      if (!this.isInNightMode && "manual" === this.nightModeSource && !force) return;
+      shouldBeInNightMode && !this.isInNightMode ? (this.enterNightMode(), this.nightModeSource = "sensor") : shouldBeInNightMode || !this.isInNightMode || "sensor" !== this.nightModeSource && !force || (this.exitNightMode(), 
       this.nightModeSource = null);
     } catch (error) {}
   }
@@ -939,11 +939,14 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
   handleNightModeTap() {
     if (this.isInNightMode) {
-      const originalSource = this.nightModeSource;
-      this.exitNightMode(), "sensor" === originalSource && (this.nightModeReactivationTimer && clearTimeout(this.nightModeReactivationTimer), 
-      this.nightModeReactivationTimer = setTimeout((() => {
-        this.checkSunEntities(), this.nightModeReactivationTimer = null;
-      }), 3e4));
+      this.exitNightMode();
+      const lightSensorEntity = this.config.light_sensor_entity || "sensor.liam_room_display_light_sensor";
+      if (this.hass && this.hass.states[lightSensorEntity]) {
+        0 === parseInt(this.hass.states[lightSensorEntity].state) && (this.nightModeReactivationTimer && clearTimeout(this.nightModeReactivationTimer), 
+        this.nightModeReactivationTimer = setTimeout((() => {
+          this.checkLightSensor(!0), this.nightModeReactivationTimer = null;
+        }), 3e4));
+      }
     }
   }
 });
