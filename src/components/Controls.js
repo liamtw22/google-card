@@ -19,7 +19,8 @@ export class Controls extends LitElement {
       brightness: { type: Number },
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
-      isDraggingBrightness: { type: Boolean }
+      isDraggingBrightness: { type: Boolean },
+      lastSetBrightness: { type: Number } // Add tracking for last explicitly set brightness
     };
   }
 
@@ -278,6 +279,7 @@ export class Controls extends LitElement {
     this.isBrightnessCardTransitioning = false;
     this.brightness = 128;
     this.visualBrightness = 128;
+    this.lastSetBrightness = null; // Track last explicitly set brightness
     this.isAdjustingBrightness = false;
     this.longPressTimer = null;
     this.isDraggingBrightness = false;
@@ -306,9 +308,23 @@ export class Controls extends LitElement {
   }
 
   updated(changedProperties) {
-    // Update visualBrightness when brightness changes from external sources
+    // Check if lastSetBrightness has a value and if brightness changed from an external source
+    if (changedProperties.has('brightness') && 
+        !this.isAdjustingBrightness && 
+        this.lastSetBrightness !== null && 
+        this.brightness !== this.lastSetBrightness) {
+      
+      // If brightness changed from external source and we have a lastSetBrightness,
+      // update the HA entity to match our last explicitly set value
+      this.updateHABrightness(this.lastSetBrightness);
+      return;
+    }
+    
+    // Normal case: update visualBrightness when brightness changes from external sources
     if (changedProperties.has('brightness') && !this.isAdjustingBrightness) {
       this.visualBrightness = this.brightness;
+      // Reset lastSetBrightness if we're accepting an external change
+      this.lastSetBrightness = null;
     }
     
     // Check for entity updates
@@ -330,9 +346,9 @@ export class Controls extends LitElement {
     }
   }
   
-  // Update from entity but don't override visual feedback during adjustment
+  // Update from entity but don't override during adjustment or if we have a pending value
   updateFromEntity() {
-    if (this.isAdjustingBrightness) return;
+    if (this.isAdjustingBrightness || this.lastSetBrightness !== null) return;
     
     const brightnessEntity = 'number.liam_display_screen_brightness';
     if (this.hass.states[brightnessEntity]) {
@@ -345,6 +361,25 @@ export class Controls extends LitElement {
     }
   }
 
+  // New method to update HA entity with explicit promise handling
+  async updateHABrightness(value) {
+    if (!this.hass) return;
+    
+    try {
+      await this.hass.callService('number', 'set_value', {
+        entity_id: 'number.liam_display_screen_brightness',
+        value: value
+      });
+      
+      // Update local state to match what we just set
+      this.brightness = value;
+      this.visualBrightness = value;
+      this.requestUpdate();
+    } catch (err) {
+      console.error('Error updating brightness:', err);
+    }
+  }
+
   // Updated to handle brightness with a simplified 10-dot scale and no dots active for 0
   handleBrightnessChange(e) {
     e.stopPropagation();
@@ -353,17 +388,10 @@ export class Controls extends LitElement {
 
     const dotValue = parseInt(clickedDot.dataset.value);
     
-    // Special case for dot value 1 with current brightness 0
-    if (dotValue === 1 && this.visualBrightness === 0) {
-      // Set to minimal non-zero brightness
-      this.updateBrightnessValue(1, false);
-      return;
-    }
+    // Convert 1-10 range to 1-255 range or set to 0 for special case
+    const brightness = dotValue === 0 ? 0 : Math.round((dotValue / 10) * 255);
     
-    // Convert 1-10 range to 1-255 range 
-    const brightness = Math.round((dotValue / 10) * 255);
-    
-    // For clicks, immediately send the final value since it's not a drag operation
+    // For clicks, immediately send the final value
     this.updateBrightnessValue(brightness, false);
   }
 
@@ -427,6 +455,12 @@ export class Controls extends LitElement {
       composed: true,
     }));
     
+    // Update HA directly to ensure the value sticks
+    this.updateHABrightness(this.visualBrightness);
+    
+    // Save this as the last explicitly set brightness
+    this.lastSetBrightness = this.visualBrightness;
+    
     // Small delay before allowing entity updates again
     setTimeout(() => {
       this.isAdjustingBrightness = false;
@@ -442,7 +476,7 @@ export class Controls extends LitElement {
     document.removeEventListener('touchend', this.handleBrightnessDragEnd);
   }
 
-  // Updated to handle both visual updates and entity updates
+  // Updated to handle both visual updates and entity updates with enhanced state tracking
   updateBrightnessValue(value, isDragging = false) {
     // Ensure the value is within 0-255 range
     const brightness = Math.max(0, Math.min(255, Math.round(value)));
@@ -461,7 +495,10 @@ export class Controls extends LitElement {
         composed: true,
       }));
     } else {
-      // For clicks or after dragging ends, send the final value
+      // For clicks or after dragging ends, send the final value and update directly
+      this.updateHABrightness(brightness);
+      this.lastSetBrightness = brightness; // Remember the last value we set
+      
       this.dispatchEvent(new CustomEvent('brightnessChangeComplete', {
         detail: brightness,
         bubbles: true,
