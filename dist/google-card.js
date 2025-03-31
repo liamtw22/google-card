@@ -650,7 +650,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
     const dotValue = parseInt(clickedDot.dataset.value);
-    if (0 === dotValue) return void this.updateBrightnessValue(0, !1);
+    if (1 === dotValue && 0 === this.visualBrightness) return void this.updateBrightnessValue(1, !1);
     const brightness = Math.round(dotValue / 10 * 255);
     this.updateBrightnessValue(brightness, !1);
   }
@@ -740,11 +740,6 @@ customElements.define("google-controls", class Controls extends LitElement {
               @mousedown="${this.handleBrightnessDragStart}"
               @touchstart="${this.handleBrightnessDragStart}"
             >
-              <!-- Add a zero dot first -->
-              <div
-                class="brightness-dot ${0 === brightnessDisplayValue ? "active" : ""}"
-                data-value="0"
-              ></div>
               ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map((value => html`
                   <div
                     class="brightness-dot ${value <= brightnessDisplayValue && 0 !== brightnessDisplayValue ? "active" : ""}"
