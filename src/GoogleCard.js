@@ -94,6 +94,7 @@ class GoogleCard extends LitElement {
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
     this.handleBrightnessCardToggle = this.handleBrightnessCardToggle.bind(this);
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handleBrightnessChangeComplete = this.handleBrightnessChangeComplete.bind(this);
     this.handleDebugToggle = this.handleDebugToggle.bind(this);
     this.handleNightModeExit = this.handleNightModeExit.bind(this);
   }
@@ -103,14 +104,14 @@ class GoogleCard extends LitElement {
     this.showOverlay = false;
     this.isOverlayVisible = false;
     this.isOverlayTransitioning = false;
-    this.isNightMode = false;
+    this.isNightMode = false; // Start in normal mode
     this.showBrightnessCard = false;
     this.isBrightnessCardVisible = false;
     this.isBrightnessCardTransitioning = false;
     this.brightness = DEFAULT_CONFIG.brightness || 128;
     this.visualBrightness = this.brightness;
     this.previousBrightness = this.brightness;
-    this.isInNightMode = false;
+    this.isInNightMode = false; // Start in normal mode
     this.isAdjustingBrightness = false;
     this.lastBrightnessUpdateTime = 0;
     this.touchStartY = 0;
@@ -121,6 +122,7 @@ class GoogleCard extends LitElement {
     this.brightnessStabilizeTimer = null;
     this.timeUpdateInterval = null;
     this.nightModeSource = null;
+    this.nightModeReactivationTimer = null; // Add this for reactivation
     this.editMode = false;
 
     this.updateScreenSize();
@@ -210,7 +212,26 @@ class GoogleCard extends LitElement {
       `;
     }
 
-    const mainContent = this.isNightMode ? html`
+    // Always load background-rotator
+    const backgroundComponent = html`
+      <background-rotator
+        .hass=${this.hass}
+        .config=${this.config}
+        .screenWidth=${this.screenWidth}
+        .screenHeight=${this.screenHeight}
+      ></background-rotator>
+    `;
+    
+    // Always render weather-clock but hide it in night mode
+    const weatherComponent = html`
+      <weather-clock 
+        .hass=${this.hass} 
+        .config=${this.config}
+        style="${this.isNightMode ? 'display: none;' : ''}"
+      ></weather-clock>
+    `;
+
+    const nightModeComponent = this.isNightMode ? html`
       <night-mode 
         .currentTime=${this.currentTime}
         .hass=${this.hass}
@@ -221,16 +242,9 @@ class GoogleCard extends LitElement {
         .nightModeSource=${this.nightModeSource}
         @nightModeExit=${this.handleNightModeExit}
       ></night-mode>
-    ` : html`
-      <background-rotator
-        .hass=${this.hass}
-        .config=${this.config}
-        .screenWidth=${this.screenWidth}
-        .screenHeight=${this.screenHeight}
-      ></background-rotator>
+    ` : '';
 
-      <weather-clock .hass=${this.hass} .config=${this.config}></weather-clock>
-
+    const controlsComponent = html`
       <google-controls
         .hass=${this.hass}
         .config=${this.config}
@@ -246,7 +260,9 @@ class GoogleCard extends LitElement {
         @overlayToggle=${this.handleOverlayToggle}
         @brightnessCardToggle=${this.handleBrightnessCardToggle}
         @brightnessChange=${this.handleBrightnessChange}
+        @brightnessChangeComplete=${this.handleBrightnessChangeComplete}
         @debugToggle=${this.handleDebugToggle}
+        style="${this.isNightMode ? 'display: none;' : ''}"
       ></google-controls>
     `;
 
@@ -265,7 +281,12 @@ class GoogleCard extends LitElement {
       </style>
 
       <div class="touch-container">
-        <div class="content-wrapper">${mainContent}</div>
+        <div class="content-wrapper">
+          ${backgroundComponent}
+          ${weatherComponent}
+          ${nightModeComponent}
+          ${controlsComponent}
+        </div>
       </div>
     `;
   }
@@ -334,6 +355,7 @@ class GoogleCard extends LitElement {
     if (this.brightnessCardDismissTimer) clearTimeout(this.brightnessCardDismissTimer);
     if (this.brightnessStabilizeTimer) clearTimeout(this.brightnessStabilizeTimer);
     if (this.timeUpdateInterval) clearInterval(this.timeUpdateInterval);
+    if (this.nightModeReactivationTimer) clearTimeout(this.nightModeReactivationTimer);
   }
 
   updateScreenSize() {
@@ -385,10 +407,10 @@ class GoogleCard extends LitElement {
       const velocityX = Math.abs(deltaX) / deltaTime;
       
       // If in manually activated night mode, any touch/tap should exit night mode
-      if (this.isNightMode && this.nightModeSource === 'manual') {
+      if (this.isNightMode) {
         // Only minor movements should count as taps, not full swipes
         if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) {
-          this.handleNightModeTransition(false);
+          this.handleNightModeExit();
           return;
         }
       }
@@ -397,7 +419,7 @@ class GoogleCard extends LitElement {
       if (Math.abs(deltaX) > Math.abs(deltaY) && 
           Math.abs(deltaX) > 50 && 
           velocityX > 0.2 && 
-          this.touchStartX < window.innerWidth * 0.2 && // Started from the left edge (20% of screen)
+          this.touchStartX < window.innerWidth * 0.25 && // Started from the left quarter of screen
           deltaX < 0) { // Left to right swipe (negative deltaX)
         
         // Toggle night mode with manual source
@@ -502,17 +524,23 @@ class GoogleCard extends LitElement {
     });
   }
 
-  // Updated for immediate visual feedback with background entity update
+  // Updated to only handle visual changes during dragging
   handleBrightnessChange(event) {
     const brightness = event.detail;
     
-    // Update visual state immediately for responsive UI
+    // Only update visual state for responsive UI
     this.isAdjustingBrightness = true;
     this.visualBrightness = brightness;
-    this.brightness = brightness;
-    this.requestUpdate();
     
-    // Update the entity in the background
+    // Request update for visual changes
+    this.requestUpdate();
+  }
+
+  // New handler for when brightness changes are complete (after dragging ends)
+  handleBrightnessChangeComplete(event) {
+    const brightness = event.detail;
+    
+    // Update the entity only when dragging completes or dot is clicked
     if (this.hass) {
       this.hass.callService('number', 'set_value', {
         entity_id: 'number.liam_display_screen_brightness',
@@ -527,7 +555,9 @@ class GoogleCard extends LitElement {
       this.previousBrightness = brightness;
     }
     
-    // Reset dismiss timer when user interacts with brightness
+    this.brightness = brightness;
+    
+    // Reset dismiss timer
     this.startBrightnessCardDismissTimer();
     this.lastBrightnessUpdateTime = Date.now();
     
@@ -547,34 +577,52 @@ class GoogleCard extends LitElement {
     this.requestUpdate();
   }
 
+  // Updated for reactivation timer
   handleNightModeExit() {
     this.isNightMode = false;
+    this.isInNightMode = false;
+    
+    // If light sensor is still 0, set up reactivation timer
+    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+    if (this.hass && this.hass.states[lightSensorEntity]) {
+      const lightLevel = parseInt(this.hass.states[lightSensorEntity].state);
+      if (lightLevel === 0) {
+        // Set timer to reactivate night mode after 30 seconds
+        if (this.nightModeReactivationTimer) {
+          clearTimeout(this.nightModeReactivationTimer);
+        }
+        
+        this.nightModeReactivationTimer = setTimeout(() => {
+          this.updateNightMode(); // This will check light sensor and reactivate if needed
+        }, 30000); // 30 seconds
+    }
+  }
+    
     this.requestUpdate();
   }
 
-  // Updated to use sun entities
+  // Updated to use light sensor
   updateNightMode() {
     if (!this.hass) return;
     
-    // Get sun state entities
-    const sunRisingEntity = this.hass.states['sensor.sun_next_rising'];
-    const sunSettingEntity = this.hass.states['sensor.sun_next_setting'];
+    // Use the light sensor entity instead of sun entities
+    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+    const lightSensor = this.hass.states[lightSensorEntity];
     
-    if (!sunRisingEntity || !sunSettingEntity) {
+    if (!lightSensor) {
       return;
     }
     
-    // Parse the timestamp strings into Date objects
-    const nextRising = new Date(sunRisingEntity.state);
-    const nextSetting = new Date(sunSettingEntity.state);
+    if (lightSensor.state === 'unavailable' || lightSensor.state === 'unknown') {
+      return;
+    }
+
+    const lightLevel = parseInt(lightSensor.state);
+    const shouldBeInNightMode = lightLevel === 0;
     
-    // If the next sun event is rising, then it's currently night
-    // If the next sun event is setting, then it's currently day
-    const isDarkTime = nextRising < nextSetting;
-    
-    // Set dark mode based on sun state
-    if (isDarkTime !== this.isDarkMode) {
-      this.isDarkMode = isDarkTime;
+    // Set dark mode based on light sensor
+    if (shouldBeInNightMode !== this.isDarkMode) {
+      this.isDarkMode = shouldBeInNightMode;
       document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
       this.updateCssVariables();
       this.refreshComponents();
@@ -583,13 +631,12 @@ class GoogleCard extends LitElement {
     
     // If night mode was manually activated, don't let sensor readings deactivate it
     if (this.isInNightMode && this.nightModeSource === 'manual') {
-      // Keep night mode on regardless of sun state
       return;
     }
     
-    // Otherwise, follow sun state for automatic night mode
-    if (isDarkTime !== this.isInNightMode) {
-      this.handleNightModeTransition(isDarkTime, 'sensor');
+    // Otherwise, follow light sensor for automatic night mode
+    if (shouldBeInNightMode !== this.isInNightMode) {
+      this.handleNightModeTransition(shouldBeInNightMode, 'sensor');
     }
   }
 
