@@ -198,6 +198,10 @@ class GoogleCard extends LitElement {
     }
     if (controls) {
       controls.requestUpdate();
+      // Force update the controls component to apply dark mode
+      if (controls.syncDarkMode) {
+        controls.syncDarkMode();
+      }
     }
   }
 
@@ -347,6 +351,32 @@ class GoogleCard extends LitElement {
       touchContainer.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
       touchContainer.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
       touchContainer.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
+    }
+    
+    // Initial refresh to ensure dark mode is correctly applied
+    this.refreshComponents();
+    
+    // Check entity brightness state to initialize
+    this.updateFromEntity();
+  }
+  
+  updateFromEntity() {
+    if (this.hass) {
+      const brightnessEntity = 'number.liam_display_screen_brightness';
+      if (this.hass.states[brightnessEntity]) {
+        const newBrightness = parseFloat(this.hass.states[brightnessEntity].state);
+        if (!isNaN(newBrightness)) {
+          this.brightness = newBrightness;
+          this.visualBrightness = newBrightness;
+          
+          // If not in night mode, also save as previous brightness (if > 0)
+          if (!this.isNightMode && newBrightness > 0) {
+            this.previousBrightness = newBrightness;
+          }
+          
+          this.requestUpdate();
+        }
+      }
     }
   }
 
@@ -536,7 +566,7 @@ class GoogleCard extends LitElement {
     this.requestUpdate();
   }
 
-  // New handler for when brightness changes are complete (after dragging ends)
+  // New handler for when brightness changes are complete (after dragging ends or clicking)
   handleBrightnessChangeComplete(event) {
     const brightness = event.detail;
     
@@ -550,8 +580,8 @@ class GoogleCard extends LitElement {
       });
     }
     
-    // Store as previous brightness if not in night mode
-    if (!this.isNightMode) {
+    // Store as previous brightness if not in night mode and greater than 0
+    if (!this.isNightMode && brightness > 0) {
       this.previousBrightness = brightness;
     }
     
@@ -595,10 +625,34 @@ class GoogleCard extends LitElement {
         this.nightModeReactivationTimer = setTimeout(() => {
           this.updateNightMode(); // This will check light sensor and reactivate if needed
         }, 30000); // 30 seconds
+      }
     }
-  }
+    
+    // Restore previous brightness
+    this.restorePreviousBrightness();
     
     this.requestUpdate();
+  }
+  
+  // New method to explicitly restore previous brightness
+  async restorePreviousBrightness() {
+    if (!this.hass) return;
+    
+    const brightnessEntity = 'number.liam_display_screen_brightness';
+    
+    // Restore previous brightness or use a reasonable default
+    const restoreBrightness = (this.previousBrightness && this.previousBrightness > 0) 
+      ? this.previousBrightness 
+      : 128;
+    
+    await this.hass.callService('number', 'set_value', {
+      entity_id: brightnessEntity,
+      value: restoreBrightness
+    });
+    
+    // Update local state
+    this.brightness = restoreBrightness;
+    this.visualBrightness = restoreBrightness;
   }
 
   // Updated to use light sensor
@@ -650,7 +704,11 @@ class GoogleCard extends LitElement {
       if (newNightMode) {
         // Save current brightness before entering night mode
         if (!this.isInNightMode && this.hass.states[brightnessEntity]) {
-          this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state);
+          const currentValue = parseFloat(this.hass.states[brightnessEntity].state);
+          // Only store non-zero values as previous brightness
+          if (currentValue > 0) {
+            this.previousBrightness = currentValue;
+          }
         }
         
         // Set brightness to 0
@@ -705,6 +763,12 @@ class GoogleCard extends LitElement {
         if (this.brightness !== newBrightness) {
           this.brightness = newBrightness;
           this.visualBrightness = newBrightness;
+          
+          // If not in night mode and brightness > 0, also update previous brightness
+          if (!this.isNightMode && newBrightness > 0) {
+            this.previousBrightness = newBrightness;
+          }
+          
           this.requestUpdate();
         }
       }
@@ -714,6 +778,11 @@ class GoogleCard extends LitElement {
       if (timeSinceLastUpdate > 2000) {
         this.updateNightMode();
       }
+    }
+    
+    // Ensure theme is properly applied
+    if (changedProperties.has('isDarkMode') || changedProperties.has('hass')) {
+      this.refreshComponents();
     }
   }
 
