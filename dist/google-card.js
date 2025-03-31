@@ -830,6 +830,9 @@ customElements.define("night-mode", class NightMode extends LitElement {
       },
       nightModeSource: {
         type: String
+      },
+      animationActive: {
+        type: Boolean
       }
     };
   }
@@ -848,6 +851,22 @@ customElements.define("night-mode", class NightMode extends LitElement {
           align-items: center;
           z-index: 5;
           cursor: pointer;
+          /* Add transition for smooth animation */
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Add animation class for slide-in effect */
+        .night-mode.animate-entry {
+          animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes slideInFromLeft {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(0);
+          }
         }
 
         .night-time {
@@ -861,7 +880,8 @@ customElements.define("night-mode", class NightMode extends LitElement {
   constructor() {
     super(), this.currentTime = "", this.brightness = 0, this.isInNightMode = !1, this.previousBrightness = 128, 
     this.isTransitioning = !1, this.error = null, this.nightModeSource = null, this.timeUpdateInterval = null, 
-    this.sensorCheckInterval = null, this.sensorCheckedTime = 0, this.nightModeReactivationTimer = null;
+    this.sensorCheckInterval = null, this.sensorCheckedTime = 0, this.nightModeReactivationTimer = null, 
+    this.animationActive = !1;
   }
   connectedCallback() {
     super.connectedCallback(), this.updateTime(), this.startTimeUpdates(), this.isInNightMode && this.enterNightMode(), 
@@ -888,7 +908,10 @@ customElements.define("night-mode", class NightMode extends LitElement {
   }
   async enterNightMode() {
     if (!this.isInNightMode || this.isTransitioning) {
-      this.isTransitioning = !0;
+      this.isTransitioning = !0, "manual" === this.nightModeSource && (this.animationActive = !0, 
+      setTimeout((() => {
+        this.animationActive = !1, this.requestUpdate();
+      }), 300));
       try {
         const brightnessEntity = "number.liam_display_screen_brightness";
         if (this.hass && this.hass.states[brightnessEntity]) {
@@ -944,8 +967,9 @@ customElements.define("night-mode", class NightMode extends LitElement {
     } catch (error) {}
   }
   render() {
+    const animateClass = this.isInNightMode && "manual" === this.nightModeSource && this.animationActive ? "animate-entry" : "";
     return html`
-      <div class="night-mode" @click="${this.handleNightModeTap}">
+      <div class="night-mode ${animateClass}" @click="${this.handleNightModeTap}">
         <div class="night-time">${this.currentTime}</div>
         ${this.error ? html`<div class="error">${this.error}</div>` : ""}
       </div>
