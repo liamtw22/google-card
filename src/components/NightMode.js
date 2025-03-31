@@ -113,15 +113,21 @@ export class NightMode extends LitElement {
       const brightnessEntity = 'number.liam_display_screen_brightness';
       
       // Store current brightness before entering night mode
-      if (this.hass.states[brightnessEntity]) {
-        this.previousBrightness = parseFloat(this.hass.states[brightnessEntity].state);
+      if (this.hass && this.hass.states[brightnessEntity]) {
+        const currentValue = parseFloat(this.hass.states[brightnessEntity].state);
+        // Only store non-zero values as previous brightness
+        if (currentValue > 0) {
+          this.previousBrightness = currentValue;
+        }
       }
       
       // Set to minimum brightness (0)
-      await this.hass.callService('number', 'set_value', {
-        entity_id: brightnessEntity,
-        value: 0
-      });
+      if (this.hass) {
+        await this.hass.callService('number', 'set_value', {
+          entity_id: brightnessEntity,
+          value: 0
+        });
+      }
       
       this.isInNightMode = true;
       this.error = null;
@@ -145,10 +151,12 @@ export class NightMode extends LitElement {
         ? this.previousBrightness 
         : 128; // Default to middle brightness if no previous value
       
-      await this.hass.callService('number', 'set_value', {
-        entity_id: brightnessEntity,
-        value: targetBrightness
-      });
+      if (this.hass) {
+        await this.hass.callService('number', 'set_value', {
+          entity_id: brightnessEntity,
+          value: targetBrightness
+        });
+      }
       
       this.isInNightMode = false;
       this.error = null;
