@@ -256,6 +256,14 @@ export class Controls extends LitElement {
             margin-bottom: env(safe-area-inset-bottom, 0);
           }
         }
+
+        /* Added explicit dark mode support */
+        :host([data-theme="dark"]) {
+          --overlay-background: rgba(32, 33, 36, 0.95);
+          --control-text-color: #ffffff;
+          --brightness-dot-color: #5f6368;
+          --brightness-dot-active: #ffffff;
+        }
       `
     ];
   }
@@ -288,11 +296,7 @@ export class Controls extends LitElement {
     this.requestUpdate();
     
     // Apply theme attribute for better dark mode detection
-    if (document.documentElement.getAttribute('data-theme') === 'dark') {
-      this.shadowRoot.host.setAttribute('data-theme', 'dark');
-    } else {
-      this.shadowRoot.host.setAttribute('data-theme', 'light');
-    }
+    this.syncDarkMode();
   }
 
   disconnectedCallback() {
@@ -313,7 +317,13 @@ export class Controls extends LitElement {
     }
     
     // Ensure proper dark mode
-    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+    this.syncDarkMode();
+  }
+  
+  // New method to sync dark mode state
+  syncDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
       this.shadowRoot.host.setAttribute('data-theme', 'dark');
     } else {
       this.shadowRoot.host.setAttribute('data-theme', 'light');
@@ -342,7 +352,14 @@ export class Controls extends LitElement {
     if (!clickedDot) return;
 
     const dotValue = parseInt(clickedDot.dataset.value);
-    // Convert 1-10 range to 0-255 range
+    
+    // Special case for 0
+    if (dotValue === 0) {
+      this.updateBrightnessValue(0, false);
+      return;
+    }
+    
+    // Otherwise convert 1-10 range to 0-255 range
     const brightness = Math.round((dotValue / 10) * 255);
     
     // For clicks, immediately send the final value since it's not a drag operation
@@ -452,9 +469,12 @@ export class Controls extends LitElement {
     }
   }
 
-  // Use visualBrightness for immediate feedback
+  // Updated to allow for 0 brightness value
   getBrightnessDisplayValue() {
-    // Use visualBrightness for immediate feedback
+    // Special case - show 0 when brightness is 0
+    if (this.visualBrightness === 0) return 0;
+    
+    // Otherwise map from 0-255 to 1-10
     return Math.max(1, Math.min(10, Math.round((this.visualBrightness / 255) * 10))) || 1;
   }
 
@@ -503,6 +523,7 @@ export class Controls extends LitElement {
     }));
   }
 
+  // Updated to include a 0 brightness option
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     
@@ -519,10 +540,15 @@ export class Controls extends LitElement {
               @mousedown="${this.handleBrightnessDragStart}"
               @touchstart="${this.handleBrightnessDragStart}"
             >
+              <!-- Add a zero dot first -->
+              <div
+                class="brightness-dot ${brightnessDisplayValue === 0 ? 'active' : ''}"
+                data-value="0"
+              ></div>
               ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
                 (value) => html`
                   <div
-                    class="brightness-dot ${value <= brightnessDisplayValue ? 'active' : ''}"
+                    class="brightness-dot ${value <= brightnessDisplayValue && brightnessDisplayValue !== 0 ? 'active' : ''}"
                     data-value="${value}"
                   ></div>
                 `
@@ -576,8 +602,7 @@ export class Controls extends LitElement {
 
   render() {
     // Ensure proper dark mode application
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    this.shadowRoot.host.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    this.syncDarkMode();
     
     return html`
       <div class="controls-container" @touchstart="${e => e.stopPropagation()}">
