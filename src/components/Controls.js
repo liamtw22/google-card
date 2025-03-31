@@ -345,7 +345,7 @@ export class Controls extends LitElement {
     }
   }
 
-  // Updated to handle brightness with immediate visual feedback
+  // Updated to handle brightness with a simplified 10-dot scale and no dots active for 0
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
@@ -353,13 +353,14 @@ export class Controls extends LitElement {
 
     const dotValue = parseInt(clickedDot.dataset.value);
     
-    // Special case for 0
-    if (dotValue === 0) {
-      this.updateBrightnessValue(0, false);
+    // Special case for dot value 1 with current brightness 0
+    if (dotValue === 1 && this.visualBrightness === 0) {
+      // Set to minimal non-zero brightness
+      this.updateBrightnessValue(1, false);
       return;
     }
     
-    // Otherwise convert 1-10 range to 0-255 range
+    // Convert 1-10 range to 1-255 range 
     const brightness = Math.round((dotValue / 10) * 255);
     
     // For clicks, immediately send the final value since it's not a drag operation
@@ -469,9 +470,9 @@ export class Controls extends LitElement {
     }
   }
 
-  // Updated to allow for 0 brightness value
+  // Updated to return 0 when brightness is 0 (with no dots active)
   getBrightnessDisplayValue() {
-    // Special case - show 0 when brightness is 0
+    // Special case - return 0 when brightness is 0 (but no dots will be active)
     if (this.visualBrightness === 0) return 0;
     
     // Otherwise map from 0-255 to 1-10
@@ -523,7 +524,7 @@ export class Controls extends LitElement {
     }));
   }
 
-  // Updated to include a 0 brightness option
+  // Updated to use 10 dots with no dots filled when value is 0
   renderBrightnessCard() {
     const brightnessDisplayValue = this.getBrightnessDisplayValue();
     
@@ -540,11 +541,6 @@ export class Controls extends LitElement {
               @mousedown="${this.handleBrightnessDragStart}"
               @touchstart="${this.handleBrightnessDragStart}"
             >
-              <!-- Add a zero dot first -->
-              <div
-                class="brightness-dot ${brightnessDisplayValue === 0 ? 'active' : ''}"
-                data-value="0"
-              ></div>
               ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(
                 (value) => html`
                   <div
