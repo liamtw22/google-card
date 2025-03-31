@@ -376,6 +376,9 @@ customElements.define("google-controls", class Controls extends LitElement {
       },
       longPressTimer: {
         type: Object
+      },
+      ignoreEntityUpdatesUntil: {
+        type: Number
       }
     };
   }
@@ -618,7 +621,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     super(), this.showOverlay = !1, this.isOverlayVisible = !1, this.isOverlayTransitioning = !1, 
     this.showBrightnessCard = !1, this.isBrightnessCardVisible = !1, this.isBrightnessCardTransitioning = !1, 
     this.brightness = 128, this.visualBrightness = 128, this.isAdjustingBrightness = !1, 
-    this.longPressTimer = null, this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
+    this.longPressTimer = null, this.ignoreEntityUpdatesUntil = 0, this.handleBrightnessChange = this.handleBrightnessChange.bind(this), 
     this.handleBrightnessDrag = this.handleBrightnessDrag.bind(this), this.handleSettingsIconTouchStart = this.handleSettingsIconTouchStart.bind(this), 
     this.handleSettingsIconTouchEnd = this.handleSettingsIconTouchEnd.bind(this);
   }
@@ -629,8 +632,9 @@ customElements.define("google-controls", class Controls extends LitElement {
     super.disconnectedCallback(), this.longPressTimer && clearTimeout(this.longPressTimer);
   }
   updated(changedProperties) {
-    changedProperties.has("brightness") && !this.isAdjustingBrightness && (this.visualBrightness = this.brightness), 
-    changedProperties.has("hass") && this.hass && this.updateFromEntity(), this.syncDarkMode();
+    const now = Date.now();
+    changedProperties.has("hass") && this.hass && now > this.ignoreEntityUpdatesUntil && this.updateFromEntity(), 
+    this.syncDarkMode();
   }
   syncDarkMode() {
     "dark" === document.documentElement.getAttribute("data-theme") ? this.shadowRoot.host.setAttribute("data-theme", "dark") : this.shadowRoot.host.setAttribute("data-theme", "light");
@@ -639,8 +643,8 @@ customElements.define("google-controls", class Controls extends LitElement {
     if (this.isAdjustingBrightness) return;
     if (this.hass.states["number.liam_display_screen_brightness"]) {
       const entityValue = parseFloat(this.hass.states["number.liam_display_screen_brightness"].state);
-      isNaN(entityValue) || entityValue === this.brightness || (this.brightness = entityValue, 
-      this.visualBrightness = entityValue, this.requestUpdate());
+      isNaN(entityValue) || entityValue === this.brightness || (console.log("Entity update:", entityValue), 
+      this.brightness = entityValue, this.visualBrightness = entityValue, this.requestUpdate());
     }
   }
   handleBrightnessChange(e) {
@@ -659,11 +663,12 @@ customElements.define("google-controls", class Controls extends LitElement {
     const percentage = Math.max(0, Math.min(clientX - rect.left, rect.width)) / rect.width, dotValue = Math.round(10 * percentage), newBrightness = Math.round(25.5 * dotValue);
     this.isAdjustingBrightness = !0, this.updateBrightnessValue(newBrightness), setTimeout((() => {
       this.isAdjustingBrightness = !1;
-    }), 500);
+    }), 1e3);
   }
   updateBrightnessValue(value) {
     const brightness = Math.max(1, Math.min(255, Math.round(value)));
-    this.visualBrightness = brightness, this.brightness = brightness, this.hass && this.hass.callService("number", "set_value", {
+    this.visualBrightness = brightness, this.brightness = brightness, this.ignoreEntityUpdatesUntil = Date.now() + 3e3, 
+    this.hass && this.hass.callService("number", "set_value", {
       entity_id: "number.liam_display_screen_brightness",
       value: brightness
     }).catch((err => {
