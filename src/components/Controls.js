@@ -19,7 +19,8 @@ export class Controls extends LitElement {
       brightness: { type: Number },
       visualBrightness: { type: Number },
       isAdjustingBrightness: { type: Boolean },
-      longPressTimer: { type: Object }
+      longPressTimer: { type: Object },
+      ignoreEntityUpdatesUntil: { type: Number }, // New property to track when to resume entity updates
     };
   }
 
@@ -280,6 +281,7 @@ export class Controls extends LitElement {
     this.visualBrightness = 128;
     this.isAdjustingBrightness = false;
     this.longPressTimer = null;
+    this.ignoreEntityUpdatesUntil = 0; // Initialize timestamp for entity update delay
     
     // Bind methods to preserve 'this' context
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
@@ -302,13 +304,11 @@ export class Controls extends LitElement {
   }
 
   updated(changedProperties) {
-    // Update visualBrightness when brightness changes from external sources
-    if (changedProperties.has('brightness') && !this.isAdjustingBrightness) {
-      this.visualBrightness = this.brightness;
-    }
+    // Check if we should ignore entity updates
+    const now = Date.now();
     
-    // Check for entity updates
-    if (changedProperties.has('hass') && this.hass) {
+    // Only update from entity if we're not in the delay period
+    if (changedProperties.has('hass') && this.hass && now > this.ignoreEntityUpdatesUntil) {
       this.updateFromEntity();
     }
     
@@ -326,14 +326,16 @@ export class Controls extends LitElement {
     }
   }
   
-  // Update from entity but don't override visual feedback during adjustment
+  // Update from entity but skip during delay period
   updateFromEntity() {
+    // Don't update from entity if we're in adjustment mode
     if (this.isAdjustingBrightness) return;
     
     const brightnessEntity = 'number.liam_display_screen_brightness';
     if (this.hass.states[brightnessEntity]) {
       const entityValue = parseFloat(this.hass.states[brightnessEntity].state);
       if (!isNaN(entityValue) && entityValue !== this.brightness) {
+        console.log('Entity update:', entityValue);
         this.brightness = entityValue;
         this.visualBrightness = entityValue;
         this.requestUpdate();
@@ -341,7 +343,7 @@ export class Controls extends LitElement {
     }
   }
 
-  // Simplified brightness change handler based on the example
+  // Modified brightness change handler to use delay
   handleBrightnessChange(e) {
     e.stopPropagation();
     const clickedDot = e.target.closest('.brightness-dot');
@@ -353,7 +355,7 @@ export class Controls extends LitElement {
     this.updateBrightnessValue(newBrightness);
   }
 
-  // Simplified drag handler based on the example
+  // Modified drag handler to use delay
   handleBrightnessDrag(e) {
     e.stopPropagation();
     if (e.type.includes('touch')) {
@@ -380,13 +382,13 @@ export class Controls extends LitElement {
     this.isAdjustingBrightness = true;
     this.updateBrightnessValue(newBrightness);
     
-    // Reset adjustment flag after a short delay
+    // Reset adjustment flag after a delay
     setTimeout(() => {
       this.isAdjustingBrightness = false;
-    }, 500);
+    }, 1000); // 1 second delay
   }
 
-  // Simplified value update based on the example
+  // Modified value update to implement the delay
   updateBrightnessValue(value) {
     // Ensure the value is within brightness range
     const brightness = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, Math.round(value)));
@@ -394,6 +396,9 @@ export class Controls extends LitElement {
     // Update local state
     this.visualBrightness = brightness;
     this.brightness = brightness;
+    
+    // Set a timestamp to ignore entity updates for the next 3 seconds
+    this.ignoreEntityUpdatesUntil = Date.now() + 3000; // 3 second delay
     
     // Update the Home Assistant entity
     if (this.hass) {
