@@ -1,6 +1,5 @@
 // src/components/NightMode.js
 import { css, LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-
 import { sharedStyles } from '../styles/SharedStyles';
 
 export class NightMode extends LitElement {
@@ -72,9 +71,9 @@ export class NightMode extends LitElement {
       this.enterNightMode();
     }
     
-    // Set up periodic sensor checks for sun-based detection
+    // Set up periodic sensor checks for light-based detection
     this.sensorCheckInterval = setInterval(() => {
-      this.checkSunEntities();
+      this.checkLightSensor();
     }, 30000); // Check every 30 seconds
   }
 
@@ -173,7 +172,7 @@ export class NightMode extends LitElement {
       const timeSinceLastCheck = Date.now() - this.sensorCheckedTime;
       // Only check if we haven't checked recently
       if (timeSinceLastCheck > 5000) {
-        this.checkSunEntities();
+        this.checkLightSensor();
       }
       
       // Update brightness from entity
@@ -184,39 +183,37 @@ export class NightMode extends LitElement {
     }
   }
 
-  checkSunEntities() {
-    if (!this.hass) return;
+  checkLightSensor(force = false) {
+    if (!this.hass || !this.config) return;
     
     this.sensorCheckedTime = Date.now();
 
-    // Get sun state entities
-    const sunRisingEntity = this.hass.states['sensor.sun_next_rising'];
-    const sunSettingEntity = this.hass.states['sensor.sun_next_setting'];
+    const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+    const lightSensor = this.hass.states[lightSensorEntity];
     
-    if (!sunRisingEntity || !sunSettingEntity) {
+    if (!lightSensor) {
       return;
     }
     
+    if (lightSensor.state === 'unavailable' || lightSensor.state === 'unknown') {
+      return;
+    }
+
     try {
-      // Parse the timestamp strings into Date objects
-      const nextRising = new Date(sunRisingEntity.state);
-      const nextSetting = new Date(sunSettingEntity.state);
-      
-      // If the next sun event is rising, then it's currently night
-      // If the next sun event is setting, then it's currently day
-      const isDarkTime = nextRising < nextSetting;
-      
-      // If night mode was manually activated, don't let sensor readings deactivate it
-      if (this.isInNightMode && this.nightModeSource === 'manual') {
-        // Keep night mode on regardless of sun state
+      const lightLevel = parseInt(lightSensor.state);
+      const shouldBeInNightMode = lightLevel === 0;
+
+      // If night mode was manually deactivated and this is not a forced check, 
+      // don't let sensor readings reactivate it
+      if (!this.isInNightMode && this.nightModeSource === 'manual' && !force) {
         return;
       }
       
-      // For sensor-based night mode, follow the sun state
-      if (isDarkTime && !this.isInNightMode) {
+      // For sensor-based night mode or forced check, follow the sensor readings
+      if (shouldBeInNightMode && !this.isInNightMode) {
         this.enterNightMode();
         this.nightModeSource = 'sensor';
-      } else if (!isDarkTime && this.isInNightMode && this.nightModeSource === 'sensor') {
+      } else if (!shouldBeInNightMode && this.isInNightMode && (this.nightModeSource === 'sensor' || force)) {
         this.exitNightMode();
         this.nightModeSource = null;
       }
@@ -242,18 +239,22 @@ export class NightMode extends LitElement {
       // Exit night mode
       this.exitNightMode();
       
-      // If this was enabled by a sensor, set a timer to re-check after 30 seconds
-      if (originalSource === 'sensor') {
-        // Clear any existing timer
-        if (this.nightModeReactivationTimer) {
-          clearTimeout(this.nightModeReactivationTimer);
+      // If light sensor is still 0, set up reactivation timer
+      const lightSensorEntity = this.config.light_sensor_entity || 'sensor.liam_room_display_light_sensor';
+      if (this.hass && this.hass.states[lightSensorEntity]) {
+        const lightLevel = parseInt(this.hass.states[lightSensorEntity].state);
+        if (lightLevel === 0) {
+          // Clear any existing timer
+          if (this.nightModeReactivationTimer) {
+            clearTimeout(this.nightModeReactivationTimer);
+          }
+          
+          // Set a new timer to re-check light sensor after 30 seconds
+          this.nightModeReactivationTimer = setTimeout(() => {
+            this.checkLightSensor(true); // Force check that will reactivate if needed
+            this.nightModeReactivationTimer = null;
+          }, 30000); // 30 seconds
         }
-        
-        // Set a new timer to re-check sun state after 30 seconds
-        this.nightModeReactivationTimer = setTimeout(() => {
-          this.checkSunEntities();
-          this.nightModeReactivationTimer = null;
-        }, 30000); // 30 seconds
       }
     }
   }
