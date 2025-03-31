@@ -639,7 +639,7 @@ customElements.define("google-controls", class Controls extends LitElement {
     const clickedDot = e.target.closest(".brightness-dot");
     if (!clickedDot) return;
     const dotValue = parseInt(clickedDot.dataset.value), brightness = Math.round(dotValue / 10 * 255);
-    this.updateBrightnessValue(brightness);
+    this.updateBrightnessValue(brightness, !1);
   }
   handleBrightnessDragStart(e) {
     e.stopPropagation(), this.isDraggingBrightness = !0, this.isAdjustingBrightness = !0, 
@@ -655,21 +655,29 @@ customElements.define("google-controls", class Controls extends LitElement {
     const rect = container.getBoundingClientRect(), clientX = e.type.includes("touch") ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
     if (void 0 === clientX) return;
     const percentage = Math.max(0, Math.min(clientX - rect.left, rect.width)) / rect.width, brightness = Math.round(255 * percentage);
-    this.updateBrightnessValue(brightness);
+    this.updateBrightnessValue(brightness, !0);
   }
   handleBrightnessDragEnd(e) {
-    e && (e.preventDefault(), e.stopPropagation()), this.isDraggingBrightness = !1, 
-    setTimeout((() => {
+    e && (e.preventDefault(), e.stopPropagation()), this.isDraggingBrightness && (this.isDraggingBrightness = !1, 
+    this.dispatchEvent(new CustomEvent("brightnessChangeComplete", {
+      detail: this.visualBrightness,
+      bubbles: !0,
+      composed: !0
+    })), setTimeout((() => {
       this.isAdjustingBrightness = !1;
-    }), 500), this.removeBrightnessDragListeners();
+    }), 500), this.removeBrightnessDragListeners());
   }
   removeBrightnessDragListeners() {
     document.removeEventListener("mousemove", this.handleBrightnessDrag), document.removeEventListener("mouseup", this.handleBrightnessDragEnd), 
     document.removeEventListener("touchmove", this.handleBrightnessDrag), document.removeEventListener("touchend", this.handleBrightnessDragEnd);
   }
-  updateBrightnessValue(value) {
+  updateBrightnessValue(value, isDragging = !1) {
     const brightness = Math.max(0, Math.min(255, Math.round(value)));
-    this.visualBrightness = brightness, this.requestUpdate(), this.dispatchEvent(new CustomEvent("brightnessChange", {
+    this.visualBrightness = brightness, this.requestUpdate(), isDragging ? this.dispatchEvent(new CustomEvent("brightnessChange", {
+      detail: brightness,
+      bubbles: !0,
+      composed: !0
+    })) : this.dispatchEvent(new CustomEvent("brightnessChangeComplete", {
       detail: brightness,
       bubbles: !0,
       composed: !0
