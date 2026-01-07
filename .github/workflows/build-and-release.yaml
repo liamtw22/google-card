@@ -14,20 +14,26 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm ci
           echo "Dependencies installed successfully"
+
+      - name: Type check
+        run: |
+          npm run typecheck
+          echo "Type checking completed successfully"
 
       - name: Lint and Format
         run: |
@@ -45,15 +51,15 @@ jobs:
           npm run build
           echo "Build completed successfully"
 
-      - name: Stage dist file
+      - name: Stage dist files
         run: |
-          git add dist/google-card.js
+          git add dist/google-card.js dist/google-card.js.map
           git status
 
-      - name: Commit dist file
+      - name: Commit dist files
         run: |
           if git diff --staged --quiet; then
-            echo "No changes to google-card.js"
+            echo "No changes to dist files"
           else
             git commit -m "chore: update dist/google-card.js"
             git push origin main
@@ -73,22 +79,49 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Release
-        uses: actions/create-release@v1
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
           body: |
             Release of version ${{ steps.get_version.outputs.version }}
             
-            Changes in this release:
+            ## Installation
+            
+            ### HACS (Recommended)
+            1. Add this repository to HACS as a custom repository
+            2. Install "Google Card" from HACS
+            3. Refresh your browser
+            
+            ### Manual
+            1. Download `google-card.js` from this release
+            2. Copy to your `config/www` folder
+            3. Add as a resource in your Lovelace configuration
+            
+            ## Changes in this release
             - Updated dist/google-card.js
+            - TypeScript build with full type safety
+            - Built-in form editor for visual configuration
           draft: false
           prerelease: false
+          files: |
+            dist/google-card.js
+            dist/google-card.js.map
 
       - name: Verify workflow completion
         run: |
           echo "All jobs completed successfully"
-          echo "Version released: v${{ steps.get_version.outputs.version }}"
+          echo "Version: v${{ steps.get_version.outputs.version }}"

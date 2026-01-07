@@ -1,9 +1,10 @@
 import resolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
+import typescript from '@rollup/plugin-typescript';
 
 export default {
-  input: 'src/GoogleCard.js',
+  input: 'src/google-card.ts',
   output: {
     file: 'dist/google-card.js',
     format: 'es',
@@ -15,6 +16,11 @@ export default {
       browser: true
     }),
     json(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      declaration: false,
+      declarationDir: undefined
+    }),
     terser({
       format: {
         comments: false,

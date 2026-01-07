@@ -20,3 +20,13 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Build artifacts (keep dist/google-card.js for releases)
+dist/*.d.ts
+dist/types/
