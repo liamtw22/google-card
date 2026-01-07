@@ -1,17 +1,17 @@
 // src/google-card.ts
 
-import { LitElement, html, css, TemplateResult, nothing } from 'lit';
+import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, LovelaceCard, GridOptions, ConfigFormReturn } from './types';
+import { HomeAssistant, LovelaceCard, GridOptions } from './types';
 import { GoogleCardConfig, NightModeSource } from './types/card-config';
 import { sharedStyles } from './styles/shared-styles';
-import { 
-  DEFAULT_CONFIG, 
+import {
+  DEFAULT_CONFIG,
   DEFAULT_BRIGHTNESS,
   OVERLAY_DISMISS_TIMEOUT,
   SWIPE_THRESHOLD,
   NIGHT_MODE_LIGHT_THRESHOLD,
-  BRIGHTNESS_STABILIZE_DELAY
+  BRIGHTNESS_STABILIZE_DELAY,
 } from './constants';
 
 // Import components
@@ -20,13 +20,13 @@ import './components/weather-clock';
 import './components/controls';
 import './components/night-mode';
 
-// Import editor
+// Import editor and getConfigForm
 import './editor';
 import { getConfigForm } from './editor';
 
 /**
  * Google Card - A Home Assistant card that mimics Google's UI for photo frame displays
- * 
+ *
  * Features:
  * - Rotating background images from various sources
  * - Weather and AQI display
@@ -161,10 +161,10 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     super.connectedCallback();
     this._updateScreenSize();
     this._updateTime();
-    
+
     window.addEventListener('resize', this._boundUpdateScreenSize!);
     this._themeMediaQuery?.addEventListener('change', this._boundHandleThemeChange!);
-    
+
     this._timeUpdateInterval = window.setInterval(() => {
       this._updateTime();
     }, 1000);
@@ -174,7 +174,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     window.removeEventListener('resize', this._boundUpdateScreenSize!);
     this._themeMediaQuery?.removeEventListener('change', this._boundHandleThemeChange!);
-    
+
     this._clearTimers();
   }
 
@@ -213,11 +213,13 @@ export class GoogleCard extends LitElement implements LovelaceCard {
 
   private _updateTime(): void {
     const now = new Date();
-    this._currentTime = now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).replace(/\s?(AM|PM)$/i, '');
+    this._currentTime = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(/\s?(AM|PM)$/i, '');
   }
 
   private _handleThemeChange(): void {
@@ -228,27 +230,29 @@ export class GoogleCard extends LitElement implements LovelaceCard {
 
   private _updateCssVariables(): void {
     if (!this._config) return;
-    
+
     this.style.setProperty('--crossfade-time', `${this._config.crossfade_time ?? 3}s`);
     this.style.setProperty('--theme-transition', 'background-color 0.3s ease, color 0.3s ease');
     this.style.setProperty('--theme-background', this._isDarkMode ? '#121212' : '#ffffff');
     this.style.setProperty('--theme-text', this._isDarkMode ? '#ffffff' : '#333333');
-    
+
     this.setAttribute('data-theme', this._isDarkMode ? 'dark' : 'light');
   }
 
   private _inEditor(): boolean {
-    return this._editMode || 
+    return (
+      this._editMode ||
       this.parentElement?.tagName === 'HUI-CARD-PREVIEW' ||
       this.parentElement?.classList.contains('element-preview') ||
-      this.getRootNode() instanceof ShadowRoot && 
-        (this.getRootNode() as ShadowRoot).host?.tagName === 'HUI-CARD-PREVIEW';
+      (this.getRootNode() instanceof ShadowRoot &&
+        (this.getRootNode() as ShadowRoot).host?.tagName === 'HUI-CARD-PREVIEW')
+    );
   }
 
   // Touch handling
   private _handleTouchStart(e: TouchEvent): void {
     if (this._isNightMode) return;
-    
+
     const touch = e.touches[0];
     this._touchStartY = touch.clientY;
     this._touchStartX = touch.clientX;
@@ -257,17 +261,17 @@ export class GoogleCard extends LitElement implements LovelaceCard {
 
   private _handleTouchEnd(e: TouchEvent): void {
     if (this._isNightMode) return;
-    
+
     const touch = e.changedTouches[0];
     const deltaY = this._touchStartY - touch.clientY;
     const deltaX = touch.clientX - this._touchStartX;
     const deltaTime = Date.now() - this._touchStartTime;
-    
+
     // Swipe up to show overlay
     if (deltaY > SWIPE_THRESHOLD && Math.abs(deltaX) < SWIPE_THRESHOLD && deltaTime < 300) {
       this._showControlOverlay();
     }
-    
+
     // Swipe down to hide overlay
     if (deltaY < -SWIPE_THRESHOLD && Math.abs(deltaX) < SWIPE_THRESHOLD && deltaTime < 300) {
       this._hideControlOverlay();
@@ -279,16 +283,16 @@ export class GoogleCard extends LitElement implements LovelaceCard {
       this._dismissBrightnessCard();
       return;
     }
-    
+
     if (!this._showOverlay) {
       this._showOverlay = true;
       this._isOverlayTransitioning = true;
-      
+
       requestAnimationFrame(() => {
         this._isOverlayVisible = true;
         this._startOverlayDismissTimer();
         this.requestUpdate();
-        
+
         setTimeout(() => {
           this._isOverlayTransitioning = false;
           this.requestUpdate();
@@ -303,7 +307,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     if (this._showOverlay) {
       this._isOverlayTransitioning = true;
       this._isOverlayVisible = false;
-      
+
       setTimeout(() => {
         this._showOverlay = false;
         this._isOverlayTransitioning = false;
@@ -316,7 +320,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     if (this._overlayDismissTimer) {
       clearTimeout(this._overlayDismissTimer);
     }
-    
+
     this._overlayDismissTimer = window.setTimeout(() => {
       this._hideControlOverlay();
     }, OVERLAY_DISMISS_TIMEOUT);
@@ -325,7 +329,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
   private _dismissBrightnessCard(): void {
     this._isBrightnessCardTransitioning = true;
     this._isBrightnessCardVisible = false;
-    
+
     setTimeout(() => {
       this._showBrightnessCard = false;
       this._isBrightnessCardTransitioning = false;
@@ -337,7 +341,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     if (this._brightnessCardDismissTimer) {
       clearTimeout(this._brightnessCardDismissTimer);
     }
-    
+
     this._brightnessCardDismissTimer = window.setTimeout(() => {
       this._dismissBrightnessCard();
     }, OVERLAY_DISMISS_TIMEOUT);
@@ -346,28 +350,28 @@ export class GoogleCard extends LitElement implements LovelaceCard {
   // Event handlers for child components
   private _handleBrightnessCardToggle(event: CustomEvent): void {
     const shouldShow = event.detail;
-    
+
     if (shouldShow && !this._showBrightnessCard) {
       // Hide overlay first if showing
       if (this._showOverlay) {
         this._isOverlayVisible = false;
         this._showOverlay = false;
         this._isOverlayTransitioning = false;
-        
+
         if (this._overlayDismissTimer) {
           clearTimeout(this._overlayDismissTimer);
         }
       }
-      
+
       // Then show brightness card
       this._showBrightnessCard = true;
       this._isBrightnessCardTransitioning = true;
-      
+
       requestAnimationFrame(() => {
         this._isBrightnessCardVisible = true;
         this._startBrightnessCardDismissTimer();
         this.requestUpdate();
-        
+
         setTimeout(() => {
           this._isBrightnessCardTransitioning = false;
           this.requestUpdate();
@@ -383,27 +387,27 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     this._isAdjustingBrightness = true;
     this._visualBrightness = newBrightness;
     this._lastBrightnessUpdateTime = Date.now();
-    
+
     // Reset brightness card dismiss timer
     this._startBrightnessCardDismissTimer();
-    
+
     // Clear previous stabilize timer
     if (this._brightnessStabilizeTimer) {
       clearTimeout(this._brightnessStabilizeTimer);
     }
-    
+
     this._brightnessStabilizeTimer = window.setTimeout(() => {
       this._isAdjustingBrightness = false;
       this.requestUpdate();
     }, BRIGHTNESS_STABILIZE_DELAY);
-    
+
     this.requestUpdate();
   }
 
   private _handleBrightnessChangeComplete(event: CustomEvent): void {
     const newBrightness = event.detail;
     this._brightness = newBrightness;
-    
+
     if (!this._isNightMode && newBrightness > 0) {
       this._previousBrightness = newBrightness;
     }
@@ -421,41 +425,44 @@ export class GoogleCard extends LitElement implements LovelaceCard {
   // Night mode handling
   private _updateNightMode(): void {
     if (!this.hass || !this._config?.light_sensor_entity) return;
-    
+
     const lightSensorState = this.hass.states[this._config.light_sensor_entity];
     if (!lightSensorState) return;
-    
+
     const lightLevel = parseFloat(lightSensorState.state);
     if (isNaN(lightLevel)) return;
-    
+
     const shouldBeInNightMode = lightLevel <= NIGHT_MODE_LIGHT_THRESHOLD;
-    
+
     // Update dark mode based on light level
-    if ((lightLevel <= 10) !== this._isDarkMode) {
+    if (lightLevel <= 10 !== this._isDarkMode) {
       this._isDarkMode = lightLevel <= 10;
       this.setAttribute('data-theme', this._isDarkMode ? 'dark' : 'light');
       this._updateCssVariables();
       this.requestUpdate();
     }
-    
+
     // If night mode was manually activated, don't let sensor readings deactivate it
     if (this._isInNightMode && this._nightModeSource === 'manual') {
       return;
     }
-    
+
     // Otherwise, follow light sensor for automatic night mode
     if (shouldBeInNightMode !== this._isInNightMode) {
       this._handleNightModeTransition(shouldBeInNightMode, 'sensor');
     }
   }
 
-  private async _handleNightModeTransition(newNightMode: boolean, source: NightModeSource = 'sensor'): Promise<void> {
+  private async _handleNightModeTransition(
+    newNightMode: boolean,
+    source: NightModeSource = 'sensor'
+  ): Promise<void> {
     if (newNightMode === this._isInNightMode && this._nightModeSource === source) return;
-    
+
     try {
       const brightnessEntity = this._config?.brightness_control_entity;
       if (!brightnessEntity || !this.hass) return;
-      
+
       if (newNightMode) {
         // Save current brightness before entering night mode
         if (!this._isInNightMode && this.hass.states[brightnessEntity]) {
@@ -464,28 +471,27 @@ export class GoogleCard extends LitElement implements LovelaceCard {
             this._previousBrightness = currentValue;
           }
         }
-        
+
         // Set brightness to 0
         await this.hass.callService('number', 'set_value', {
           entity_id: brightnessEntity,
           value: 0,
         });
-        
+
         this._nightModeSource = source;
       } else {
         // Restore previous brightness
-        const restoreBrightness = this._previousBrightness > 0 
-          ? this._previousBrightness 
-          : DEFAULT_BRIGHTNESS;
-        
+        const restoreBrightness =
+          this._previousBrightness > 0 ? this._previousBrightness : DEFAULT_BRIGHTNESS;
+
         await this.hass.callService('number', 'set_value', {
           entity_id: brightnessEntity,
           value: restoreBrightness,
         });
-        
+
         this._nightModeSource = null;
       }
-      
+
       this._isInNightMode = newNightMode;
       this._isNightMode = newNightMode;
       this.requestUpdate();
@@ -498,7 +504,12 @@ export class GoogleCard extends LitElement implements LovelaceCard {
   }
 
   updated(changedProperties: Map<string, unknown>): void {
-    if (changedProperties.has('hass') && this.hass && !this._isAdjustingBrightness && !this._inEditor()) {
+    if (
+      changedProperties.has('hass') &&
+      this.hass &&
+      !this._isAdjustingBrightness &&
+      !this._inEditor()
+    ) {
       // Monitor brightness entity changes
       const brightnessEntity = this._config?.brightness_control_entity;
       if (brightnessEntity && this.hass.states[brightnessEntity]) {
@@ -506,22 +517,22 @@ export class GoogleCard extends LitElement implements LovelaceCard {
         if (this._brightness !== newBrightness) {
           this._brightness = newBrightness;
           this._visualBrightness = newBrightness;
-          
+
           if (!this._isNightMode && newBrightness > 0) {
             this._previousBrightness = newBrightness;
           }
-          
+
           this.requestUpdate();
         }
       }
-      
+
       // Check if it's time to update night mode
       const timeSinceLastUpdate = Date.now() - this._lastBrightnessUpdateTime;
       if (timeSinceLastUpdate > 2000) {
         this._updateNightMode();
       }
     }
-    
+
     if (changedProperties.has('_isDarkMode') || changedProperties.has('hass')) {
       this._updateCssVariables();
     }
@@ -531,7 +542,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
     if (!this._config) {
       return html`<div class="error">No configuration found</div>`;
     }
-    
+
     // Show placeholder in editor mode
     if (this._inEditor()) {
       return html`
@@ -572,10 +583,7 @@ export class GoogleCard extends LitElement implements LovelaceCard {
                   .showDebugInfo=${this._showDebugInfo}
                 ></background-rotator>
 
-                <weather-clock
-                  .hass=${this.hass}
-                  .config=${this._config}
-                ></weather-clock>
+                <weather-clock .hass=${this.hass} .config=${this._config}></weather-clock>
 
                 <google-controls
                   .hass=${this.hass}
@@ -606,7 +614,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'google-card',
   name: 'Google Card',
-  description: 'A card that mimics Google\'s UI for photo frame displays',
+  description: "A card that mimics Google's UI for photo frame displays",
   preview: true,
   documentationURL: 'https://github.com/liamtw22/google-card',
 });

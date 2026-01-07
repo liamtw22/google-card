@@ -5,11 +5,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from '../types';
 import { GoogleCardConfig } from '../types/card-config';
 import { sharedStyles } from '../styles/shared-styles';
-import { 
-  LONG_PRESS_TIMEOUT, 
-  MIN_BRIGHTNESS, 
-  MAX_BRIGHTNESS 
-} from '../constants';
+import { LONG_PRESS_TIMEOUT, MIN_BRIGHTNESS, MAX_BRIGHTNESS } from '../constants';
 
 // Import iconify for icons
 import 'https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js';
@@ -66,7 +62,9 @@ export class Controls extends LitElement {
       }
 
       .overlay.transitioning {
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        transition:
+          transform 0.3s ease-out,
+          opacity 0.3s ease-out;
       }
 
       .overlay.visible {
@@ -133,7 +131,9 @@ export class Controls extends LitElement {
       }
 
       .brightness-card.transitioning {
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        transition:
+          transform 0.3s ease-out,
+          opacity 0.3s ease-out;
       }
 
       .brightness-card.visible {
@@ -174,7 +174,9 @@ export class Controls extends LitElement {
         height: 24px;
         border-radius: 50%;
         background-color: var(--brightness-dot-color);
-        transition: background-color 0.2s ease, transform 0.1s ease;
+        transition:
+          background-color 0.2s ease,
+          transform 0.1s ease;
       }
 
       .brightness-dot.active {
@@ -320,10 +322,7 @@ export class Controls extends LitElement {
             @click=${this._toggleBrightnessCard}
             @touchstart=${this._toggleBrightnessCard}
           >
-            <iconify-icon
-              class="control-icon"
-              icon="mdi:brightness-6"
-            ></iconify-icon>
+            <iconify-icon class="control-icon" icon="mdi:brightness-6"></iconify-icon>
             <span class="control-label">Brightness</span>
           </div>
           <div
@@ -335,10 +334,7 @@ export class Controls extends LitElement {
             @touchend=${this._handleSettingsLongPressEnd}
             @touchcancel=${this._handleSettingsLongPressEnd}
           >
-            <iconify-icon
-              class="control-icon"
-              icon="mdi:cog"
-            ></iconify-icon>
+            <iconify-icon class="control-icon" icon="mdi:cog"></iconify-icon>
             <span class="control-label">Settings</span>
           </div>
         </div>
@@ -360,10 +356,7 @@ export class Controls extends LitElement {
     return html`
       <div class="${brightnessClasses}">
         <div class="brightness-header">
-          <iconify-icon
-            class="brightness-icon"
-            icon="mdi:brightness-6"
-          ></iconify-icon>
+          <iconify-icon class="brightness-icon" icon="mdi:brightness-6"></iconify-icon>
           <span class="brightness-title">Display Brightness</span>
         </div>
         <div
@@ -374,9 +367,7 @@ export class Controls extends LitElement {
         >
           ${Array.from({ length: 11 }, (_, i) => {
             const isActive = i <= displayValue;
-            return html`
-              <div class="brightness-dot ${isActive ? 'active' : ''}"></div>
-            `;
+            return html` <div class="brightness-dot ${isActive ? 'active' : ''}"></div> `;
           })}
         </div>
         <div class="brightness-value">${displayValue}/10</div>

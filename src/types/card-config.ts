@@ -5,12 +5,7 @@ import { LovelaceCardConfig } from './home-assistant';
 /**
  * Image source types supported by the card
  */
-export type ImageSourceType = 
-  | 'media-source' 
-  | 'unsplash-api' 
-  | 'immich-api' 
-  | 'picsum' 
-  | 'url';
+export type ImageSourceType = 'media-source' | 'unsplash-api' | 'immich-api' | 'picsum' | 'url';
 
 /**
  * Image fit options
@@ -49,7 +44,7 @@ export interface GoogleCardConfig extends LovelaceCardConfig {
 
   // Device Settings
   device_name?: string;
-  
+
   // Debug Settings
   show_debug?: boolean;
   sensor_update_delay?: number;
@@ -76,19 +71,19 @@ export interface DebugInfo {
  */
 export const WEATHER_ICONS: Record<string, string> = {
   'clear-night': 'clear-night',
-  'cloudy': 'cloudy',
-  'exceptional': 'exceptional',
-  'fog': 'fog',
-  'hail': 'hail',
-  'lightning': 'thunderstorms',
+  cloudy: 'cloudy',
+  exceptional: 'exceptional',
+  fog: 'fog',
+  hail: 'hail',
+  lightning: 'thunderstorms',
   'lightning-rainy': 'thunderstorms-rain',
-  'partlycloudy': 'partly-cloudy-day',
-  'pouring': 'rain',
-  'rainy': 'drizzle',
-  'snowy': 'snow',
+  partlycloudy: 'partly-cloudy-day',
+  pouring: 'rain',
+  rainy: 'drizzle',
+  snowy: 'snow',
   'snowy-rainy': 'sleet',
-  'sunny': 'clear-day',
-  'windy': 'wind',
+  sunny: 'clear-day',
+  windy: 'wind',
   'windy-variant': 'wind',
 };
 

@@ -128,11 +128,13 @@ export class WeatherClock extends LitElement {
     });
 
     // Format time
-    this._time = now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).replace(/\s?(AM|PM)$/i, '');
+    this._time = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(/\s?(AM|PM)$/i, '');
 
     this.requestUpdate();
   }
@@ -140,7 +142,9 @@ export class WeatherClock extends LitElement {
   private _updateWeather(): void {
     if (!this.hass || !this.config.weather_entity) return;
 
-    const weatherState = this.hass.states[this.config.weather_entity] as HassEntityState | undefined;
+    const weatherState = this.hass.states[this.config.weather_entity] as
+      | HassEntityState
+      | undefined;
     if (!weatherState) {
       this._error = `Weather entity not found: ${this.config.weather_entity}`;
       return;
@@ -196,7 +200,8 @@ export class WeatherClock extends LitElement {
   }
 
   protected render(): TemplateResult {
-    const hasValidAqi = this._aqi !== null && this.config.show_aqi !== false && !isNaN(parseFloat(this._aqi));
+    const hasValidAqi =
+      this._aqi !== null && this.config.show_aqi !== false && !isNaN(parseFloat(this._aqi));
 
     return html`
       <div class="weather-component">
@@ -215,7 +220,8 @@ export class WeatherClock extends LitElement {
                 <div class="weather-section">
                   <div class="weather-info">
                     <img
-                      src="https://basmilius.github.io/weather-icons/production/fill/all/${this._weatherIcon}.svg"
+                      src="https://basmilius.github.io/weather-icons/production/fill/all/${this
+                        ._weatherIcon}.svg"
                       class="weather-icon"
                       alt="Weather icon"
                       @error=${this._handleIconError}
@@ -240,7 +246,8 @@ export class WeatherClock extends LitElement {
 
   private _handleIconError(e: Event): void {
     const img = e.target as HTMLImageElement;
-    img.src = 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg';
+    img.src =
+      'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/not-available.svg';
     img.onerror = null;
   }
 }

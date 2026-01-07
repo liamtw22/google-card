@@ -75,16 +75,22 @@ export class BackgroundRotator extends LitElement {
 
   private _startImageListUpdates(): void {
     this._updateImageList();
-    this._imageListUpdateInterval = window.setInterval(() => {
-      this._updateImageList();
-    }, (this.config.image_list_update_interval ?? 3600) * 1000);
+    this._imageListUpdateInterval = window.setInterval(
+      () => {
+        this._updateImageList();
+      },
+      (this.config.image_list_update_interval ?? 3600) * 1000
+    );
   }
 
   private _startImageRotation(): void {
     this._updateImage();
-    this._imageUpdateInterval = window.setInterval(() => {
-      this._updateImage();
-    }, (this.config.display_time ?? 15) * 1000);
+    this._imageUpdateInterval = window.setInterval(
+      () => {
+        this._updateImage();
+      },
+      (this.config.display_time ?? 15) * 1000
+    );
   }
 
   private _getImageSourceType(): ImageSourceType {
@@ -171,7 +177,9 @@ export class BackgroundRotator extends LitElement {
     const images: string[] = [];
 
     if (item.media_class === 'image' && item.media_content_id) {
-      images.push(`/media-source/local${item.media_content_id.replace(/^media-source:\/\/media_source\/local/, '')}`);
+      images.push(
+        `/media-source/local${item.media_content_id.replace(/^media-source:\/\/media_source\/local/, '')}`
+      );
     }
 
     if (item.children) {
@@ -249,7 +257,7 @@ export class BackgroundRotator extends LitElement {
       this._currentImageIndex = nextIndex;
 
       // Reset transition flag after crossfade completes
-      const crossfadeTime = ((this.config.crossfade_time ?? 3) * 1000) + TRANSITION_BUFFER;
+      const crossfadeTime = (this.config.crossfade_time ?? 3) * 1000 + TRANSITION_BUFFER;
       setTimeout(() => {
         this._isTransitioning = false;
         this.requestUpdate();

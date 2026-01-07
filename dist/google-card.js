@@ -1355,10 +1355,7 @@ let Controls = class Controls extends i {
             @click=${this._toggleBrightnessCard}
             @touchstart=${this._toggleBrightnessCard}
           >
-            <iconify-icon
-              class="control-icon"
-              icon="mdi:brightness-6"
-            ></iconify-icon>
+            <iconify-icon class="control-icon" icon="mdi:brightness-6"></iconify-icon>
             <span class="control-label">Brightness</span>
           </div>
           <div
@@ -1370,10 +1367,7 @@ let Controls = class Controls extends i {
             @touchend=${this._handleSettingsLongPressEnd}
             @touchcancel=${this._handleSettingsLongPressEnd}
           >
-            <iconify-icon
-              class="control-icon"
-              icon="mdi:cog"
-            ></iconify-icon>
+            <iconify-icon class="control-icon" icon="mdi:cog"></iconify-icon>
             <span class="control-label">Settings</span>
           </div>
         </div>
@@ -1385,10 +1379,7 @@ let Controls = class Controls extends i {
     return b`
       <div class="${brightnessClasses}">
         <div class="brightness-header">
-          <iconify-icon
-            class="brightness-icon"
-            icon="mdi:brightness-6"
-          ></iconify-icon>
+          <iconify-icon class="brightness-icon" icon="mdi:brightness-6"></iconify-icon>
           <span class="brightness-title">Display Brightness</span>
         </div>
         <div
@@ -1399,9 +1390,7 @@ let Controls = class Controls extends i {
         >
           ${Array.from({
       length: 11
-    }, (_, i) => b`
-              <div class="brightness-dot ${i <= displayValue ? "active" : ""}"></div>
-            `)}
+    }, (_, i) => b` <div class="brightness-dot ${i <= displayValue ? "active" : ""}"></div> `)}
         </div>
         <div class="brightness-value">${displayValue}/10</div>
       </div>
@@ -1441,7 +1430,9 @@ Controls.styles = [ sharedStyles, i$3`
       }
 
       .overlay.transitioning {
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        transition:
+          transform 0.3s ease-out,
+          opacity 0.3s ease-out;
       }
 
       .overlay.visible {
@@ -1508,7 +1499,9 @@ Controls.styles = [ sharedStyles, i$3`
       }
 
       .brightness-card.transitioning {
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        transition:
+          transform 0.3s ease-out,
+          opacity 0.3s ease-out;
       }
 
       .brightness-card.visible {
@@ -1549,7 +1542,9 @@ Controls.styles = [ sharedStyles, i$3`
         height: 24px;
         border-radius: 50%;
         background-color: var(--brightness-dot-color);
-        transition: background-color 0.2s ease, transform 0.1s ease;
+        transition:
+          background-color 0.2s ease,
+          transform 0.1s ease;
       }
 
       .brightness-dot.active {
@@ -1626,11 +1621,7 @@ let NightMode = class NightMode extends i {
   render() {
     const nightModeClasses = [ "night-mode", this._animationActive ? "animate-entry" : "" ].filter(Boolean).join(" ");
     return b`
-      <div
-        class="${nightModeClasses}"
-        @click=${this._handleTap}
-        @touchstart=${this._handleTap}
-      >
+      <div class="${nightModeClasses}" @click=${this._handleTap} @touchstart=${this._handleTap}>
         <div class="night-time">${this.currentTime}</div>
         <div class="night-hint">Tap to wake</div>
       </div>
@@ -2002,8 +1993,8 @@ let GoogleCardEditor = class GoogleCardEditor extends i {
         <div class="card">
           <div class="card-header">Google Card Configuration</div>
           <p class="input-desc">
-            This card uses the built-in Home Assistant form editor.
-            If you see this message, the form editor is loading...
+            This card uses the built-in Home Assistant form editor. If you see this message, the
+            form editor is loading...
           </p>
         </div>
       </div>
@@ -2262,10 +2253,7 @@ let GoogleCard = class GoogleCard extends i {
                   .showDebugInfo=${this._showDebugInfo}
                 ></background-rotator>
 
-                <weather-clock
-                  .hass=${this.hass}
-                  .config=${this._config}
-                ></weather-clock>
+                <weather-clock .hass=${this.hass} .config=${this._config}></weather-clock>
 
                 <google-controls
                   .hass=${this.hass}

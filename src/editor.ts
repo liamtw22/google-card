@@ -1,13 +1,8 @@
 // src/editor.ts
 
-import { LitElement, html, css, nothing, TemplateResult } from 'lit';
+import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { 
-  HomeAssistant, 
-  LovelaceCardEditor, 
-  FormSchema, 
-  ConfigFormReturn 
-} from './types';
+import { HomeAssistant, LovelaceCardEditor, FormSchema, ConfigFormReturn } from './types';
 import { GoogleCardConfig } from './types/card-config';
 import { DEFAULT_CONFIG } from './constants';
 import { editorStyles } from './styles/shared-styles';
@@ -291,7 +286,8 @@ export function getConfigForm(): ConfigFormReturn {
 
     computeHelper: (schema: FormSchema): string | undefined => {
       const helpers: Record<string, string> = {
-        image_url: 'URL or media source path for images. Supports: direct URL, media-source://, Unsplash API, Immich API, Picsum',
+        image_url:
+          'URL or media source path for images. Supports: direct URL, media-source://, Unsplash API, Immich API, Picsum',
         display_time: 'How long each image is displayed before transitioning',
         crossfade_time: 'Duration of the crossfade animation between images',
         image_fit: 'How images are fitted within the display area',
@@ -304,7 +300,8 @@ export function getConfigForm(): ConfigFormReturn {
         brightness_control_entity: 'Entity to control display brightness (number or input_number)',
         device_name: 'Device identifier for notifications (e.g., mobile_app_device_name)',
         sensor_update_delay: 'Delay before reading sensor values after changes',
-        show_debug: 'Enable to show debug information overlay (also accessible via long-press on settings icon)',
+        show_debug:
+          'Enable to show debug information overlay (also accessible via long-press on settings icon)',
       };
       return helpers[schema.name] ?? undefined;
     },
@@ -349,9 +346,15 @@ export class GoogleCardEditor extends LitElement implements LovelaceCardEditor {
     switch (key) {
       case 'display_time':
       case 'crossfade_time':
-        return Math.max(1, parseInt(String(value)) || DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number);
+        return Math.max(
+          1,
+          parseInt(String(value)) || (DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number)
+        );
       case 'image_list_update_interval':
-        return Math.max(60, parseInt(String(value)) || DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number);
+        return Math.max(
+          60,
+          parseInt(String(value)) || (DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number)
+        );
       default:
         return value;
     }
@@ -363,9 +366,9 @@ export class GoogleCardEditor extends LitElement implements LovelaceCardEditor {
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config || !this.hass) return;
 
-    const target = ev.target as HTMLElement & { 
-      configValue?: string; 
-      value?: unknown; 
+    const target = ev.target as HTMLElement & {
+      configValue?: string;
+      value?: unknown;
       checked?: boolean;
     };
     const key = target.configValue;
@@ -377,7 +380,12 @@ export class GoogleCardEditor extends LitElement implements LovelaceCardEditor {
       value = target.checked;
     } else if (
       (target as HTMLInputElement).type === 'number' ||
-      ['display_time', 'crossfade_time', 'image_list_update_interval', 'sensor_update_delay'].includes(key)
+      [
+        'display_time',
+        'crossfade_time',
+        'image_list_update_interval',
+        'sensor_update_delay',
+      ].includes(key)
     ) {
       value = this._validate(key, target.value);
     } else {
@@ -411,8 +419,8 @@ export class GoogleCardEditor extends LitElement implements LovelaceCardEditor {
         <div class="card">
           <div class="card-header">Google Card Configuration</div>
           <p class="input-desc">
-            This card uses the built-in Home Assistant form editor.
-            If you see this message, the form editor is loading...
+            This card uses the built-in Home Assistant form editor. If you see this message, the
+            form editor is loading...
           </p>
         </div>
       </div>

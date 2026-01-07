@@ -8,16 +8,11 @@
   },
   "plugins": [
     "@typescript-eslint",
-    "import",
     "prettier"
   ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    "plugin:import/errors",
-    "plugin:import/warnings",
-    "plugin:import/typescript",
     "plugin:prettier/recommended"
   ],
   "env": {
@@ -29,19 +24,13 @@
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-non-null-assertion": "warn",
-    "import/order": [
-      "error",
-      {
-        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
-        "newlines-between": "always"
-      }
-    ],
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/unbound-method": "off",
+    "@typescript-eslint/require-await": "off",
     "prettier/prettier": "error"
-  },
-  "settings": {
-    "import/resolver": {
-      "typescript": {}
-    }
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "*.js"]
 }

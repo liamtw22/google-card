@@ -94,11 +94,13 @@ export class NightMode extends LitElement {
 
   private _updateTime(): void {
     const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).replace(/\s?(AM|PM)$/i, '');
+    this.currentTime = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(/\s?(AM|PM)$/i, '');
     this.requestUpdate();
   }
 
@@ -112,19 +114,12 @@ export class NightMode extends LitElement {
   }
 
   protected render(): TemplateResult {
-    const nightModeClasses = [
-      'night-mode',
-      this._animationActive ? 'animate-entry' : '',
-    ]
+    const nightModeClasses = ['night-mode', this._animationActive ? 'animate-entry' : '']
       .filter(Boolean)
       .join(' ');
 
     return html`
-      <div
-        class="${nightModeClasses}"
-        @click=${this._handleTap}
-        @touchstart=${this._handleTap}
-      >
+      <div class="${nightModeClasses}" @click=${this._handleTap} @touchstart=${this._handleTap}>
         <div class="night-time">${this.currentTime}</div>
         <div class="night-hint">Tap to wake</div>
       </div>
