@@ -1076,7 +1076,7 @@ __decorate([ r() ], BackgroundRotator.prototype, "_isTransitioning", void 0), Ba
 const WEATHER_ICONS = {
   "clear-night": "clear-night",
   cloudy: "cloudy",
-  exceptional: "exceptional",
+  exceptional: "not-available",
   fog: "fog",
   hail: "hail",
   lightning: "thunderstorms",
@@ -1088,14 +1088,27 @@ const WEATHER_ICONS = {
   "snowy-rainy": "sleet",
   sunny: "clear-day",
   windy: "wind",
-  "windy-variant": "wind"
+  "windy-variant": "wind",
+  overcast: "overcast-day",
+  "partly-cloudy": "partly-cloudy-day",
+  "partly-cloudy-night": "partly-cloudy-night",
+  clear: "clear-day",
+  thunderstorm: "thunderstorms",
+  storm: "thunderstorms",
+  rain: "rain",
+  snow: "snow",
+  mist: "fog",
+  dust: "dust",
+  smoke: "smoke",
+  drizzle: "drizzle",
+  "light-rain": "drizzle"
 }, AQI_THRESHOLDS = [ {
   max: 50,
-  color: "#00e400",
+  color: "#68a03a",
   label: "Good"
 }, {
   max: 100,
-  color: "#ffff00",
+  color: "#f9bf33",
   label: "Moderate"
 }, {
   max: 150,
@@ -1117,52 +1130,62 @@ const WEATHER_ICONS = {
 
 let WeatherClock = class WeatherClock extends i {
   constructor() {
-    super(...arguments), this._date = "", this._time = "", this._temperature = "", this._weatherIcon = "clear-day", 
+    super(...arguments), this._date = "", this._time = "", this._temperature = "", this._weatherIcon = "not-available", 
     this._aqi = null, this._error = null;
   }
   connectedCallback() {
-    super.connectedCallback(), this._updateTime(), this._timeUpdateInterval = window.setInterval(() => {
-      this._updateTime();
-    }, 1e3);
+    super.connectedCallback(), this._updateDateTime(), this._scheduleNextMinuteUpdate();
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), this._timeUpdateInterval && clearInterval(this._timeUpdateInterval);
+    super.disconnectedCallback(), this._timeUpdateInterval && clearTimeout(this._timeUpdateInterval);
   }
   updated(changedProperties) {
-    changedProperties.has("hass") && this.hass && (this._updateWeather(), this._updateAqi());
+    changedProperties.has("hass") && this.hass && this._updateWeatherData(), changedProperties.has("config") && this.config && this.requestUpdate();
   }
-  _updateTime() {
+  _scheduleNextMinuteUpdate() {
+    const now = new Date, delay = 1e3 * (60 - now.getSeconds()) + (1e3 - now.getMilliseconds());
+    this._timeUpdateInterval = window.setTimeout(() => {
+      this._updateDateTime(), this._scheduleNextMinuteUpdate();
+    }, delay);
+  }
+  _updateDateTime() {
     const now = new Date;
     this._date = now.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
+      weekday: "short",
+      month: "short",
       day: "numeric"
     }), this._time = now.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: !0
-    }).replace(/\s?(AM|PM)$/i, ""), this.requestUpdate();
+    }).replace(/\s?[AP]M/, ""), this.requestUpdate();
   }
-  _updateWeather() {
-    if (!this.hass || !this.config.weather_entity) return;
-    const weatherState = this.hass.states[this.config.weather_entity];
-    if (!weatherState) return void (this._error = `Weather entity not found: ${this.config.weather_entity}`);
-    const attrs = weatherState.attributes, temp = attrs.temperature, unit = attrs.temperature_unit || "°";
-    void 0 !== temp && (this._temperature = `${Math.round(temp)}${unit}`);
-    const condition = weatherState.state;
-    this._weatherIcon = WEATHER_ICONS[condition] || "clear-day", this._error = null;
-  }
-  _updateAqi() {
-    if (!this.hass || !this.config.aqi_entity) return void (this._aqi = null);
-    const aqiState = this.hass.states[this.config.aqi_entity];
-    if (!aqiState) return void (this._aqi = null);
-    const aqiValue = parseFloat(aqiState.state);
-    isNaN(aqiValue) ? this._aqi = null : this._aqi = String(Math.round(aqiValue));
+  _updateWeatherData() {
+    if (this.hass) try {
+      const weatherEntity = this.config.weather_entity;
+      if (weatherEntity && this.hass.states[weatherEntity]) {
+        const weatherState = this.hass.states[weatherEntity], attrs = weatherState.attributes;
+        attrs && void 0 !== attrs.temperature ? (this._temperature = `${Math.round(attrs.temperature)}°`, 
+        this._weatherIcon = WEATHER_ICONS[weatherState.state] || "not-available") : (this._temperature = "--°", 
+        this._weatherIcon = "not-available");
+      } else this._temperature = "--°", this._weatherIcon = "not-available";
+      const aqiEntity = this.config.aqi_entity;
+      if (aqiEntity && this.hass.states[aqiEntity]) {
+        const aqiState = this.hass.states[aqiEntity];
+        if (aqiState.state && "unknown" !== aqiState.state && "unavailable" !== aqiState.state) {
+          const aqiValue = parseFloat(aqiState.state);
+          this._aqi = isNaN(aqiValue) ? null : aqiState.state;
+        } else this._aqi = null;
+      } else this._aqi = null;
+      this._error = null, this.requestUpdate();
+    } catch (error) {
+      this._error = `Error: ${error.message}`;
+    }
   }
   _getAqiColor(aqi) {
-    if (!aqi) return "transparent";
-    const aqiNum = parseFloat(aqi);
-    if (isNaN(aqiNum)) return "transparent";
+    if (!aqi) return "#999999";
+    const aqiNum = parseInt(aqi);
+    if (isNaN(aqiNum)) return "#999999";
     for (const threshold of AQI_THRESHOLDS) if (aqiNum <= threshold.max) return threshold.color;
     return AQI_THRESHOLDS[AQI_THRESHOLDS.length - 1].color;
   }
@@ -1208,73 +1231,80 @@ let WeatherClock = class WeatherClock extends i {
 
 WeatherClock.styles = [ sharedStyles, i$3`
       .weather-component {
-        position: absolute;
-        bottom: 40px;
+        position: fixed;
+        bottom: 30px;
         left: 40px;
-        z-index: 2;
-        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        color: white;
+        font-family: 'Product Sans Regular', sans-serif;
+        width: 100%;
+        max-width: 400px;
       }
 
       .top-row {
         display: flex;
         justify-content: flex-start;
-        align-items: flex-end;
-        gap: 30px;
+        align-items: center;
+        width: 100%;
       }
 
       .left-column {
         display: flex;
         flex-direction: column;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        align-items: flex-start;
       }
 
       .date {
-        font-size: 24px;
-        color: white;
+        font-size: 25px;
+        margin-bottom: 5px;
         font-weight: 400;
+        margin-left: 10px;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
       }
 
       .time {
-        font-size: 100px;
-        color: white;
-        font-weight: 400;
+        font-size: 90px;
         line-height: 1;
-        margin-top: -5px;
+        font-weight: 500;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
       }
 
       .weather-section {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        align-items: center;
+        margin-top: 20px;
+        margin-left: 15px;
       }
 
       .weather-info {
         display: flex;
         align-items: center;
-        gap: 10px;
+        font-weight: 500;
       }
 
       .weather-icon {
-        width: 64px;
-        height: 64px;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        width: 50px;
+        height: 50px;
       }
 
       .temperature {
-        font-size: 48px;
-        color: white;
-        font-weight: 400;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        font-size: 35px;
+        font-weight: 500;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+        padding-top: 2px;
       }
 
       .aqi {
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 14px;
+        font-size: 20px;
+        padding: 2px 15px;
+        border-radius: 8px;
         font-weight: 500;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        align-self: center;
+        min-width: 60px;
+        text-align: center;
       }
     ` ], __decorate([ n({
   attribute: !1
@@ -1304,8 +1334,18 @@ let Controls = class Controls extends i {
   _handleSettingsLongPressEnd() {
     this._longPressTimer && (clearTimeout(this._longPressTimer), this._longPressTimer = void 0);
   }
-  _handleBrightnessInteraction(e) {
-    const rect = e.currentTarget.getBoundingClientRect(), clientX = e instanceof TouchEvent ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
+  _handleBrightnessClick(e) {
+    e.stopPropagation();
+    const clickedDot = e.target.closest(".brightness-dot");
+    if (!clickedDot) return;
+    const dotValue = parseInt(clickedDot.dataset.value || "0"), newBrightness = Math.round(25.5 * dotValue);
+    this._userSetBrightness = newBrightness, this._hasUserSetBrightness = !0, this._updateBrightnessValue(newBrightness);
+  }
+  _handleBrightnessDrag(e) {
+    e.stopPropagation(), e.type.includes("touch") && e.preventDefault();
+    const container = this.shadowRoot?.querySelector(".brightness-dots");
+    if (!container) return;
+    const rect = container.getBoundingClientRect(), clientX = e instanceof TouchEvent ? e.touches[0]?.clientX || e.changedTouches[0]?.clientX : e.clientX;
     if (void 0 === clientX) return;
     const percentage = Math.max(0, Math.min(clientX - rect.left, rect.width)) / rect.width, dotValue = Math.round(10 * percentage), newBrightness = Math.round(25.5 * dotValue);
     this._userSetBrightness = newBrightness, this._hasUserSetBrightness = !0, this._updateBrightnessValue(newBrightness);
@@ -1339,7 +1379,7 @@ let Controls = class Controls extends i {
   }
   render() {
     return b`
-      <div class="controls-container">
+      <div class="controls-container" @touchstart=${e => e.stopPropagation()}>
         ${this.showOverlay ? this._renderOverlay() : A}
         ${this.showBrightnessCard ? this._renderBrightnessCard() : A}
       </div>
@@ -1348,27 +1388,34 @@ let Controls = class Controls extends i {
   _renderOverlay() {
     const overlayClasses = [ "overlay", this.isOverlayTransitioning ? "transitioning" : "", this.isOverlayVisible ? "visible" : "" ].filter(Boolean).join(" ");
     return b`
-      <div class="${overlayClasses}">
-        <div class="overlay-content">
-          <div
-            class="control-item"
-            @click=${this._toggleBrightnessCard}
-            @touchstart=${this._toggleBrightnessCard}
-          >
-            <iconify-icon class="control-icon" icon="mdi:brightness-6"></iconify-icon>
-            <span class="control-label">Brightness</span>
-          </div>
-          <div
-            class="control-item"
-            @mousedown=${this._handleSettingsLongPressStart}
-            @mouseup=${this._handleSettingsLongPressEnd}
-            @mouseleave=${this._handleSettingsLongPressEnd}
-            @touchstart=${this._handleSettingsLongPressStart}
-            @touchend=${this._handleSettingsLongPressEnd}
-            @touchcancel=${this._handleSettingsLongPressEnd}
-          >
-            <iconify-icon class="control-icon" icon="mdi:cog"></iconify-icon>
-            <span class="control-label">Settings</span>
+      <div class="${overlayClasses}" @click=${e => e.stopPropagation()}>
+        <div class="icon-container">
+          <div class="icon-row">
+            <button class="icon-button" @click=${e => this._toggleBrightnessCard(e)}>
+              <iconify-icon icon="material-symbols-light:sunny-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:volume-up-outline-rounded"></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon
+                icon="material-symbols-light:do-not-disturb-on-outline-rounded"
+              ></iconify-icon>
+            </button>
+            <button class="icon-button">
+              <iconify-icon icon="material-symbols-light:alarm-add-outline-rounded"></iconify-icon>
+            </button>
+            <button
+              class="icon-button"
+              @touchstart=${() => this._handleSettingsLongPressStart()}
+              @touchend=${() => this._handleSettingsLongPressEnd()}
+              @touchcancel=${() => this._handleSettingsLongPressEnd()}
+              @mousedown=${() => this._handleSettingsLongPressStart()}
+              @mouseup=${() => this._handleSettingsLongPressEnd()}
+              @mouseleave=${() => this._handleSettingsLongPressEnd()}
+            >
+              <iconify-icon icon="material-symbols-light:settings-outline-rounded"></iconify-icon>
+            </button>
           </div>
         </div>
       </div>
@@ -1377,22 +1424,29 @@ let Controls = class Controls extends i {
   _renderBrightnessCard() {
     const brightnessClasses = [ "brightness-card", this.isBrightnessCardTransitioning ? "transitioning" : "", this.isBrightnessCardVisible ? "visible" : "" ].filter(Boolean).join(" "), displayValue = this._getBrightnessDisplayValue();
     return b`
-      <div class="${brightnessClasses}">
-        <div class="brightness-header">
-          <iconify-icon class="brightness-icon" icon="mdi:brightness-6"></iconify-icon>
-          <span class="brightness-title">Display Brightness</span>
+      <div class="${brightnessClasses}" @click=${e => e.stopPropagation()}>
+        <div class="brightness-control">
+          <div class="brightness-dots-container">
+            <div
+              class="brightness-dots"
+              @click=${e => this._handleBrightnessClick(e)}
+              @mousedown=${e => this._handleBrightnessDrag(e)}
+              @mousemove=${e => {
+      1 === e.buttons && this._handleBrightnessDrag(e);
+    }}
+              @touchstart=${e => this._handleBrightnessDrag(e)}
+              @touchmove=${e => this._handleBrightnessDrag(e)}
+            >
+              ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map(value => b`
+                  <div
+                    class="brightness-dot ${value <= displayValue && 0 !== displayValue ? "active" : ""}"
+                    data-value="${value}"
+                  ></div>
+                `)}
+            </div>
+          </div>
+          <span class="brightness-value">${displayValue}</span>
         </div>
-        <div
-          class="brightness-dots"
-          @click=${this._handleBrightnessInteraction}
-          @touchstart=${this._handleBrightnessInteraction}
-          @touchmove=${this._handleBrightnessInteraction}
-        >
-          ${Array.from({
-      length: 11
-    }, (_, i) => b` <div class="brightness-dot ${i <= displayValue ? "active" : ""}"></div> `)}
-        </div>
-        <div class="brightness-value">${displayValue}/10</div>
       </div>
     `;
   }
@@ -1425,14 +1479,21 @@ Controls.styles = [ sharedStyles, i$3`
         transition: none;
         z-index: 1001;
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
         pointer-events: auto;
         touch-action: none;
+        will-change: transform, opacity;
       }
 
       .overlay.transitioning {
         transition:
-          transform 0.3s ease-out,
-          opacity 0.3s ease-out;
+          transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .overlay.visible {
@@ -1440,127 +1501,195 @@ Controls.styles = [ sharedStyles, i$3`
         opacity: 1;
       }
 
-      .overlay-content {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
+      .icon-container {
+        width: 100%;
         height: 100%;
-        padding: 0 20px;
-      }
-
-      .control-item {
         display: flex;
-        flex-direction: column;
+        justify-content: center;
         align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        padding: 10px;
-        border-radius: 12px;
-        transition: background-color 0.2s ease;
-        user-select: none;
-        -webkit-user-select: none;
-        touch-action: manipulation;
+        pointer-events: auto;
       }
 
-      .control-item:active {
+      .icon-row {
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        width: 95%;
+        pointer-events: auto;
+      }
+
+      .icon-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--control-text-color);
+        padding: 10px;
+        border-radius: 50%;
+        transition:
+          background-color 0.2s ease,
+          transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        touch-action: none;
+        width: 60px;
+        height: 60px;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .icon-button:hover {
         background-color: rgba(0, 0, 0, 0.1);
       }
 
-      .control-icon {
-        width: 32px;
-        height: 32px;
-        color: var(--control-text-color);
-      }
-
-      .control-label {
-        font-size: 12px;
-        color: var(--control-text-color);
+      .icon-button:active {
+        background-color: rgba(0, 0, 0, 0.2);
+        transform: scale(0.95);
       }
 
       .brightness-card {
         position: fixed;
         bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(calc(100% + 40px));
-        width: 90%;
-        max-width: 400px;
+        left: 20px;
+        right: 20px;
+        height: 50px;
         background-color: var(--overlay-background);
         -webkit-backdrop-filter: blur(var(--background-blur));
         backdrop-filter: blur(var(--background-blur));
+        color: var(--control-text-color);
         border-radius: 20px;
-        padding: 24px;
-        box-sizing: border-box;
+        padding: 25px 25px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1002;
+        transform: translateY(calc(100% + 20px));
         opacity: 0;
         transition: none;
-        z-index: 1002;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         pointer-events: auto;
         touch-action: none;
+        will-change: transform, opacity;
       }
 
       .brightness-card.transitioning {
         transition:
-          transform 0.3s ease-out,
-          opacity 0.3s ease-out;
+          transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .brightness-card.visible {
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0);
         opacity: 1;
       }
 
-      .brightness-header {
+      .brightness-control {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
+        width: 100%;
+        pointer-events: auto;
+        height: 100%;
       }
 
-      .brightness-icon {
-        width: 24px;
-        height: 24px;
-        color: var(--control-text-color);
-      }
-
-      .brightness-title {
-        font-size: 18px;
-        font-weight: 500;
-        color: var(--control-text-color);
+      .brightness-dots-container {
+        flex-grow: 1;
+        margin-right: 10px;
+        padding: 0 10px;
+        pointer-events: auto;
       }
 
       .brightness-dots {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 0;
+        height: 30px;
+        pointer-events: auto;
         touch-action: none;
+        padding: 10px 0;
         cursor: pointer;
       }
 
       .brightness-dot {
-        width: 24px;
-        height: 24px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         background-color: var(--brightness-dot-color);
         transition:
           background-color 0.2s ease,
-          transform 0.1s ease;
+          transform 0.2s ease;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+
+      .brightness-dot:hover {
+        transform: scale(1.2);
       }
 
       .brightness-dot.active {
         background-color: var(--brightness-dot-active);
       }
 
-      .brightness-dot:active {
-        transform: scale(1.2);
+      .brightness-value {
+        min-width: 60px;
+        text-align: right;
+        font-size: 36px;
+        color: var(--control-text-color);
+        font-weight: 300;
+        margin-right: 20px;
+        pointer-events: none;
+        font-family: 'Product Sans Regular', sans-serif;
       }
 
-      .brightness-value {
-        text-align: center;
-        margin-top: 12px;
-        font-size: 14px;
-        color: var(--control-text-color);
-        opacity: 0.7;
+      iconify-icon {
+        font-size: 50px;
+        width: 50px;
+        height: 50px;
+        display: block !important;
+        color: var(--control-text-color) !important;
+        pointer-events: none;
+        fill: currentColor;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      /* iOS specific adjustments */
+      @supports (-webkit-touch-callout: none) {
+        .controls-container {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        .overlay {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+          height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+        }
+
+        .brightness-card {
+          padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+          margin-bottom: env(safe-area-inset-bottom, 0);
+        }
+      }
+
+      /* PWA standalone mode adjustments */
+      @media (display-mode: standalone) {
+        .controls-container {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        .overlay {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+          height: calc(var(--overlay-height) + env(safe-area-inset-bottom, 0));
+        }
+
+        .brightness-card {
+          padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+          margin-bottom: env(safe-area-inset-bottom, 0);
+        }
+      }
+
+      /* Explicit dark mode support */
+      :host([data-theme='dark']) {
+        --overlay-background: rgba(32, 33, 36, 0.95);
+        --control-text-color: #ffffff;
+        --brightness-dot-color: #5f6368;
+        --brightness-dot-active: #ffffff;
       }
     ` ], __decorate([ n({
   attribute: !1
@@ -2014,6 +2143,7 @@ let GoogleCard = class GoogleCard extends i {
   }
   static getStubConfig() {
     return {
+      type: "custom:google-card",
       image_url: "https://source.unsplash.com/random",
       display_time: 15,
       crossfade_time: 3,
@@ -2043,21 +2173,27 @@ let GoogleCard = class GoogleCard extends i {
     this._boundHandleThemeChange = this._handleThemeChange.bind(this);
   }
   connectedCallback() {
-    super.connectedCallback(), this._updateScreenSize(), this._updateTime(), window.addEventListener("resize", this._boundUpdateScreenSize), 
+    if (super.connectedCallback(), this._inEditor()) return this.style.position = "static", 
+    void (this.style.height = "auto");
+    this._updateScreenSize(), this._startTimeUpdates(), window.addEventListener("resize", this._boundUpdateScreenSize), 
     this._themeMediaQuery?.addEventListener("change", this._boundHandleThemeChange), 
-    this._timeUpdateInterval = window.setInterval(() => {
-      this._updateTime();
-    }, 1e3);
+    document.documentElement.setAttribute("data-theme", this._isDarkMode ? "dark" : "light"), 
+    setTimeout(() => this._updateNightMode(), 1e3);
   }
   disconnectedCallback() {
-    super.disconnectedCallback(), window.removeEventListener("resize", this._boundUpdateScreenSize), 
-    this._themeMediaQuery?.removeEventListener("change", this._boundHandleThemeChange), 
-    this._clearTimers();
+    super.disconnectedCallback(), this._inEditor() || (this._clearTimers(), window.removeEventListener("resize", this._boundUpdateScreenSize), 
+    this._themeMediaQuery?.removeEventListener("change", this._boundHandleThemeChange));
   }
-  _clearTimers() {
-    this._overlayDismissTimer && clearTimeout(this._overlayDismissTimer), this._brightnessCardDismissTimer && clearTimeout(this._brightnessCardDismissTimer), 
-    this._brightnessStabilizeTimer && clearTimeout(this._brightnessStabilizeTimer), 
-    this._timeUpdateInterval && clearInterval(this._timeUpdateInterval), this._nightModeReactivationTimer && clearTimeout(this._nightModeReactivationTimer);
+  firstUpdated() {
+    if (this._inEditor()) return;
+    const touchContainer = this.shadowRoot?.querySelector(".touch-container");
+    touchContainer && (touchContainer.addEventListener("touchstart", e => this._handleTouchStart(e), {
+      passive: !0
+    }), touchContainer.addEventListener("touchmove", e => this._handleTouchMove(e), {
+      passive: !1
+    }), touchContainer.addEventListener("touchend", e => this._handleTouchEnd(e), {
+      passive: !0
+    })), this._refreshComponents();
   }
   setConfig(config) {
     if (!config.image_url) throw new Error("Image URL required");
@@ -2075,8 +2211,20 @@ let GoogleCard = class GoogleCard extends i {
       columns: "full"
     };
   }
+  _clearTimers() {
+    this._overlayDismissTimer && clearTimeout(this._overlayDismissTimer), this._brightnessCardDismissTimer && clearTimeout(this._brightnessCardDismissTimer), 
+    this._brightnessStabilizeTimer && clearTimeout(this._brightnessStabilizeTimer), 
+    this._timeUpdateInterval && clearInterval(this._timeUpdateInterval), this._nightModeReactivationTimer && clearTimeout(this._nightModeReactivationTimer);
+  }
   _updateScreenSize() {
-    this._screenWidth = window.innerWidth, this._screenHeight = window.innerHeight;
+    const pixelRatio = window.devicePixelRatio || 1;
+    this._screenWidth = Math.round(window.innerWidth * pixelRatio), this._screenHeight = Math.round(window.innerHeight * pixelRatio), 
+    this.requestUpdate();
+  }
+  _startTimeUpdates() {
+    this._updateTime(), this._timeUpdateInterval = window.setInterval(() => {
+      this._updateTime();
+    }, 1e3);
   }
   _updateTime() {
     const now = new Date;
@@ -2084,47 +2232,62 @@ let GoogleCard = class GoogleCard extends i {
       hour: "numeric",
       minute: "2-digit",
       hour12: !0
-    }).replace(/\s?(AM|PM)$/i, "");
+    }).replace(/\s?[AP]M/, "");
   }
   _handleThemeChange() {
     this._isDarkMode = this._themeMediaQuery?.matches ?? !1, this._updateCssVariables(), 
-    this.requestUpdate();
+    this._refreshComponents(), this.requestUpdate();
   }
   _updateCssVariables() {
     this._config && (this.style.setProperty("--crossfade-time", `${this._config.crossfade_time ?? 3}s`), 
     this.style.setProperty("--theme-transition", "background-color 0.3s ease, color 0.3s ease"), 
     this.style.setProperty("--theme-background", this._isDarkMode ? "#121212" : "#ffffff"), 
     this.style.setProperty("--theme-text", this._isDarkMode ? "#ffffff" : "#333333"), 
-    this.setAttribute("data-theme", this._isDarkMode ? "dark" : "light"));
+    this.setAttribute("data-theme", this._isDarkMode ? "dark" : "light"), document.documentElement.style.setProperty("--theme-transition", "background-color 0.3s ease, color 0.3s ease"), 
+    document.documentElement.style.setProperty("--theme-background", this._isDarkMode ? "#121212" : "#ffffff"), 
+    document.documentElement.style.setProperty("--theme-text", this._isDarkMode ? "#ffffff" : "#333333"));
+  }
+  _refreshComponents() {
+    if (this._inEditor()) return;
+    document.documentElement.setAttribute("data-theme", this._isDarkMode ? "dark" : "light");
+    const backgroundRotator = this.shadowRoot?.querySelector("background-rotator"), weatherClock = this.shadowRoot?.querySelector("weather-clock"), controls = this.shadowRoot?.querySelector("google-controls");
+    backgroundRotator && backgroundRotator.requestUpdate(), weatherClock && weatherClock.requestUpdate(), 
+    controls && controls.requestUpdate();
   }
   _inEditor() {
     return this._editMode || "HUI-CARD-PREVIEW" === this.parentElement?.tagName || this.parentElement?.classList.contains("element-preview") || this.getRootNode() instanceof ShadowRoot && "HUI-CARD-PREVIEW" === this.getRootNode().host?.tagName;
   }
   _handleTouchStart(e) {
-    if (this._isNightMode) return;
-    const touch = e.touches[0];
-    this._touchStartY = touch.clientY, this._touchStartX = touch.clientX, this._touchStartTime = Date.now();
+    1 === e.touches.length && (this._touchStartY = e.touches[0].clientY, this._touchStartX = e.touches[0].clientX, 
+    this._touchStartTime = Date.now());
+  }
+  _handleTouchMove(e) {
+    1 === e.touches.length && (this._showBrightnessCard || this._showOverlay) && e.preventDefault();
   }
   _handleTouchEnd(e) {
-    if (this._isNightMode) return;
-    const touch = e.changedTouches[0], deltaY = this._touchStartY - touch.clientY, deltaX = touch.clientX - this._touchStartX, deltaTime = Date.now() - this._touchStartTime;
-    deltaY > 50 && Math.abs(deltaX) < 50 && deltaTime < 300 && this._showControlOverlay(), 
-    deltaY < -50 && Math.abs(deltaX) < 50 && deltaTime < 300 && this._hideControlOverlay();
+    if (1 !== e.changedTouches.length) return;
+    const deltaY = this._touchStartY - e.changedTouches[0].clientY, deltaX = this._touchStartX - e.changedTouches[0].clientX, deltaTime = Date.now() - this._touchStartTime, velocityY = Math.abs(deltaY) / deltaTime, velocityX = Math.abs(deltaX) / deltaTime;
+    this._isNightMode && Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50 ? this._handleNightModeExit() : Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50 && velocityX > .2 && this._touchStartX < .25 * window.innerWidth && deltaX < 0 ? this._isNightMode || this._handleNightModeTransition(!0, "manual") : Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && velocityY > .2 && (deltaY > 0 && !this._showBrightnessCard && !this._showOverlay ? this._showControlOverlay() : deltaY < 0 && (this._showBrightnessCard ? this._dismissBrightnessCard() : this._showOverlay && this._hideControlOverlay()));
   }
   _showControlOverlay() {
     this._showBrightnessCard ? this._dismissBrightnessCard() : this._showOverlay ? this._startOverlayDismissTimer() : (this._showOverlay = !0, 
     this._isOverlayTransitioning = !0, requestAnimationFrame(() => {
-      this._isOverlayVisible = !0, this._startOverlayDismissTimer(), this.requestUpdate(), 
-      setTimeout(() => {
-        this._isOverlayTransitioning = !1, this.requestUpdate();
-      }, 300);
+      requestAnimationFrame(() => {
+        this._isOverlayVisible = !0, this._startOverlayDismissTimer(), this.requestUpdate(), 
+        setTimeout(() => {
+          this._isOverlayTransitioning = !1, this.requestUpdate();
+        }, 300);
+      });
     }));
   }
   _hideControlOverlay() {
-    this._showOverlay && (this._isOverlayTransitioning = !0, this._isOverlayVisible = !1, 
-    setTimeout(() => {
-      this._showOverlay = !1, this._isOverlayTransitioning = !1, this.requestUpdate();
-    }, 300));
+    this._showOverlay && !this._isOverlayTransitioning && (this._isOverlayTransitioning = !0, 
+    this._isOverlayVisible = !1, this._overlayDismissTimer && clearTimeout(this._overlayDismissTimer), 
+    requestAnimationFrame(() => {
+      this.requestUpdate(), setTimeout(() => {
+        this._showOverlay = !1, this._isOverlayTransitioning = !1, this.requestUpdate();
+      }, 300);
+    }));
   }
   _startOverlayDismissTimer() {
     this._overlayDismissTimer && clearTimeout(this._overlayDismissTimer), this._overlayDismissTimer = window.setTimeout(() => {
@@ -2132,9 +2295,13 @@ let GoogleCard = class GoogleCard extends i {
     }, 1e4);
   }
   _dismissBrightnessCard() {
-    this._isBrightnessCardTransitioning = !0, this._isBrightnessCardVisible = !1, setTimeout(() => {
-      this._showBrightnessCard = !1, this._isBrightnessCardTransitioning = !1, this.requestUpdate();
-    }, 300);
+    this._isBrightnessCardTransitioning || (this._isBrightnessCardTransitioning = !0, 
+    this._isBrightnessCardVisible = !1, this._brightnessCardDismissTimer && clearTimeout(this._brightnessCardDismissTimer), 
+    requestAnimationFrame(() => {
+      this.requestUpdate(), setTimeout(() => {
+        this._showBrightnessCard = !1, this._isBrightnessCardTransitioning = !1, this.requestUpdate();
+      }, 300);
+    }));
   }
   _startBrightnessCardDismissTimer() {
     this._brightnessCardDismissTimer && clearTimeout(this._brightnessCardDismissTimer), 
@@ -2169,17 +2336,35 @@ let GoogleCard = class GoogleCard extends i {
     this._showDebugInfo = !this._showDebugInfo, this.requestUpdate();
   }
   _handleNightModeExit() {
-    this._handleNightModeTransition(!1, "manual");
+    this._isNightMode = !1, this._isInNightMode = !1;
+    const lightSensorEntity = this._config?.light_sensor_entity;
+    if (lightSensorEntity && this.hass && this.hass.states[lightSensorEntity]) {
+      0 === parseInt(this.hass.states[lightSensorEntity].state) && (this._nightModeReactivationTimer && clearTimeout(this._nightModeReactivationTimer), 
+      this._nightModeReactivationTimer = window.setTimeout(() => {
+        this._updateNightMode();
+      }, 3e4));
+    }
+    this._restorePreviousBrightness(), this.requestUpdate();
+  }
+  async _restorePreviousBrightness() {
+    if (!this.hass || !this._config?.brightness_control_entity) return;
+    const restoreBrightness = this._previousBrightness && this._previousBrightness > 0 ? this._previousBrightness : 128;
+    await this.hass.callService("number", "set_value", {
+      entity_id: this._config.brightness_control_entity,
+      value: restoreBrightness
+    }), this._brightness = restoreBrightness, this._visualBrightness = restoreBrightness;
   }
   _updateNightMode() {
     if (!this.hass || !this._config?.light_sensor_entity) return;
     const lightSensorState = this.hass.states[this._config.light_sensor_entity];
     if (!lightSensorState) return;
+    if ("unavailable" === lightSensorState.state || "unknown" === lightSensorState.state) return;
     const lightLevel = parseFloat(lightSensorState.state);
     if (isNaN(lightLevel)) return;
     const shouldBeInNightMode = lightLevel <= 1;
-    lightLevel <= 10 !== this._isDarkMode && (this._isDarkMode = lightLevel <= 10, this.setAttribute("data-theme", this._isDarkMode ? "dark" : "light"), 
-    this._updateCssVariables(), this.requestUpdate()), this._isInNightMode && "manual" === this._nightModeSource || shouldBeInNightMode !== this._isInNightMode && this._handleNightModeTransition(shouldBeInNightMode, "sensor");
+    shouldBeInNightMode !== this._isDarkMode && (this._isDarkMode = shouldBeInNightMode, 
+    document.documentElement.setAttribute("data-theme", this._isDarkMode ? "dark" : "light"), 
+    this._updateCssVariables(), this._refreshComponents(), this.requestUpdate()), this._isInNightMode && "manual" === this._nightModeSource || shouldBeInNightMode !== this._isInNightMode && this._handleNightModeTransition(shouldBeInNightMode, "sensor");
   }
   async _handleNightModeTransition(newNightMode, source = "sensor") {
     if (newNightMode !== this._isInNightMode || this._nightModeSource !== source) try {
@@ -2201,7 +2386,10 @@ let GoogleCard = class GoogleCard extends i {
           value: restoreBrightness
         }), this._nightModeSource = null;
       }
-      this._isInNightMode = newNightMode, this._isNightMode = newNightMode, this.requestUpdate();
+      this._isInNightMode = newNightMode, this._isNightMode = newNightMode;
+      const nightModeComponent = this.shadowRoot?.querySelector("night-mode");
+      nightModeComponent && (nightModeComponent.isInNightMode = newNightMode, nightModeComponent.previousBrightness = this._previousBrightness, 
+      nightModeComponent.nightModeSource = this._nightModeSource), this.requestUpdate();
     } catch (error) {
       this._isInNightMode = !newNightMode, this._isNightMode = !newNightMode, this.requestUpdate();
     }
@@ -2217,69 +2405,92 @@ let GoogleCard = class GoogleCard extends i {
       }
       Date.now() - this._lastBrightnessUpdateTime > 2e3 && this._updateNightMode();
     }
-    (changedProperties.has("_isDarkMode") || changedProperties.has("hass")) && this._updateCssVariables();
+    (changedProperties.has("_isDarkMode") || changedProperties.has("hass")) && (this._updateCssVariables(), 
+    this._refreshComponents());
   }
   render() {
     return this._config ? this._inEditor() ? b`
         <div class="editor-placeholder">
           <h3>Google Card</h3>
-          <p>This card displays rotating background images with weather information.</p>
-          <p><strong>Image URL:</strong> ${this._config.image_url}</p>
+          <div>Image Source: ${this._config?.image_url || "Not configured"}</div>
+          <div>Current Mode: ${this._config?.image_fit || "contain"}</div>
         </div>
       ` : b`
-      <div
-        class="touch-container"
-        @touchstart=${this._handleTouchStart}
-        @touchend=${this._handleTouchEnd}
-      >
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
+      <style>
+        @font-face {
+          font-family: 'Product Sans Regular';
+          src:
+            local('Product Sans'),
+            local('ProductSans-Regular'),
+            url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2)
+              format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+      </style>
+
+      <div class="touch-container">
         <div class="content-wrapper">
+          <background-rotator
+            .hass=${this.hass}
+            .config=${this._config}
+            .screenWidth=${this._screenWidth}
+            .screenHeight=${this._screenHeight}
+          ></background-rotator>
+
+          <weather-clock
+            .hass=${this.hass}
+            .config=${this._config}
+            style="${this._isNightMode ? "display: none;" : ""}"
+          ></weather-clock>
+
           ${this._isNightMode ? b`
                 <night-mode
+                  .currentTime=${this._currentTime}
                   .hass=${this.hass}
                   .config=${this._config}
-                  .currentTime=${this._currentTime}
                   .brightness=${this._brightness}
-                  .isInNightMode=${this._isInNightMode}
                   .previousBrightness=${this._previousBrightness}
+                  .isInNightMode=${this._isInNightMode}
                   .nightModeSource=${this._nightModeSource}
                   @nightModeExit=${this._handleNightModeExit}
                 ></night-mode>
-              ` : b`
-                <background-rotator
-                  .hass=${this.hass}
-                  .config=${this._config}
-                  .screenWidth=${this._screenWidth}
-                  .screenHeight=${this._screenHeight}
-                  .showDebugInfo=${this._showDebugInfo}
-                ></background-rotator>
+              ` : ""}
 
-                <weather-clock .hass=${this.hass} .config=${this._config}></weather-clock>
-
-                <google-controls
-                  .hass=${this.hass}
-                  .config=${this._config}
-                  .showOverlay=${this._showOverlay}
-                  .isOverlayVisible=${this._isOverlayVisible}
-                  .isOverlayTransitioning=${this._isOverlayTransitioning}
-                  .showBrightnessCard=${this._showBrightnessCard}
-                  .isBrightnessCardVisible=${this._isBrightnessCardVisible}
-                  .isBrightnessCardTransitioning=${this._isBrightnessCardTransitioning}
-                  .brightness=${this._brightness}
-                  .visualBrightness=${this._visualBrightness}
-                  .isAdjustingBrightness=${this._isAdjustingBrightness}
-                  @brightnessCardToggle=${this._handleBrightnessCardToggle}
-                  @brightnessChange=${this._handleBrightnessChange}
-                  @brightnessChangeComplete=${this._handleBrightnessChangeComplete}
-                  @debugToggle=${this._handleDebugToggle}
-                ></google-controls>
-              `}
+          <google-controls
+            .hass=${this.hass}
+            .config=${this._config}
+            .showOverlay=${this._showOverlay}
+            .isOverlayVisible=${this._isOverlayVisible}
+            .isOverlayTransitioning=${this._isOverlayTransitioning}
+            .showBrightnessCard=${this._showBrightnessCard}
+            .isBrightnessCardVisible=${this._isBrightnessCardVisible}
+            .isBrightnessCardTransitioning=${this._isBrightnessCardTransitioning}
+            .brightness=${this._brightness}
+            .visualBrightness=${this._visualBrightness}
+            .isAdjustingBrightness=${this._isAdjustingBrightness}
+            @brightnessCardToggle=${this._handleBrightnessCardToggle}
+            @brightnessChange=${this._handleBrightnessChange}
+            @brightnessChangeComplete=${this._handleBrightnessChangeComplete}
+            @debugToggle=${this._handleDebugToggle}
+            style="${this._isNightMode ? "display: none;" : ""}"
+          ></google-controls>
         </div>
       </div>
     ` : b`<div class="error">No configuration found</div>`;
   }
 };
 
-GoogleCard.styles = [ sharedStyles, i$3`
+GoogleCard.getConfigForm = getConfigForm, GoogleCard.styles = [ sharedStyles, i$3`
       :host {
         display: block;
         width: 100%;
@@ -2316,7 +2527,7 @@ GoogleCard.styles = [ sharedStyles, i$3`
         box-shadow: var(--ha-card-box-shadow, 0 2px 2px 0 rgba(0, 0, 0, 0.14));
         margin: 8px;
       }
-    ` ], GoogleCard.getConfigForm = getConfigForm, __decorate([ n({
+    ` ], __decorate([ n({
   attribute: !1
 }) ], GoogleCard.prototype, "hass", void 0), __decorate([ r() ], GoogleCard.prototype, "_config", void 0), 
 __decorate([ r() ], GoogleCard.prototype, "_screenWidth", void 0), __decorate([ r() ], GoogleCard.prototype, "_screenHeight", void 0), 
