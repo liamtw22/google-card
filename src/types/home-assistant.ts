@@ -139,7 +139,7 @@ export interface LovelaceCardConfig {
 }
 
 export interface GridOptions {
-  rows?: number;
+  rows?: number | 'full';
   columns?: number | 'full';
   min_rows?: number;
   max_rows?: number;
