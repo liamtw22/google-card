@@ -67,12 +67,12 @@ export interface DebugInfo {
 }
 
 /**
- * Weather icon mapping
+ * Weather icon mapping - extended to match original card
  */
 export const WEATHER_ICONS: Record<string, string> = {
   'clear-night': 'clear-night',
   cloudy: 'cloudy',
-  exceptional: 'exceptional',
+  exceptional: 'not-available',
   fog: 'fog',
   hail: 'hail',
   lightning: 'thunderstorms',
@@ -85,10 +85,24 @@ export const WEATHER_ICONS: Record<string, string> = {
   sunny: 'clear-day',
   windy: 'wind',
   'windy-variant': 'wind',
+  // Extended mappings from original card
+  overcast: 'overcast-day',
+  'partly-cloudy': 'partly-cloudy-day',
+  'partly-cloudy-night': 'partly-cloudy-night',
+  clear: 'clear-day',
+  thunderstorm: 'thunderstorms',
+  storm: 'thunderstorms',
+  rain: 'rain',
+  snow: 'snow',
+  mist: 'fog',
+  dust: 'dust',
+  smoke: 'smoke',
+  drizzle: 'drizzle',
+  'light-rain': 'drizzle',
 };
 
 /**
- * AQI Color thresholds
+ * AQI Color thresholds - matching original card colors
  */
 export interface AQIThreshold {
   max: number;
@@ -97,8 +111,8 @@ export interface AQIThreshold {
 }
 
 export const AQI_THRESHOLDS: AQIThreshold[] = [
-  { max: 50, color: '#00e400', label: 'Good' },
-  { max: 100, color: '#ffff00', label: 'Moderate' },
+  { max: 50, color: '#68a03a', label: 'Good' },
+  { max: 100, color: '#f9bf33', label: 'Moderate' },
   { max: 150, color: '#f47c06', label: 'Unhealthy for Sensitive Groups' },
   { max: 200, color: '#c43828', label: 'Unhealthy' },
   { max: 300, color: '#ab1457', label: 'Very Unhealthy' },
