@@ -14,7 +14,7 @@ export class WeatherClock extends LitElement {
   @state() private _date = '';
   @state() private _time = '';
   @state() private _temperature = '';
-  @state() private _weatherIcon = 'clear-day';
+  @state() private _weatherIcon = 'not-available';
   @state() private _aqi: string | null = null;
   @state() private _error: string | null = null;
 
@@ -24,171 +24,187 @@ export class WeatherClock extends LitElement {
     sharedStyles,
     css`
       .weather-component {
-        position: absolute;
-        bottom: 40px;
+        position: fixed;
+        bottom: 30px;
         left: 40px;
-        z-index: 2;
-        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        color: white;
+        font-family: 'Product Sans Regular', sans-serif;
+        width: 100%;
+        max-width: 400px;
       }
 
       .top-row {
         display: flex;
         justify-content: flex-start;
-        align-items: flex-end;
-        gap: 30px;
+        align-items: center;
+        width: 100%;
       }
 
       .left-column {
         display: flex;
         flex-direction: column;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        align-items: flex-start;
       }
 
       .date {
-        font-size: 24px;
-        color: white;
+        font-size: 25px;
+        margin-bottom: 5px;
         font-weight: 400;
+        margin-left: 10px;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
       }
 
       .time {
-        font-size: 100px;
-        color: white;
-        font-weight: 400;
+        font-size: 90px;
         line-height: 1;
-        margin-top: -5px;
+        font-weight: 500;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
       }
 
       .weather-section {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        align-items: center;
+        margin-top: 20px;
+        margin-left: 15px;
       }
 
       .weather-info {
         display: flex;
         align-items: center;
-        gap: 10px;
+        font-weight: 500;
       }
 
       .weather-icon {
-        width: 64px;
-        height: 64px;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        width: 50px;
+        height: 50px;
       }
 
       .temperature {
-        font-size: 48px;
-        color: white;
-        font-weight: 400;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        font-size: 35px;
+        font-weight: 500;
+        text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+        padding-top: 2px;
       }
 
       .aqi {
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 14px;
+        font-size: 20px;
+        padding: 2px 15px;
+        border-radius: 8px;
         font-weight: 500;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        align-self: center;
+        min-width: 60px;
+        text-align: center;
       }
     `,
   ];
 
   connectedCallback(): void {
     super.connectedCallback();
-    this._updateTime();
-    this._timeUpdateInterval = window.setInterval(() => {
-      this._updateTime();
-    }, 1000);
+    this._updateDateTime();
+    this._scheduleNextMinuteUpdate();
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._timeUpdateInterval) {
-      clearInterval(this._timeUpdateInterval);
+      clearTimeout(this._timeUpdateInterval);
     }
   }
 
   updated(changedProperties: Map<string, unknown>): void {
     if (changedProperties.has('hass') && this.hass) {
-      this._updateWeather();
-      this._updateAqi();
+      this._updateWeatherData();
+    }
+    if (changedProperties.has('config') && this.config) {
+      this.requestUpdate();
     }
   }
 
-  private _updateTime(): void {
+  private _scheduleNextMinuteUpdate(): void {
+    const now = new Date();
+    const delay = (60 - now.getSeconds()) * 1000 + (1000 - now.getMilliseconds());
+    this._timeUpdateInterval = window.setTimeout(() => {
+      this._updateDateTime();
+      this._scheduleNextMinuteUpdate();
+    }, delay);
+  }
+
+  private _updateDateTime(): void {
     const now = new Date();
 
-    // Format date
+    // Format date - matching original: short weekday, short month
     this._date = now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
     });
 
-    // Format time
+    // Format time - no AM/PM
     this._time = now
       .toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
       })
-      .replace(/\s?(AM|PM)$/i, '');
+      .replace(/\s?[AP]M/, '');
 
     this.requestUpdate();
   }
 
-  private _updateWeather(): void {
-    if (!this.hass || !this.config.weather_entity) return;
+  private _updateWeatherData(): void {
+    if (!this.hass) return;
 
-    const weatherState = this.hass.states[this.config.weather_entity] as
-      | HassEntityState
-      | undefined;
-    if (!weatherState) {
-      this._error = `Weather entity not found: ${this.config.weather_entity}`;
-      return;
-    }
+    try {
+      const weatherEntity = this.config.weather_entity;
+      if (weatherEntity && this.hass.states[weatherEntity]) {
+        const weatherState = this.hass.states[weatherEntity] as HassEntityState;
+        const attrs = weatherState.attributes as WeatherEntityAttributes;
 
-    const attrs = weatherState.attributes as WeatherEntityAttributes;
-    const temp = attrs.temperature;
-    const unit = attrs.temperature_unit || '°';
+        if (attrs && attrs.temperature !== undefined) {
+          this._temperature = `${Math.round(attrs.temperature)}°`;
+          this._weatherIcon = WEATHER_ICONS[weatherState.state] || 'not-available';
+        } else {
+          this._temperature = '--°';
+          this._weatherIcon = 'not-available';
+        }
+      } else {
+        this._temperature = '--°';
+        this._weatherIcon = 'not-available';
+      }
 
-    if (temp !== undefined) {
-      this._temperature = `${Math.round(temp)}${unit}`;
-    }
+      const aqiEntity = this.config.aqi_entity;
+      if (aqiEntity && this.hass.states[aqiEntity]) {
+        const aqiState = this.hass.states[aqiEntity];
+        if (
+          aqiState.state &&
+          aqiState.state !== 'unknown' &&
+          aqiState.state !== 'unavailable'
+        ) {
+          const aqiValue = parseFloat(aqiState.state);
+          this._aqi = isNaN(aqiValue) ? null : aqiState.state;
+        } else {
+          this._aqi = null;
+        }
+      } else {
+        this._aqi = null;
+      }
 
-    // Map weather condition to icon
-    const condition = weatherState.state;
-    this._weatherIcon = WEATHER_ICONS[condition] || 'clear-day';
-    this._error = null;
-  }
-
-  private _updateAqi(): void {
-    if (!this.hass || !this.config.aqi_entity) {
-      this._aqi = null;
-      return;
-    }
-
-    const aqiState = this.hass.states[this.config.aqi_entity];
-    if (!aqiState) {
-      this._aqi = null;
-      return;
-    }
-
-    const aqiValue = parseFloat(aqiState.state);
-    if (!isNaN(aqiValue)) {
-      this._aqi = String(Math.round(aqiValue));
-    } else {
-      this._aqi = null;
+      this._error = null;
+      this.requestUpdate();
+    } catch (error) {
+      this._error = `Error: ${(error as Error).message}`;
     }
   }
 
   private _getAqiColor(aqi: string | null): string {
-    if (!aqi) return 'transparent';
+    if (!aqi) return '#999999';
 
-    const aqiNum = parseFloat(aqi);
-    if (isNaN(aqiNum)) return 'transparent';
+    const aqiNum = parseInt(aqi);
+    if (isNaN(aqiNum)) return '#999999';
 
     for (const threshold of AQI_THRESHOLDS) {
       if (aqiNum <= threshold.max) {
